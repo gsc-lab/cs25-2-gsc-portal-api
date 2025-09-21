@@ -1,0 +1,59 @@
+#  개발용 Docker Compose 설정 (Vue + Express)
+# - 네트워크 역할 분리
+# - 마운트 및 설정파일 구조화
+# - 정적/동적 요청 분기 고려 (개발 단계에선 프록시 활용)
+
+
+services:
+  backend:
+    build: ./backend
+    container_name: dev_backend
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    command: sh -c "npm install && npm run dev"
+    environment:
+      TZ: ${TIME_ZONE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      NODE_ENV: development
+    networks:
+      - gsc
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    container_name: dev_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: gsc_portal
+      TZ: ${TIME_ZONE}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db:/docker-entrypoint-initdb.d
+    networks:
+      - gsc
+
+networks:
+  gsc:
+    driver: bridge
+
+volumes:
+  db_data:

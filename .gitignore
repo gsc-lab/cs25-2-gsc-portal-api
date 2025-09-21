@@ -1,0 +1,34 @@
+# Dependency directories
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor config
+.idea/
+.vscode/
+*.code-workspace
+
+# Local env files
+.env
+.env.*          # for .env.development, .env.production
+.env.local
+
+# npm/yarn lock & debug
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Optional: typescript cache
+*.tsbuildinfo
+
+# Optional: Mac trash folder
+.Trashes
+
+# Log output from Vite/Vue CLI
+coverage/
