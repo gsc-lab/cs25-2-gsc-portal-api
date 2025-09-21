@@ -57,7 +57,7 @@ phone         VARCHAR(50),
 status        ENUM('active','inactive','pending') NOT NULL DEFAULT 'pending',
 updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 UNIQUE KEY ux_user_email (email),
-UNIQUE KEY ux_user_phone (콜)
+UNIQUE KEY ux_user_phone (phone)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE user_role (
@@ -160,6 +160,7 @@ schedule_id  VARCHAR(10) PRIMARY KEY,
 classroom_id VARCHAR(10)  NOT NULL,
 time_slot_id VARCHAR(10)  NOT NULL,
 course_id    VARCHAR(15) NOT NULL,
+sec_id       VARCHAR(10) NOT NULL,
 day_of_week  ENUM('MON','TUE','WED','THU','FRI') NOT NULL,
 UNIQUE KEY ux_sched_slot_room (time_slot_id, classroom_id, day_of_week),
 KEY ix_sched_course_slot (course_id, time_slot_id, day_of_week),

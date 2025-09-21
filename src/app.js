@@ -1,5 +1,5 @@
 import express from "express";
-import { swaggerUi, specs } from "../docs/swagger.js";
+import { swaggerUi, specs } from "./docs/swagger.js";
 
 const app = express();
 app.use(express.json());
