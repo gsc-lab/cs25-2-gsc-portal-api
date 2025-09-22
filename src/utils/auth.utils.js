@@ -1,6 +1,6 @@
-import jwt from 'jsonwebtoken';
-import redisClient from '../config/redis.js';
-import dotenv from 'dotenv';
+import jwt from "jsonwebtoken";
+import redisClient from "../db/redis.js";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -8,17 +8,18 @@ const secret = process.env.JWT_SECRET;
 
 // ESM 방식 export로 전체 함수 묶어서 내보내기
 export const sign = (user) => {
-  console.log('유저 확인', user);
+  console.log("유저 확인", user);
   const payload = {
     user_id: user.user_id,
     name: user.name,
-    role: user.role || 'student',
+    email: user.email,
+    role: user.role || "student",
   };
 
   console.log(payload);
   return jwt.sign(payload, secret, {
-    algorithm: 'HS256',
-    expiresIn: '1800s',
+    algorithm: "HS256",
+    expiresIn: "1800s",
   });
 };
 
@@ -29,6 +30,7 @@ export const verify = (token) => {
       success: true,
       user_id: decoded.user_id,
       name: decoded.name,
+      email: decoded.email,
       role: decoded.role,
     };
   } catch (err) {
@@ -42,8 +44,8 @@ export const verify = (token) => {
 export const signRefresh = (userId, jti) => {
   const payload = { sub: String(userId), jti };
   return jwt.sign(payload, secret, {
-    algorithm: 'HS256',
-    expiresIn: '7d',
+    algorithm: "HS256",
+    expiresIn: "7d",
   });
 };
 
@@ -55,13 +57,13 @@ export const refreshVerify = async (token, userId) => {
         jwt.verify(token, secret);
         return true;
       } catch (err) {
-        console.warn('JWT 서명 검증 실패:', err.message);
+        console.warn("JWT 서명 검증 실패:", err.message);
         return false;
       }
     }
     return false;
   } catch (err) {
-    console.warn('Redis 조회 실패', err.message);
+    console.warn("Redis 조회 실패", err.message);
     return false;
   }
 };

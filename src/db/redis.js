@@ -1,5 +1,5 @@
-import dotenv from 'dotenv';
-import { createClient } from 'redis';
+import dotenv from "dotenv";
+import { createClient } from "redis";
 
 dotenv.config();
 
@@ -12,8 +12,8 @@ const redisClient = createClient({
   },
 });
 
-redisClient.on('connect', () => {
-  console.log('Redis Connected');
+redisClient.on("connect", () => {
+  console.log("Redis Connected");
 });
 
 await redisClient.connect();

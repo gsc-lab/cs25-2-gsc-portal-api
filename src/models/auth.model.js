@@ -1,10 +1,19 @@
-import pool from '../config/db.js';
+import pool from "../db/connection.js";
 
 // 이메일 관련 사용자 찾기
 export const findByEmail = async (email) => {
   const [rows] = await pool.query(
-    'SELECT * FROM user_account WHERE email = ?',
+    "SELECT * FROM user_account WHERE email = ?",
     [email],
+  );
+  return rows[0];
+};
+
+// ID 조회
+export const findById = async (userId) => {
+  const [rows] = await pool.query(
+    "SELECT * FROM user_account WHERE user_id = ?",
+    [userId],
   );
   return rows[0];
 };
@@ -12,7 +21,7 @@ export const findByEmail = async (email) => {
 // 이메일 허용 사용자 찾기
 export const findAuthEmail = async (email) => {
   const [rows] = await pool.query(
-    'SELECT * FROM allowed_email WHERE email = ?',
+    "SELECT * FROM allowed_email WHERE email = ?",
     [email],
   );
   return rows[0];
@@ -24,7 +33,7 @@ export const createStudent = async ({
   name,
   email,
   phone,
-  status = 'pending',
+  status = "pending",
   grade_id = null,
   language_id = null,
   class_id = null,
@@ -46,17 +55,17 @@ export const createStudent = async ({
     await conn.query(
       `INSERT INTO student_entity (user_id, grade_id, class_id, language_id, is_international, status)
              VALUES (?, ?, ?, ?, ?, ?)`,
-      [user_id, grade_id, class_id, language_id, is_international, 'enrolled'],
+      [user_id, grade_id, class_id, language_id, is_international, "enrolled"],
     );
 
     await conn.query(
       `INSERT INTO user_role (role_type, user_id)
              VALUES (?, ?)`,
-      ['student', user_id],
+      ["student", user_id],
     );
 
     if (user.affectedRows !== 1) {
-      throw new Error('user_account(학생) 입력 실패 ');
+      throw new Error("user_account(학생) 입력 실패 ");
     }
 
     await conn.commit();
@@ -84,7 +93,7 @@ export const createProfessor = async ({
   name,
   email,
   phone,
-  status = 'pending',
+  status = "pending",
 }) => {
   const conn = await pool.getConnection();
   try {
@@ -100,11 +109,11 @@ export const createProfessor = async ({
     await conn.query(
       `INSERT INTO user_role (role_type, user_id)
              VALUES (?, ?)`,
-      ['professor', user_id],
+      ["professor", user_id],
     );
 
     if (rows.affectedRows !== 1) {
-      throw new Error('user_account 입력 실패');
+      throw new Error("user_account 입력 실패");
     }
 
     await conn.commit();

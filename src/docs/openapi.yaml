@@ -282,12 +282,12 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: 대시보드 데이터 반환 성공
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DashboardResponse'
+                $ref: "#/components/schemas/DashboardResponse"
   /auth/google:
     get:
       tags:
@@ -295,7 +295,7 @@ paths:
       summary: Google OAuth 인증 URL 요청
       description: 사용자가 로그인 버튼 클릭 시, Google OAuth 인증을 위한 URL을 반환합니다.
       responses:
-        '200':
+        "200":
           description: 인증 URL 반환 성공
           content:
             application/json:
@@ -319,18 +319,18 @@ paths:
             type: string
           description: Google에서 전달하는 인증 코드
       responses:
-        '200':
+        "200":
           description: 로그인 성공 (토큰과 사용자 정보 반환)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '403':
+                $ref: "#/components/schemas/AuthResponse"
+        "403":
           description: 로그인 실패 (승인 대기 또는 거부된 사용자)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
   /auth/refresh:
     post:
       tags:
@@ -348,18 +348,18 @@ paths:
                   type: string
                   example: 1//0gNabcABCDeFgHIJKLmnopQR_StUvWxYz
       responses:
-        '200':
+        "200":
           description: 토큰 재발급 성공
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
           description: 유효하지 않은 refresh token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
   /auth/me:
     get:
       tags:
@@ -369,18 +369,18 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: 사용자 정보 반환
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        '401':
+                $ref: "#/components/schemas/User"
+        "401":
           description: 인증 실패
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
   /auth/register:
     post:
       tags:
@@ -396,26 +396,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserRegistrationRequest'
+              $ref: "#/components/schemas/UserRegistrationRequest"
       responses:
-        '201':
+        "201":
           description: 등록 성공. 생성된 사용자 정보 반환.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: '잘못된 요청 (예: 필수 필드 누락, 유효하지 않은 class_id)'
+                $ref: "#/components/schemas/User"
+        "400":
+          description: "잘못된 요청 (예: 필수 필드 누락, 유효하지 않은 class_id)"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
           description: 이미 등록된 사용자 (Conflict)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
   /notices:
     get:
       tags:
@@ -433,21 +433,21 @@ paths:
           schema:
             type: string
             example: G1
-          description: '학년 필터 (예: G1, G2, G3) 비워두면 전체 조회'
+          description: "학년 필터 (예: G1, G2, G3) 비워두면 전체 조회"
         - name: level_id
           in: query
           required: false
           schema:
             type: string
             example: N1
-          description: '레벨 필터 (예: N1, N2 대비반 등 특강용)'
+          description: "레벨 필터 (예: N1, N2 대비반 등 특강용)"
         - name: language_id
           in: query
           required: false
           schema:
             type: string
             example: JP
-          description: '언어 필터 (예: 일본어반, 한국어반 등)'
+          description: "언어 필터 (예: 일본어반, 한국어반 등)"
         - name: course_id
           in: query
           required: false
@@ -460,16 +460,16 @@ paths:
           required: false
           schema:
             type: string
-          description: '학기 필터 (예: 2025-1). 지정하지 않으면 현재 학기만 조회.'
+          description: "학기 필터 (예: 2025-1). 지정하지 않으면 현재 학기만 조회."
       responses:
-        '200':
+        "200":
           description: 공지사항 목록 반환
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/NoticeSummary'
+                  $ref: "#/components/schemas/NoticeSummary"
     post:
       tags:
         - Notices
@@ -482,14 +482,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NoticeCreateRequest'
+              $ref: "#/components/schemas/NoticeCreateRequest"
       responses:
-        '201':
+        "201":
           description: 공지사항 생성 성공
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NoticeDetail'
+                $ref: "#/components/schemas/NoticeDetail"
   /notices/{noticeId}:
     get:
       tags:
@@ -505,12 +505,12 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: 공지사항 상세 정보 반환
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NoticeDetail'
+                $ref: "#/components/schemas/NoticeDetail"
     put:
       tags:
         - Notices
@@ -529,26 +529,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NoticeUpdateRequest'
+              $ref: "#/components/schemas/NoticeUpdateRequest"
       responses:
-        '200':
+        "200":
           description: 공지사항 수정 성공
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NoticeDetail'
-        '403':
+                $ref: "#/components/schemas/NoticeDetail"
+        "403":
           description: 권한 없음
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: 대상 공지 없음
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       tags:
         - Notices
@@ -563,20 +563,20 @@ paths:
           schema:
             type: integer
       responses:
-        '204':
+        "204":
           description: 공지사항 삭제 성공 (본문 없음)
-        '403':
+        "403":
           description: 권한 없음
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: 대상 공지 없음
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
   /notices/{noticeId}/dispatch:
     post:
       tags:
@@ -609,24 +609,24 @@ paths:
                   default: KAKAO
             example: {}
       responses:
-        '202':
+        "202":
           description: 큐에 적재됨(비동기)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/KakaoEnqueueResponse'
-        '400':
+                $ref: "#/components/schemas/KakaoEnqueueResponse"
+        "400":
           description: 잘못된 템플릿 변수/수신자 정보
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: 권한 없음
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
   /notices/{noticeId}/status:
     get:
       tags:
@@ -642,20 +642,20 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: 수신자 목록 및 읽음 현황 반환
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/NoticeReadStatus'
-        '403':
+                  $ref: "#/components/schemas/NoticeReadStatus"
+        "403":
           description: 권한 없음
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
   /notices/{noticeId}/read:
     patch:
       tags:
@@ -671,14 +671,14 @@ paths:
           schema:
             type: integer
       responses:
-        '204':
+        "204":
           description: 읽음 처리 완료 (본문 없음)
-        '404':
+        "404":
           description: 대상 공지 또는 수신 행을 찾을 수 없음
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
   /dispatch/direct:
     post:
       tags:
@@ -694,20 +694,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DirectMessageRequest'
+              $ref: "#/components/schemas/DirectMessageRequest"
       responses:
-        '202':
+        "202":
           description: 발송 요청 접수됨(비동기)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/KakaoEnqueueResponse'
-        '400':
-          description: '잘못된 요청 (예: 사용자 ID 목록이 비어있음)'
+                $ref: "#/components/schemas/KakaoEnqueueResponse"
+        "400":
+          description: "잘못된 요청 (예: 사용자 ID 목록이 비어있음)"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /dispatch/jobs/{jobId}:
     get:
@@ -723,7 +723,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: 상태 반환
           content:
             application/json:
@@ -761,7 +761,7 @@ paths:
           schema:
             type: string
             example: 2025-2
-          description: '조회할 학기 (예: 2025년 2학기)'
+          description: "조회할 학기 (예: 2025년 2학기)"
         - name: grade_id
           in: query
           required: true
@@ -774,14 +774,14 @@ paths:
           schema:
             type: string
             format: date
-          description: '조회하고 싶은 주(week)의 아무 날짜나 입력 (예: 2025-09-15)'
+          description: "조회하고 싶은 주(week)의 아무 날짜나 입력 (예: 2025-09-15)"
       responses:
-        '200':
+        "200":
           description: 청소 당번 목록 반환
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CleaningRosterResponse'
+                $ref: "#/components/schemas/CleaningRosterResponse"
   /classrooms/polls:
     get:
       summary: 이번 주 강의실 개방 투표 현황 조회
@@ -1739,42 +1739,26 @@ components:
           format: date
           example: 2025-04-15
     securitySchemes:
-        bearerAuth:
-          type: http
-          scheme: bearer
-          bearerFormat: JWT
+      bearerAuth:
+        type: http
+        scheme: bearer
+        bearerFormat: JWT
     User:
       type: object
       properties:
         user_id:
           type: integer
-          description: 사용자 고유 ID
+          description: 사용자 고유 ID(학번)
           example: 1
         name:
           type: string
           example: 홍길동
-        email:
-          type: string
-          example: test@yju.ac.kr
         role_type:
           type: string
           enum:
             - student
             - professor
             - admin
-        status:
-          type: string
-          enum:
-            - active
-            - inactive
-            - pending
-        is_international:
-          type: string
-          enum:
-            - 한국인
-            - 외국인
-          description: 학생인 경우, 유학생 여부
-          example: 한국인
     NoticeSummary:
       type: object
       properties:
@@ -1783,11 +1767,11 @@ components:
           example: 124
         title:
           type: string
-          example: '[G1] 2차 과제 안내'
+          example: "[G1] 2차 과제 안내"
         created_at:
           type: string
           format: date-time
-          example: '2025-09-15T10:30:00Z'
+          example: "2025-09-15T10:30:00Z"
         course_id:
           type: string
           example: COURSE-G1-01
@@ -1836,7 +1820,7 @@ components:
                 example: https://example.com/file/과제안내.pdf
     NoticeDetail:
       allOf:
-        - $ref: '#/components/schemas/NoticeSummary'
+        - $ref: "#/components/schemas/NoticeSummary"
         - type: object
           properties:
             content:
@@ -1844,7 +1828,7 @@ components:
             attachments:
               type: array
               items:
-                $ref: '#/components/schemas/Attachment'
+                $ref: "#/components/schemas/Attachment"
     NoticeCreateRequest:
       type: object
       required:
@@ -1909,7 +1893,7 @@ components:
           example: KA01-12345ABCDE
         default_vars:
           type: object
-          description: '모든 수신자에게 공통으로 적용될 템플릿 변수들 (예: #{title})'
+          description: "모든 수신자에게 공통으로 적용될 템플릿 변수들 (예: #{title})"
           example:
             notice_title: 2주차 과제 안내
             content_preview: 첨부파일을 확인하여 과제를 제출하세요.
@@ -2042,7 +2026,7 @@ components:
         poll_date:
           type: string
           format: date
-          example: '2025-09-20'
+          example: "2025-09-20"
         classroom_name:
           type: string
           example: 청문관-405
@@ -2057,7 +2041,7 @@ components:
           example: 3
       example:
         poll_id: POLL_CM405_20250920
-        poll_date: '2025-09-20'
+        poll_date: "2025-09-20"
         classroom_name: 청문관-405
         required_count: 5
         is_opened: false
@@ -2069,7 +2053,7 @@ components:
           type: string
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         user:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
     ErrorResponse:
       type: object
       properties:
@@ -2088,11 +2072,11 @@ components:
         start_time:
           type: string
           format: time
-          example: '10:00:00'
+          example: "10:00:00"
         end_time:
           type: string
           format: time
-          example: '11:50:00'
+          example: "11:50:00"
     DashboardCleaning:
       type: object
       properties:
@@ -2115,28 +2099,28 @@ components:
         schedule:
           type: array
           items:
-            $ref: '#/components/schemas/DashboardSchedule'
+            $ref: "#/components/schemas/DashboardSchedule"
         notices:
           type: array
           items:
-            $ref: '#/components/schemas/NoticeSummary'
+            $ref: "#/components/schemas/NoticeSummary"
         cleaning_duty:
           type: array
           items:
-            $ref: '#/components/schemas/DashboardCleaning'
+            $ref: "#/components/schemas/DashboardCleaning"
         weekend_poll:
-          $ref: '#/components/schemas/WeekendPollStatus'
+          $ref: "#/components/schemas/WeekendPollStatus"
           nullable: true
       example:
         schedule:
           - course_title: 기초 공학
             classroom_name: 청문관-405
-            start_time: '10:00:00'
-            end_time: '11:50:00'
+            start_time: "10:00:00"
+            end_time: "11:50:00"
         notices:
           - notice_id: 124
-            title: '[G1] 2차 과제 안내'
-            created_at: '2025-09-15T10:30:00Z'
+            title: "[G1] 2차 과제 안내"
+            created_at: "2025-09-15T10:30:00Z"
         cleaning_duty:
           - grade_id: G1
             classroom_name: 청문관-405
@@ -2145,7 +2129,7 @@ components:
               - 학생2
         weekend_poll:
           poll_id: POLL_CM405_20250920
-          poll_date: '2025-09-20'
+          poll_date: "2025-09-20"
           classroom_name: 청문관-405
           required_count: 5
           is_opened: false
@@ -2168,8 +2152,8 @@ components:
           example: 김민준
         student_id:
           type: string
-          description: '학번 (예: 2423001)'
-          example: '2423001'
+          description: "학번 (예: 2423001)"
+          example: "2423001"
         phone:
           type: string
           description: 연락 가능한 전화번호
@@ -2181,19 +2165,19 @@ components:
         grade_id:
           type: string
           description: 소속 학년(Grade) ID
-          example: G2
+          example: null
         class_id:
           type: string
           description: 소속 반(Class) ID
-          example: N2-A
+          example: null
         language_id:
           type: string
           description: 언어 ID
-          example: JP
+          example: null
         is_international:
           type: boolean
           description: 유학생 여부
-          example: 한국인
+          example: null
     StudentApproval:
       type: object
       description: 학생 승인 대기 목록에 표시될 정보 (v_student_approval 뷰 기반)
@@ -2255,11 +2239,11 @@ components:
         section_start_date:
           type: string
           format: date
-          example: '2025-09-01'
+          example: "2025-09-01"
         section_end_date:
           type: string
           format: date
-          example: '2025-12-20'
+          example: "2025-12-20"
         team_size:
           type: integer
           example: 5
@@ -2328,7 +2312,7 @@ components:
             - 2523023
         message:
           description: 발송할 메시지 내용
-          $ref: '#/components/schemas/KakaoSendRequest'
+          $ref: "#/components/schemas/KakaoSendRequest"
     CleaningRoster:
       type: object
       properties:
@@ -2361,7 +2345,7 @@ components:
         weekly_duties:
           type: array
           items:
-            $ref: '#/components/schemas/CleaningRoster'
+            $ref: "#/components/schemas/CleaningRoster"
     CleaningRosterResponse:
       type: object
       description: 학년별로 그룹화된 학기 전체 청소 당번표
@@ -2372,26 +2356,25 @@ components:
         rosters:
           type: array
           items:
-            $ref: '#/components/schemas/GradeCleaningRoster'
+            $ref: "#/components/schemas/GradeCleaningRoster"
       example:
         section: 2025-2
         rosters:
           - grade_id: G1
             classroom_name: 창조관-304
             weekly_duties:
-              - work_date: '2025-09-15'
+              - work_date: "2025-09-15"
                 members:
                   - G1 Student 01
                   - G1 Student 02
-              - work_date: '2025-09-22'
+              - work_date: "2025-09-22"
                 members:
                   - G1 Student 03
                   - G1 Student 04
           - grade_id: G2
             classroom_name: 창조관-405
             weekly_duties:
-              - work_date: '2025-09-15'
+              - work_date: "2025-09-15"
                 members:
                   - G2 Student 01
                   - G2 Student 02
-
