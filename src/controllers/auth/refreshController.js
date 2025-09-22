@@ -1,4 +1,4 @@
-import { refreshTokens } from "../../service/auth.service.js";
+import { refreshTokens } from "../../service/auth-service.js";
 import { UnauthenticatedError } from "../../errors/index.js";
 
 const isVeryRefresh = async (req, res) => {
