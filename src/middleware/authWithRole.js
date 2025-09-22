@@ -2,7 +2,7 @@ const ROLE_ORDER = { admin: 3, professor: 2, student: 1 };
 import { verify } from "../utils/auth.utils.js";
 export const authWithRole = (requiredRole = "student") => {
   return (req, res, next) => {
-    const token = req.cookies.accessToken;
+    const token = req.cookies?.accessToken;
     if (!token) {
       return res.status(401).json({ success: false, message: "토큰 없음" });
     }
