@@ -1,0 +1,23 @@
+import express from 'express';
+import * as adminController from '../controllers/adminController.js';
+import { authWithRole } from "../middleware/authWithRole.js";
+
+const router = express.Router();
+
+// 승인
+router.get('/users', authWithRole("admin"), adminController.getPendingUsers);
+router.post('/users', authWithRole("admin"), adminController.postPendingUsers);
+router.delete('/users', authWithRole("admin"), adminController.deletePendingUsers);
+
+// 예외 이메일
+router.get('/email', authWithRole("admin"), adminController.getAllowedEmail);
+router.post('/email', authWithRole("admin"), adminController.postAllowedEmail);
+router.delete('/email', authWithRole("admin"), adminController.deleteAllowedEmail);
+
+// 학생 정보
+router.get('/students', authWithRole("admin"), adminController.getStudentInfo);
+router.patch('/students/:user_id', authWithRole("admin"), adminController.patchStudentInfo);
+router.delete('/students', authWithRole("admin"), adminController.deleteStudentInfo);
+
+
+export default router;
