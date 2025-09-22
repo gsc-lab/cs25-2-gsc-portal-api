@@ -11,9 +11,7 @@ export const sign = (user) => {
   console.log("유저 확인", user);
   const payload = {
     user_id: user.user_id,
-    name: user.name,
-    email: user.email,
-    role: user.role || "student",
+    role: user.role,
   };
 
   console.log(payload);
@@ -29,8 +27,6 @@ export const verify = (token) => {
     return {
       success: true,
       user_id: decoded.user_id,
-      name: decoded.name,
-      email: decoded.email,
       role: decoded.role,
     };
   } catch (err) {
