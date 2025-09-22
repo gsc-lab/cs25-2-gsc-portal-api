@@ -131,7 +131,7 @@ export const patchStudentInfo = async function (req, res) {
             return res.status(400).json({ error: "No Data" });
         }
 
-        const result = await adminService.patchStudentInfo(user_id, updates);
+        await adminService.patchStudentInfo(user_id, updates);
         res.status(200).json({ message: "수정 완료", user_id });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -146,7 +146,7 @@ export const deleteStudentInfo = async function (req, res) {
             return res.status(400).json({ error: "user_id is required"});
         }
 
-        const result = await adminService.deleteStudentInfo(user_id);
+        await adminService.deleteStudentInfo(user_id);        
         res.status(200).json({ message: "삭제 완료" });
     } catch (err) {
         res.status(500).json({ error: err.message });
