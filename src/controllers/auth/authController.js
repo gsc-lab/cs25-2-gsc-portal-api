@@ -3,9 +3,9 @@ import url from "url";
 import { google } from "googleapis";
 import dotenv from "dotenv";
 import redisClient from "../../db/redis.js";
-import { findAuthEmail, findByEmail } from "../../models/auth.model.js";
+import { findAuthEmail, findByEmail } from "../../models/Auth.js";
 import { sign, signRefresh } from "../../utils/auth.utils.js";
-import { checkUserStatus, registerUser } from "../../service/auth.service.js";
+import { checkUserStatus, registerUser } from "../../service/auth-service.js";
 import {
   BadRequestError,
   ForbiddenError,
@@ -107,8 +107,6 @@ async function authCallback(req, res) {
       if (user) {
         const payload = {
           user_id: user.user_id,
-          name: user.name,
-          email: user.email,
           role: user.role ?? "student",
         };
         const jti = v4();
