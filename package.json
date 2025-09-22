@@ -5,34 +5,27 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "lint:fix": "eslint --fix . && prettier --write ."
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@eslint/js": "^9.36.0",
-    "axios": "^1.12.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
-    "globals": "^16.4.0",
-    "googleapis": "^160.0.0",
-    "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.15.0",
-    "redis": "^5.8.2",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "uuid": "^13.0.0"
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@eslint/json": "^0.13.2",
     "eslint": "^9.36.0",
-    "eslint-config-prettier": "^10.1.8",
-    "nodemon": "^3.1.10",
-    "prettier": "^3.6.2"
+    "globals": "^16.4.0",
+    "nodemon": "^3.1.10"
   }
 }
