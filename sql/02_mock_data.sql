@@ -44,7 +44,8 @@ INSERT INTO user_account (user_id, name, email, phone, status) VALUES
 ('9999001','관리자','admin@g.yju.ac.kr','010-9999-9999','active'),
 ('8888001','이교수','prof1@g.yju.ac.kr','010-8888-0001','active'),
 ('8888002','박교수','prof2@g.yju.ac.kr','010-8888-0002','active'),
-('2725001','유학생A','intl1@example.com','010-7777-0001','active');
+('2725001','유학생A','intl1@example.com','010-7777-0001','active'),
+('2725999','테스트학생','test_pending@g.yju.ac.kr','010-5555-9999','pending');
 
 INSERT INTO user_role (user_id, role_type) VALUES
 ('2423001','student'),
@@ -53,7 +54,8 @@ INSERT INTO user_role (user_id, role_type) VALUES
 ('9999001','admin'),
 ('8888001','professor'),
 ('8888002','professor'),
-('2725001','student');
+('2725001','student'),
+('2725999','student');
 
 INSERT INTO student_entity (user_id, grade_id, class_id, language_id, is_international, status) VALUES
 ('2423001','2','3','JP','korean','enrolled'),
@@ -153,3 +155,9 @@ INSERT INTO log_entity (log_id, user_id, action) VALUES
 (2,'2423001','READ_NOTICE'),
 (3,'8888001','LOGIN'),
 (4,'2725001','RESERVE');
+
+-- ===== Allowed Emails =====
+INSERT INTO allowed_email (email, reason, tag) VALUES
+('external1@example.com', '산학협력 교수', 'professor'),
+('external2@example.com', '졸업생 멘토링', 'alumni'),
+('testuser@example.com', '개발 테스트용', 'test');
