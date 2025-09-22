@@ -4,7 +4,7 @@ import {
   createProfessor,
   createStudent,
   findById,
-} from "../models/auth.model.js";
+} from "../models/Auth.js";
 import { v4 } from "uuid";
 import jwt from "jsonwebtoken";
 import { BadRequestError, UnauthenticatedError } from "../errors/index.js";
