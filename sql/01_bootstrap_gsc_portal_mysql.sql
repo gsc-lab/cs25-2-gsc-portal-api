@@ -34,7 +34,7 @@ name     VARCHAR(50) NOT NULL UNIQUE
 CREATE TABLE level_class (
 class_id VARCHAR(10) PRIMARY KEY,
 level_id VARCHAR(10) NOT NULL,
-name     VARCHAR(50) NOT NULL,
+name     VARCHAR(50),
 CONSTRAINT fk_level_class
 FOREIGN KEY (level_id) REFERENCES level(level_id)
 ON UPDATE CASCADE ON DELETE CASCADE,
