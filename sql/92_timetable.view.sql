@@ -12,6 +12,7 @@ SELECT
     cr.building        AS building,
     cr.room_number     AS room_number,
     ua.name            AS professor_name,
+    cp.user_id         AS professor_id,
     ct.grade_id,
     g.name             AS grade_name,
     ct.level_id,
