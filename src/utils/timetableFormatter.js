@@ -21,7 +21,7 @@ export function formatTimetable(rows) {
     for (const d of days) {
         timetable[d] = {};
         for (let p = 1; p <= 12; p++) {
-        timetable[d][p] = null;
+        timetable[d][p] = [];
         }
     }
 
