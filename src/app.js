@@ -6,7 +6,7 @@ import { swaggerUi, specs } from "./docs/swagger.js";
 import adminRouter from './routes/adminRouter.js';
 import timetableRouter from './routes/timetableRouter.js';
 import commonRouter from './routes/modal/commonRouter.js';
-
+import subjectRouter from './routes/modal/subjectRouter.js';
 
 const app = express();
 app.use(express.json());
@@ -20,7 +20,11 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 app.use('/admin', adminRouter);
 // 시간표
 app.use('/timetables', timetableRouter);
-// 모달
-app.use('/modal', commonRouter);
+// common 모달
+app.use('/modal/common', commonRouter);
+// subject 모달
+app.use('/modal/subjects', subjectRouter);
+
+
 
 export default app;
