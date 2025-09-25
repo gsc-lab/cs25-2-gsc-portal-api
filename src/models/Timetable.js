@@ -56,20 +56,37 @@ export async function getProfessorTimetable(user_id, targetDate) {
     const sql = `
     SELECT vt.*
     FROM v_timetable vt
-    JOIN course_professor cp ON vt.course_id = cp.course_id
-    WHERE cp.user_id = :user_id
+    WHERE vt.professor_id = ?
     AND (
-        (vt.event_date IS NULL AND :targetDate BETWEEN vt.start_date AND vt.end_date)
-        OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN :weekStart AND :weekEnd)
+        (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
+        OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
     )
     ORDER BY FIELD(vt.day,'MON','TUE','WED','THU','FRI'), vt.start_time;
-    `
+    `;
 
-    const params = [user_id, targetDate, weekStart, weekEnd]
+    const params = [user_id, targetDate, weekStart, weekEnd];
     const [rows] = await pool.query(sql, params);
-    return formatTimetable(rows)
+    return formatTimetable(rows);
 };
 
+// 관리자
+export async function getAdminTimetable(targetDate) {
+    const { weekStart, weekEnd } = getWeekRange(targetDate);
+
+    const sql = `
+    SELECT *
+    FROM v_timetable vt
+    WHERE (
+        (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
+        OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
+    )
+    ORDER BY FIELD(vt.day,'MON','TUE','WED','THU','FRI'), vt.start_time;
+    `;
+
+    const params = [targetDate, weekStart, weekEnd];
+    const [rows] = await pool.query(sql, params);
+    return formatTimetable(rows);
+}
 
 
 

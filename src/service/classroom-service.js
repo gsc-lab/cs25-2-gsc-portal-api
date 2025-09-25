@@ -9,7 +9,9 @@ export const getProfessorTimetable = async function(user_id, targetDate) {
     return await timetableModel.getProfessorTimetable(user_id, targetDate);
 }
 
-
+export const getAdminTimetable = async function(targetDate) {
+    return await timetableModel.getAdminTimetable(targetDate);
+}
 
 
 
