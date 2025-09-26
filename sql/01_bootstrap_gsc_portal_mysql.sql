@@ -221,7 +221,7 @@ file_id     VARCHAR(10) PRIMARY KEY,
 file_name   VARCHAR(255) NOT NULL,
 file_url    TEXT NOT NULL,
 size_type   INT,
-file_type   ENUM('PDF','IMG') NOT NULL,
+file_type   VARCHAR(100) NOT NULL,
 uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -231,6 +231,7 @@ user_id    VARCHAR(10) NOT NULL,
 course_id  VARCHAR(15),
 title      VARCHAR(100) NOT NULL,
 content    TEXT NOT NULL,
+is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 KEY ix_notice_course_time (course_id, created_at),
 KEY ix_notice_author_time (user_id, created_at),
