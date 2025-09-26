@@ -4,7 +4,7 @@ import { createClient } from "redis";
 dotenv.config();
 
 const redisClient = createClient({
-  username: process.env.REDIS_USERNAME,
+  username: process.env.REDIS_USER,
   password: process.env.REDIS_PASSWORD,
   socket: {
     port: process.env.REDIS_PORT,
