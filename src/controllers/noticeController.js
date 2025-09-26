@@ -1,30 +1,73 @@
-import * as noticeService from '../service/notice-service.js'
-import { InternalServerError } from '../errors/index.js';
-export async function fetchNotices(req, res) {
-    try {
-        const spec = {user: req.user} // 로그인 사용자 정보
-        const query = req.query;
-
-        const notices = await noticeService.getNotices(spec, query);
-
-        res.status(200).json(notices);
-    } catch (error) {
-        console.error('error is fetchNotices controller', error);
-        // throw new InternalServerError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요');
-    }
-}
-
-// 입력 파싱/검증 => 서비스 -> http
+import * as noticeService from "../service/notice-service.js";
 
 // 리스트
+export async function fetchNotices(req, res, next) {
+  try {
+    const spec = { user: req.user }; // 로그인 사용자 정보
+    const query = req.query;
+
+    const notices = await noticeService.getNotices(spec, query);
+
+    res.status(200).json(notices);
+  } catch (error) {
+    next(error);
+  }
+}
 
 // 싱세
+export async function fetchNoticesId(req, res, next) {
+  try {
+    const { notice_id } = req.params;
 
-// 등록
+    const noticeId = await noticeService.detailNotices(notice_id);
 
-// 수정
+    res.status(200).json(noticeId);
+  } catch (error) {
+    next(error);
+  }
+}
 
-// 삭제
+// 공지 작성
+export async function createNotice(req, res, next) {
+  try {
+    const { user, body: noticeData, files } = req;
 
-// 파일
+    const result = await noticeService.addNotice(user, noticeData, files);
 
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// 공지 수정
+export async function updateNotice(req, res, next) {
+  try {
+    const { notice_id } = req.params;
+    const { user, body: noticeData, files: newFiles } = req.body;
+
+    const result = await noticeService.updateNotice(
+      notice_id,
+      noticeData,
+      newFiles,
+      user,
+    );
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// 공지 삭제
+export async function deleteNotice(req, res, next) {
+  try {
+    const { notice_id } = req.params;
+
+    const result = await noticeService.deleteNotice(notice_id, req.user);
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
