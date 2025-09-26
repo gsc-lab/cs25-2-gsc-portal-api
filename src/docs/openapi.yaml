@@ -427,40 +427,48 @@ paths:
       security:
         - bearerAuth: []
       parameters:
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 1
+          description: "조회할 페이지 번호 (기본값: 1)"
+        - name: size
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 10
+          description: "한 페이지에 보여줄 공지 수 (기본값: 10)"
+        - name: course_type
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 정규
+          description: "과목 타입을 필터링합니다. (값: 정규, 특강, 한국어)"
         - name: grade_id
           in: query
           required: false
           schema:
             type: string
             example: G1
-          description: "학년 필터 (예: G1, G2, G3) 비워두면 전체 조회"
+          description: "(학생 전용) 특정 학년 타겟 공지를 추가로 필터링합니다."
         - name: level_id
           in: query
           required: false
           schema:
             type: string
             example: N1
-          description: "레벨 필터 (예: N1, N2 대비반 등 특강용)"
+          description: "(학생 전용) 특정 레벨 타겟 공지를 추가로 필터링합니다."
         - name: language_id
           in: query
           required: false
           schema:
             type: string
             example: JP
-          description: "언어 필터 (예: 일본어반, 한국어반 등)"
-        - name: course_id
-          in: query
-          required: false
-          schema:
-            type: string
-            example: COURSE-G1-01
-          description: 과목 필터 (특정 과목의 공지만 보려할 때 사용)
-        - name: sec_id
-          in: query
-          required: false
-          schema:
-            type: string
-          description: "학기 필터 (예: 2025-1). 지정하지 않으면 현재 학기만 조회."
+          description: "(학생 전용) 특정 언어 타겟 공지를 추가로 필터링합니다."
       responses:
         "200":
           description: 공지사항 목록 반환
@@ -1764,32 +1772,37 @@ components:
       properties:
         notice_id:
           type: integer
-          example: 124
+          example: 38
         title:
           type: string
-          example: "[G1] 2차 과제 안내"
+          example: "새로운 공지"
+        is_pinned:
+          type: boolean
+          example: "true"
         created_at:
           type: string
           format: date-time
           example: "2025-09-15T10:30:00Z"
-        course_id:
-          type: string
-          example: COURSE-G1-01
         course_title:
           type: string
-          example: 기초 일본어
-        author_id:
-          type: string
-          example: U12345
-        author_name:
-          type: string
-          example: 홍길동
-        author_role:
-          type: string
-          example: PROFESSOR
-        professor_name:
-          type: string
-          example: 김교수
+          example: "기초 일본어"
+        attach_count:
+          type: integer
+          example: 1
+        author:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+                example: "8888001"
+              name:
+                type: string
+                example: "이교수"
+              role:
+                type: string
+                example: "professor"
         targets:
           type: array
           items:
@@ -1797,27 +1810,33 @@ components:
             properties:
               grade_id:
                 type: string
-                example: G1
+                example: "G1"
               level_id:
                 type: string
-                example: N1
+                example: "N1"
               language_id:
                 type: string
-                example: JP
+                example: "JP"
         content:
           type: string
-          example: 과제 마감일은 다음주 월요일입니다.
+          example: "과제 마감일은 다음주 월요일입니다."
         attachments:
           type: array
           items:
             type: object
             properties:
+              file_id:
+                type: string
+                example: "FIbfa15e06"
               file_name:
                 type: string
-                example: 과제안내.pdf
+                example: "과제안내.hwpx"
               file_url:
                 type: string
-                example: https://example.com/file/과제안내.pdf
+                example: "/files/FIbfa15e06/download"
+              file_type:
+                type: string
+                example: "application/haansofthwp+xml"
     NoticeDetail:
       allOf:
         - $ref: "#/components/schemas/NoticeSummary"
@@ -2253,11 +2272,15 @@ components:
     Attachment:
       type: object
       properties:
+        file_id:
+          type: string
         file_name:
           type: string
         file_url:
           type: string
           format: uri
+        file_type:
+          type: string
     NoticeUpdateRequest:
       type: object
       description: 공지사항 수정을 위한 요청 본문 (보낸 필드만 변경)
