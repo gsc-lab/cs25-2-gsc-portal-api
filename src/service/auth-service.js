@@ -1,10 +1,6 @@
 import redisClient from "../db/redis.js";
 import { refreshVerify, sign, signRefresh } from "../utils/auth.utils.js";
-import {
-  createProfessor,
-  createStudent,
-  findById,
-} from "../models/Auth.js";
+import { createProfessor, createStudent, findById } from "../models/Auth.js";
 import { v4 } from "uuid";
 import jwt from "jsonwebtoken";
 import { BadRequestError, UnauthenticatedError } from "../errors/index.js";
