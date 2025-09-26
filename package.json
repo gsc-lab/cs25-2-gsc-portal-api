@@ -5,32 +5,40 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "prepare": "husky install",
+    "lint:fix": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\" && eslint --fix \"src/**/*.{js,jsx,ts,tsx}\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "axios": "^1.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.15.0",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "uuid": "^11.1.0",
     "googleapis": "^153.0.0",
     "http-status-codes": "^2.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "mime-types": "^3.0.1",
+    "multer": "^2.0.2",
+    "mysql2": "^3.15.0",
     "redis": "^5.6.0",
-    "axios": "^1.10.0"
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@eslint/json": "^0.13.2",
     "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-json": "^4.0.1",
     "globals": "^16.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.1",
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2"
   }
