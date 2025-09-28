@@ -11,8 +11,8 @@ router.get("/admin", authWithRole("admin"), timetableController.getAdminTimetabl
 
 // 강의 등록
 router.post("/registerCourses", authWithRole("professor"), timetableController.postRegisterCourse);
-
-
+// 시간표 등록
+router.post("/registerTimetable", authWithRole("admin"), timetableController.postRegisterTimetable);
 
 
 // 후까 교수님

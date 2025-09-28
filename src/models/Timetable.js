@@ -155,23 +155,50 @@ export async function registerCourse(sec_id, title, professor_id, target) {
     }
 }
 
+// 시간표 등록
+export async function registerTimetable(classroom_id, course_id, day_of_week, start_period, end_period) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
 
+        // schedule_id 조회
+        const [lastRow] = await conn.query(
+            "SELECT schedule_id FROM course_schedule ORDER BY schedule_id DESC LIMIT 1"
+        );
+        const lastId = lastRow.length > 0 ? lastRow[0].schedule_id : null;
 
+        for (let i = 0; i <= end_period - start_period; i++) {
+            const period = start_period + i;
+            const schedule_id = generateScheduleId(lastId, i);
 
-// helper 함수
-// Course ID 생성 (C001, C002, ...)
-function generateCourseId(lastId) {
-    if (!lastId) return "C001";
-    const num = parseInt(lastId.substring(1));
-    return "C" + String(num + 1).padStart(3, "0");
+            const sql = `
+                INSERT INTO course_schedule (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week)
+                SELECT ?, ?, ?, c.course_id, c.sec_id, ?
+                FROM course c
+                WHERE c.course_id = ?`;
+
+            await conn.query(sql, [
+                schedule_id,
+                classroom_id,
+                period,
+                day_of_week,
+                course_id 
+            ]);
+        }
+
+        await conn.commit();
+        return { message: "시간표 등록 완료" };
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
 }
 
-// Target ID 생성 (T001, T002, ...)
-function generateTargetId(lastId) {
-    if (!lastId) return "T001";
-    const num = parseInt(lastId.substring(1)); // "T008" → 8
-    return "T" + String(num + 1).padStart(3, "0"); // → "T009"
-}
+
+
+
 
 
 
@@ -204,4 +231,35 @@ export async function getHukaStudentTimetable() {
 
     const [rows] = await pool.query(sql);
     return rows;
+}
+
+
+
+
+
+
+
+
+
+
+
+// helper 함수
+// Course ID 생성
+function generateCourseId(lastId) {
+    if (!lastId) return "C001";
+    const num = parseInt(lastId.substring(1));
+    return "C" + String(num + 1).padStart(3, "0");
+}
+
+// Target ID 생성
+function generateTargetId(lastId) {
+    if (!lastId) return "T001";
+    const num = parseInt(lastId.substring(1));
+    return "T" + String(num + 1).padStart(3, "0");
+}
+// Schedule ID 생성
+function generateScheduleId(lastId, offset = 0) {
+    if (!lastId) return "SCH001";
+    const num = parseInt(lastId.substring(3));
+    return "SCH" + String(num + 1 + offset).padStart(3, "0");
 }

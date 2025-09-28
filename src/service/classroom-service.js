@@ -18,6 +18,10 @@ export const postRegisterCourse = async function (sec_id, title, professor_id, t
     return await timetableModel.registerCourse(sec_id, title, professor_id, target);
 };
 
+// 시간표 등록
+export const postRegisterTimetable = async function (classroom_id, course_id, day_of_week, start_period, end_period) {
+    return await timetableModel.registerTimetable(classroom_id, course_id, day_of_week, start_period, end_period);
+}
 
 
 

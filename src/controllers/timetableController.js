@@ -78,7 +78,7 @@ export const postRegisterCourse = async (req, res) => {
 
         const result = await classroomService.postRegisterCourse(sec_id, title, professor_id, targetInfo);
 
-        res.status(201).json({ message: "등록 완료", course: result });
+        res.status(200).json({ message: "등록 완료", course: result });
 
     } catch (err) {
         console.error(err);
@@ -86,7 +86,23 @@ export const postRegisterCourse = async (req, res) => {
     }
 };
 
+// 시간표 등록
+export const postRegisterTimetable = async function (req, res) {
+    try {
+        const { classroom_id, start_period, end_period,course_id, day_of_week } = req.body;
 
+        if (!classroom_id || !start_period || !end_period || !course_id || !day_of_week) {
+            return res.status(400).json({ error: "classroom, start_period, end_period, course_id, day_of_week are required" })
+        }
+
+        const result = await classroomService.postRegisterTimetable(classroom_id, course_id, day_of_week, start_period, end_period)
+
+        res.status(200).json({ message: "등록 완료", course: result})
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
 
 
 
