@@ -196,6 +196,35 @@ export async function registerTimetable(classroom_id, course_id, day_of_week, st
     }
 }
 
+// 휴보강 등록
+export async function postRegisterHoliday(schedule_id, event_type, event_date) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // 마지막 event_id 조회
+        const [lastRow] = await conn.query(
+            "SELECT event_id FROM course_event ORDER BY event_id DESC LIMIT 1"
+        );
+        const lastId = lastRow.length > 0 ? lastRow[0].event_id : null;
+        const event_id = generateEventId(lastId);
+
+        // INSERT
+        const sql = `
+            INSERT INTO course_event (event_id, schedule_id, event_type, event_date)
+            VALUES (?, ?, ?, ?)`;
+        await conn.query(sql, [event_id, schedule_id, event_type, event_date]);
+
+        await conn.commit();
+        return { message: "휴보강 등록 완료", event_id };
+
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+}
 
 
 
@@ -263,3 +292,10 @@ function generateScheduleId(lastId, offset = 0) {
     const num = parseInt(lastId.substring(3));
     return "SCH" + String(num + 1 + offset).padStart(3, "0");
 }
+// Event ID 생성
+function generateEventId(lastId) {
+    if (!lastId) return "E001";
+    const num = parseInt(lastId.substring(1));
+    return "E" + String(num + 1).padStart(3, "0");
+}
+

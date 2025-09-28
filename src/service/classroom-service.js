@@ -23,7 +23,10 @@ export const postRegisterTimetable = async function (classroom_id, course_id, da
     return await timetableModel.registerTimetable(classroom_id, course_id, day_of_week, start_period, end_period);
 }
 
-
+// 휴보강 등록
+export const postRegisterHoliday = async function (schedule_id, event_type, event_date) {
+    return await timetableModel.postRegisterHoliday(schedule_id, event_type, event_date);
+}
 
 
 

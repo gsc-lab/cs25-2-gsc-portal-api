@@ -104,7 +104,24 @@ export const postRegisterTimetable = async function (req, res) {
     }
 }
 
+// 휴보강 등록
+export const postRegisterHoliday = async function (req, res) {
+    try {
+        const {schedule_id, event_type, event_date} = req.body;
 
+        if (!schedule_id || !event_type || !event_date) {
+            return res.status(400).json({ error: "schedule_id, event_type, event_date are required" })
+        }
+
+        const result = await classroomService.postRegisterHoliday(schedule_id, event_type, event_date);
+
+        res.status(200).json({ message: "등록 완료", result })
+
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
 
 
 
