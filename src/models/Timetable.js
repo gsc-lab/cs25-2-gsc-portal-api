@@ -88,6 +88,93 @@ export async function getAdminTimetable(targetDate) {
     return formatTimetable(rows);
 }
 
+// 강의 등록
+export async function registerCourse(sec_id, title, professor_id, target) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // is_special 매핑
+        let is_special = 0;
+        if (target.category === "special") is_special = 1;
+        else if (target.category === "korean") is_special = 2;
+
+        // 마지막 course_id 조회 후 새 ID 생성
+        const [rows] = await conn.query("SELECT course_id FROM course ORDER BY course_id DESC LIMIT 1");
+        const lastId = rows.length > 0 ? rows[0].course_id : null;
+        const course_id = generateCourseId(lastId);
+
+        // course 등록
+        await conn.query(
+        `INSERT INTO course (course_id, sec_id, title, is_special)
+        VALUES (?, ?, ?, ?)`,
+        [course_id, sec_id, title, is_special]
+        );
+
+        // 교수 매핑
+        await conn.query(
+        `INSERT INTO course_professor (user_id, course_id)
+        VALUES (?, ?)`,
+        [professor_id, course_id]
+        );
+
+        // 마지막 target_id 조회 후 새 ID 생성
+        const [rows2] = await conn.query("SELECT target_id FROM course_target ORDER BY target_id DESC LIMIT 1");
+        const lastTargetId = rows2.length > 0 ? rows2[0].target_id : null;
+        const target_id = generateTargetId(lastTargetId);
+
+        // 대상 등록
+        if (target.category === "regular") {
+        await conn.query(
+            `INSERT INTO course_target (target_id, course_id, grade_id, language_id)
+            VALUES (?, ?, ?, ?)`,
+            [target_id, course_id, target.grade_id, "KR"]
+        );
+        } else if (target.category === "korean") {
+        await conn.query(
+            `INSERT INTO course_target (target_id, course_id, level_id, language_id)
+            VALUES (?, ?, ?, ?)`,
+            [target_id, course_id, target.level_id || null, "KR"]
+        );
+        } else if (target.category === "special") {
+        await conn.query(
+            `INSERT INTO course_target (target_id, course_id, language_id)
+            VALUES (?, ?, ?)`,
+            [target_id, course_id, "JP"]
+        );
+        }
+
+        await conn.commit();
+        return { course_id, target_id };
+
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+}
+
+
+
+
+// helper 함수
+// Course ID 생성 (C001, C002, ...)
+function generateCourseId(lastId) {
+    if (!lastId) return "C001";
+    const num = parseInt(lastId.substring(1));
+    return "C" + String(num + 1).padStart(3, "0");
+}
+
+// Target ID 생성 (T001, T002, ...)
+function generateTargetId(lastId) {
+    if (!lastId) return "T001";
+    const num = parseInt(lastId.substring(1)); // "T008" → 8
+    return "T" + String(num + 1).padStart(3, "0"); // → "T009"
+}
+
+
+
 
 
 

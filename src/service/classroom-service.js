@@ -13,6 +13,11 @@ export const getAdminTimetable = async function(targetDate) {
     return await timetableModel.getAdminTimetable(targetDate);
 }
 
+// 강의 등록
+export const postRegisterCourse = async function (sec_id, title, professor_id, target) {
+    return await timetableModel.registerCourse(sec_id, title, professor_id, target);
+};
+
 
 
 

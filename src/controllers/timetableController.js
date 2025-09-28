@@ -53,6 +53,39 @@ export const getAdminTimetable = async function (req, res) {
     }
 }
 
+// 강의 등록
+export const postRegisterCourse = async (req, res) => {
+    try {
+        const { sec_id, title, professor_id, target } = req.body;
+
+        if (!sec_id || !title || !professor_id || !target) {
+        return res.status(400).json({ 
+            error: "sec_id, title, professor_id, target are required" 
+        });
+        }
+
+        // target 가공
+        let targetInfo = {};
+        if (["1", "2", "3"].includes(target)) {
+        targetInfo = { grade_id: parseInt(target), category: "regular" };
+        } else if (target === "special") {
+        targetInfo = { category: "special" };
+        } else if (target === "korean") {
+        targetInfo = { category: "korean" };
+        } else {
+        return res.status(400).json({ error: "Invalid target value" });
+        }
+
+        const result = await classroomService.postRegisterCourse(sec_id, title, professor_id, targetInfo);
+
+        res.status(201).json({ message: "등록 완료", course: result });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
 
 
 

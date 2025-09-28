@@ -10,7 +10,7 @@ router.get("/professor/:user_id", authWithRole("professor"), timetableController
 router.get("/admin", authWithRole("admin"), timetableController.getAdminTimetable);
 
 // 강의 등록
-// router.post("/registerCourses", authWithRole("professor"), timetableController.getRegisterCourses);
+router.post("/registerCourses", authWithRole("professor"), timetableController.postRegisterCourse);
 
 
 
