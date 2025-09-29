@@ -197,7 +197,7 @@ export async function registerTimetable(classroom_id, course_id, day_of_week, st
 }
 
 // 휴보강 등록
-export async function postRegisterHoliday(schedule_id, event_type, event_date) {
+export async function postRegisterHoliday(event_type, event_date, start_period, end_period, course_id = null, cancel_event_id = null, classroom) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -207,16 +207,53 @@ export async function postRegisterHoliday(schedule_id, event_type, event_date) {
             "SELECT event_id FROM course_event ORDER BY event_id DESC LIMIT 1"
         );
         const lastId = lastRow.length > 0 ? lastRow[0].event_id : null;
-        const event_id = generateEventId(lastId);
 
-        // INSERT
-        const sql = `
-            INSERT INTO course_event (event_id, schedule_id, event_type, event_date)
-            VALUES (?, ?, ?, ?)`;
-        await conn.query(sql, [event_id, schedule_id, event_type, event_date]);
+        let targetScheduleIds = [];
+
+        if (event_type === "CANCEL") {
+            // 휴강: course_id + 교시 범위로 schedule_id 조회
+            const [rows] = await conn.query(
+                `
+                SELECT cs.schedule_id
+                FROM course_schedule cs
+                JOIN time_slot ts ON cs.time_slot_id = ts.time_slot_id
+                WHERE cs.course_id = ?
+                AND ts.time_slot_id BETWEEN ? AND ?
+                `,
+                [course_id, start_period, end_period]
+            );
+
+            if (rows.length === 0) throw new Error("휴강 대상 수업 슬롯을 찾을 수 없음");
+            targetScheduleIds = rows.map(r => r.schedule_id);
+
+        } else if (event_type === "MAKEUP") {
+            // 보강: 휴강 event_id 기준으로 schedule_id 조회
+            const [row] = await conn.query(
+                "SELECT schedule_id FROM course_event WHERE event_id = ? AND event_type = 'CANCEL'",
+                [cancel_event_id]
+            );
+            if (row.length === 0) throw new Error("대상 휴강 이벤트를 찾을 수 없음");
+
+            targetScheduleIds = [row[0].schedule_id];
+        } else {
+            throw new Error("지원하지 않는 event_type 입니다");
+        }
+
+        // 이벤트 등록 처리
+        for (let i = 0; i < targetScheduleIds.length; i++) {
+            const newEventId = generateEventId(lastId, i + 1);
+
+            await conn.query(
+                `
+                INSERT INTO course_event (event_id, schedule_id, event_type, event_date, classroom)
+                VALUES (?, ?, ?, ?, ?)
+                `,
+                [newEventId, targetScheduleIds[i], event_type, event_date, classroom]
+            );
+        }
 
         await conn.commit();
-        return { message: "휴보강 등록 완료", event_id };
+        return { message: "휴보강 등록 완료" };
 
     } catch (err) {
         await conn.rollback();
@@ -225,6 +262,8 @@ export async function postRegisterHoliday(schedule_id, event_type, event_date) {
         conn.release();
     }
 }
+
+
 
 
 
@@ -293,9 +332,9 @@ function generateScheduleId(lastId, offset = 0) {
     return "SCH" + String(num + 1 + offset).padStart(3, "0");
 }
 // Event ID 생성
-function generateEventId(lastId) {
+function generateEventId(lastId, offset = 0) {
     if (!lastId) return "E001";
     const num = parseInt(lastId.substring(1));
-    return "E" + String(num + 1).padStart(3, "0");
+    return "E" + String(num + 1 + offset).padStart(3, "0");
 }
 
