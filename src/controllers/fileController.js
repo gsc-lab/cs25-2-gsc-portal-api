@@ -1,7 +1,7 @@
 import * as fileService from "../service/file-service.js";
-import * as noticeService from "../service/notice-service.js";
 import fs from "fs";
 
+// 업로드 헤더 설정 (Content-Disposition)
 export async function downloadFile(req, res, next) {
   try {
     const { file_id } = req.params;
@@ -21,24 +21,6 @@ export async function downloadFile(req, res, next) {
     const fileStream = fs.createReadStream(filePath);
     // 파일 경로 전송
     fileStream.pipe(res);
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function uploadNotice(req, res, next) {
-  try {
-    const { notice_id } = req.params;
-    const { user, body: noticeData, files: newFiles } = req;
-
-    const result = await noticeService.updateNotice(
-      notice_id,
-      noticeData,
-      newFiles,
-      user,
-    );
-
-    res.status(200).json(result);
   } catch (error) {
     next(error);
   }
