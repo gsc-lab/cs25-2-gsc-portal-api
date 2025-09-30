@@ -11,7 +11,7 @@ SELECT
     -- [핵심] course_type 정보 추가 (원본 VIEW 로직 반영)
     (CASE
          WHEN n.course_id IS NULL THEN 'general'
-         WHEN cl.language_id = 'KR' THEN 'korean'
+         WHEN cl.is_special = 2 THEN 'korean'
          WHEN c.is_special = 1 THEN 'special'
          ELSE 'regular'
         END) COLLATE utf8mb4_0900_ai_ci AS course_type,
@@ -33,7 +33,6 @@ FROM notice n
     SELECT user_id, MIN(role_type) AS role_type FROM user_role GROUP BY user_id
 ) aur ON aur.user_id = au.user_id
          LEFT JOIN course c ON c.course_id = n.course_id
-         LEFT JOIN course_language cl ON c.course_id = cl.course_id
 
 /* 타겟 집계 */
          LEFT JOIN (

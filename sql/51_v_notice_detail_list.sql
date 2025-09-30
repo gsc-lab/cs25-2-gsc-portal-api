@@ -8,7 +8,13 @@ SELECT
     n.course_id,
     c.title AS course_title,
 
-    -- [최종 수정] 작성자 정보를 JSON 객체로 그룹화하고, user_role 테이블에서 역할을 정확하게 가져옵니다.
+    (CASE
+         WHEN n.course_id IS NULL THEN 'general'
+         WHEN c.is_special = 2 THEN 'korean'
+         WHEN c.is_special = 1 THEN 'special'
+         ELSE 'regular'
+        END) COLLATE utf8mb4_0900_ai_ci AS course_type,
+
     JSON_OBJECT(
             'user_id', u.user_id,
             'name', u.name,
