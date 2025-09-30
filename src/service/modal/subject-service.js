@@ -35,3 +35,7 @@ export const getKoreanLevels = async function() {
     return await subjectModal.getKoreanLevels();
 }
 
+// 휴강 조회
+export const getHolidays = async function(grade_id) {
+    return await subjectModal.getHolidays(grade_id);
+}

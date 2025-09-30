@@ -64,7 +64,7 @@ export const getLevels = async function (req, res) {
 // 선택한 레벨의 반 목록 조회
 export const getClassesByLevel = async function (req, res) {
     try {
-        const level_id = req.query.level_id;
+        const level_id = req.query
         if (!level_id) {
             return res.status(400).json({ error: "level_id is required" });
         }
@@ -86,3 +86,21 @@ export const getKoreanLevels = async function (req, res) {
         res.status(500).json({ error: "Internal Server Error" });
     }
 }
+
+// 휴강 조회
+export const getHolidays = async function (req, res) {
+    try {
+        const {grade_id} = req.query;
+        if (!grade_id) {
+            res.status(400).json({ error: "grade_id are required "})
+        }
+
+        const result = await subjectService.getHolidays(grade_id);
+        res.status(200).json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+

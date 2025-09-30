@@ -94,3 +94,28 @@ export async function getKoreanLevels() {
     return rows;
 }
 
+// 휴강 조회
+export async function getHolidays(grade_id) {
+    const [rows] = await pool.query (
+        `
+        SELECT
+        ce.event_id,
+        DATE_FORMAT(ce.event_date, '%Y-%m-%d') AS event_date,
+        c.title AS course_title,
+        ct.grade_id,
+        ts.time_slot_id AS period,
+        ts.start_time,
+        ts.end_time
+        FROM course_event ce
+        JOIN course_schedule cs ON ce.schedule_id = cs.schedule_id
+        JOIN course c ON cs.course_id = c.course_id
+        JOIN time_slot ts ON cs.time_slot_id = ts.time_slot_id
+        LEFT JOIN course_target ct ON c.course_id = ct.course_id
+        WHERE ce.event_type = 'CANCEL'
+        AND ct.grade_id = ?
+        ORDER BY ce.event_date;
+        `, [grade_id]
+    )
+
+    return rows;
+}
