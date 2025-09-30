@@ -16,11 +16,12 @@ router.post(
   "/",
   authWithRole("professor"),
   uploadForNotices.array("files", 10),
-  noticeController.createNotice,
+  noticeController.createNotice, noticeController.dispatchNotice
 );
 router.patch(
   "/:notice_id",
   authWithRole("professor"),
+
   uploadForNotices.array("files", 10),
   noticeController.updateNotice,
 );
