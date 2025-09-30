@@ -139,3 +139,21 @@ export const deleteNotice = async (noticeId, user) => {
 
   return { message: "공지사항이 성공적으로 삭제되었습니다." };
 };
+
+export const dispatchByNoticeId = async (noticeId, user) => {
+  const notice = await noticeModel.findById(noticeId);
+
+  if (user.role === "professor" && notice.author.user_id !== user.user_id) {
+    return [];
+  }
+
+  const dispatch = await noticeModel.dispatchNotice(noticeId);
+
+  if (dispatch.length === 0) {
+    return { message: "발송 대상자가 없습니다." };
+  }
+
+  console.log(`Dispatching notice ${noticeId} to ${dispatch.length} users`);
+  const jobId = `JOB_${Date.now()}${noticeId}`
+  return {jobId, dispatchCount: dispatch.length };
+}

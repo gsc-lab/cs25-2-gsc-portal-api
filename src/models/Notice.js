@@ -7,6 +7,8 @@ export async function findBySpec(spec, query) {
   const {
     page = 1,
     size = 10,
+    search,
+    course_name,
     course_type,
     grade_id,
     level_id,
@@ -16,6 +18,16 @@ export async function findBySpec(spec, query) {
 
   let whereClauses = [];
   let queryParams = [];
+
+  if (search) {
+    whereClauses.push(`v.title LIKE ?`);
+    queryParams.push(`%${search}%`);
+  }
+
+  if (course_name) {
+    whereClauses.push(`v.course_title LIKE ?`);
+    queryParams.push(`%${course_name}%`);
+  }
 
   // 모든 역할에 공통으로 적용되는 옵션 필터
   if (course_type) {
@@ -67,6 +79,12 @@ export async function findBySpec(spec, query) {
     if (studentRows.length === 0) return [];
 
     const studentInfo = studentRows[0];
+
+    // 재학 상태 확인
+    if (studentInfo.role !== "enrolled") {
+      return [];
+    }
+
     const enrolledCourses = studentInfo.enrolled_courses
       ? studentInfo.enrolled_courses.split(",")
       : [];
@@ -220,6 +238,55 @@ export const deleteTargets = async (noticeId, connection) => {
   const [result] = await connection.query(sql, [noticeId]);
   return result.affectedRows;
 };
+
+
+// 공지사항과 타겟을 매칭
+export const dispatchNotice = async (noticeId) => {
+  const sql = `
+       SELECT s.user_id
+       FROM notice n
+       JOIN course_student s ON n.course_id = course_id
+       WHERE n.notice_id = ?
+         AND n.course_id IS NOT NULL
+         AND se.status = 'enrolled'
+       
+       UNION
+       
+       SELECT se.user_id
+       FROM notice n
+       JOIN notice_target nt ON n.notice_id = nt.notice_id
+       JOIN sutudent_entity se ON 1=1 -- 모든 학생을 대상으로 필터링 시작
+       LEFT JOIN level_class lc ON se.class_id = lc.class_id -- 학생의 레벨 정보를 위함
+       WHERE n.notice_id = ?
+        AND se.status = 'enrolled'
+        AND n.course_id IS NULL -- 과목 없음
+        AND (
+            (nt.grade_id IS NULL OR nt.grade_id = se.grade_id) AND
+            (nt.class_id IS NULL OR nt.class_id = class_id) AND
+            (nt.language_id IS NULL OR nt.language_id = language_id) AND
+            (nt.level_id IS NULL OR nt.level_id = level_id) 
+         )
+       
+       UNION
+       
+       SELECT se.user_id
+       FROM notice n, student_entity se
+       WHERE n.notice_id = ?
+        AND n.course_id IS NULL
+        AND NOT EXISTS (SELECT 1 FROM notice_target nt WHERE nt.notice_id = n.notice_id)
+        AND se.status = 'enrolled'`
+
+  const [rows] = await pool.query(sql, [noticeId, noticeId, noticeId]);
+
+  // user_id 추출
+  return rows.map(row => row.user_id)
+}
+
+export const readStatusByNoticeId = async (noticeId, user) => {
+  const sql = `
+        UPDATE notification_delivery_notice SET status 'SENT', send_at = NOW()
+        WHERE notice_id = ? AND status = 'QUEUED'`
+}
 
 // export const updateFiles = async (noticeId, files, fileId, connection) => {
 //   const sql = `UPDATE notice_file SET notice_id = ? WHERE notice_id = ? `;

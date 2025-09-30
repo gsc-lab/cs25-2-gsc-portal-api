@@ -1,4 +1,5 @@
 import * as noticeService from "../service/notice-service.js";
+import {dispatchByNoticeId} from "../service/notice-service.js";
 
 // 리스트
 export async function fetchNotices(req, res, next) {
@@ -65,6 +66,19 @@ export async function deleteNotice(req, res, next) {
     const { notice_id } = req.params;
 
     const result = await noticeService.deleteNotice(notice_id, req.user);
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function dispatchNotice(req, res, next){
+  try {
+    const { notice_id } = req.params;
+    const { user } = req.user;
+
+    const result = await noticeService.dispatchByNoticeId(notice_id, user);
 
     res.status(200).json(result);
   } catch (error) {
