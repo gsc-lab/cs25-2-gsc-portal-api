@@ -107,48 +107,62 @@ export const postRegisterTimetable = async function (req, res) {
 // 휴보강 등록
 export const postRegisterHoliday = async function (req, res) {
     try {
-        const { event_type, event_date, start_period, end_period, course_id, cancel_event_id, classroom } = req.body;
+        const {
+        event_type,
+        event_date,
+        start_period,
+        end_period,
+        course_id,
+        cancel_event_ids,  // ✅ 항상 배열
+        classroom,
+        } = req.body;
 
         // 공통 필드 검증
-        if (!event_type || !event_date || !classroom) {
-            return res.status(400).json({ error: "event_type, event_date, classroom are required" });
+        if (!event_type || !event_date) {
+        return res.status(400).json({ error: "event_type, event_date are required" });
+        }
+        if (!["CANCEL", "MAKEUP"].includes(event_type)) {
+        return res.status(400).json({ error: "event_type must be CANCEL or MAKEUP" });
         }
 
         // 휴강일 경우
         if (event_type === "CANCEL") {
-            if (!course_id || !start_period || !end_period) {
-                return res.status(400).json({
-                    error: "CANCEL : course_id, start_period, end_period are required"
-                });
-            }
+        if (!course_id || start_period == null || end_period == null) {
+            return res.status(400).json({
+            error: "CANCEL : course_id, start_period, end_period are required",
+            });
+        }
         }
 
         // 보강일 경우
         if (event_type === "MAKEUP") {
-            if (!cancel_event_id) {
-                return res.status(400).json({
-                    error: "MAKEUP : cancel_event_id is required"
-                });
-            }
+        if (!Array.isArray(cancel_event_ids) || cancel_event_ids.length === 0) {
+            return res.status(400).json({
+            error: "MAKEUP : cancel_event_ids (array) is required",
+            });
+        }
+        if (!classroom) {
+            return res.status(400).json({ error: "MAKEUP : classroom is required" });
+        }
         }
 
         const result = await classroomService.postRegisterHoliday(
-            event_type,
-            event_date,
-            start_period,
-            end_period,
-            course_id,
-            cancel_event_id,
-            classroom
+        event_type,
+        event_date,
+        start_period,
+        end_period,
+        course_id,
+        cancel_event_ids || [],  // ✅ CANCEL이면 빈 배열, MAKEUP이면 반드시 배열
+        classroom || null
         );
 
-        res.status(200).json({ message: "등록 완료", result });
-
+        return res.status(200).json({ message: "등록 완료", result });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: "Internal Server Error" });
+        return res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
 
 
 

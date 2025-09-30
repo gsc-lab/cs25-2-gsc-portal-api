@@ -197,7 +197,15 @@ export async function registerTimetable(classroom_id, course_id, day_of_week, st
 }
 
 // 휴보강 등록
-export async function postRegisterHoliday(event_type, event_date, start_period, end_period, course_id = null, cancel_event_id = null, classroom) {
+export async function postRegisterHoliday(
+    event_type,
+    event_date,
+    start_period,
+    end_period,
+    course_id = null,
+    cancel_event_ids = [],
+    classroom
+) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -226,16 +234,28 @@ export async function postRegisterHoliday(event_type, event_date, start_period, 
             if (rows.length === 0) throw new Error("휴강 대상 수업 슬롯을 찾을 수 없음");
             targetScheduleIds = rows.map(r => r.schedule_id);
 
-        } else if (event_type === "MAKEUP") {
-            // 보강: 휴강 event_id 기준으로 schedule_id 조회
-            const [row] = await conn.query(
-                "SELECT schedule_id FROM course_event WHERE event_id = ? AND event_type = 'CANCEL'",
-                [cancel_event_id]
-            );
-            if (row.length === 0) throw new Error("대상 휴강 이벤트를 찾을 수 없음");
+            } else if (event_type === "MAKEUP") {
+                if (!Array.isArray(cancel_event_ids) || cancel_event_ids.length === 0) {
+                    throw new Error("보강 등록 시 최소 1개 이상의 휴강 event_id가 필요합니다");
+                }
 
-            targetScheduleIds = [row[0].schedule_id];
-        } else {
+                const placeholders = cancel_event_ids.map(() => "?").join(",");
+
+                const [rows] = await conn.query(
+                    `
+                    SELECT schedule_id 
+                    FROM course_event 
+                    WHERE event_id IN (${placeholders}) AND event_type = 'CANCEL'
+                    `,
+                    cancel_event_ids
+                );
+
+                if (rows.length === 0) throw new Error("대상 휴강 이벤트를 찾을 수 없음");
+                targetScheduleIds = rows.map(r => r.schedule_id);
+                console.log("cancel_event_ids:", cancel_event_ids);
+                console.log("rows:", rows);
+                console.log("targetScheduleIds:", targetScheduleIds);
+            } else {
             throw new Error("지원하지 않는 event_type 입니다");
         }
 
