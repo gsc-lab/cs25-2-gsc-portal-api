@@ -14,8 +14,8 @@ export const getAdminTimetable = async function(targetDate) {
 }
 
 // 강의 등록
-export const postRegisterCourse = async function (sec_id, title, professor_id, target) {
-    return await timetableModel.registerCourse(sec_id, title, professor_id, target);
+export const postRegisterCourse = async (sec_id, title, professor_id, targetInfo) => {
+    return await timetableModel.postRegisterCourse(sec_id, title, professor_id, targetInfo);
 };
 
 // 시간표 등록
@@ -30,7 +30,7 @@ export const postRegisterHoliday = async function (
     start_period,
     end_period,
     course_id,
-    cancel_event_ids,   // ✅ 배열
+    cancel_event_ids,   // 배열
     classroom
     ) {
     

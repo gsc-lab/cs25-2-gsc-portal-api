@@ -56,30 +56,39 @@ export const getAdminTimetable = async function (req, res) {
 // 강의 등록
 export const postRegisterCourse = async (req, res) => {
     try {
-        const { sec_id, title, professor_id, target } = req.body;
+        const { sec_id, title, professor_id, target, level_id } = req.body;
 
         if (!sec_id || !title || !professor_id || !target) {
-        return res.status(400).json({ 
-            error: "sec_id, title, professor_id, target are required" 
+        return res.status(400).json({
+            error: "sec_id, title, professor_id, target are required",
         });
         }
 
-        // target 가공
         let targetInfo = {};
         if (["1", "2", "3"].includes(target)) {
         targetInfo = { grade_id: parseInt(target), category: "regular" };
         } else if (target === "special") {
-        targetInfo = { category: "special" };
+        if (!level_id) {
+            return res.status(400).json({ error: "special requires level_id" });
+        }
+        targetInfo = { category: "special", level_id };
         } else if (target === "korean") {
-        targetInfo = { category: "korean" };
+        if (!level_id) {
+            return res.status(400).json({ error: "korean requires level_id" });
+        }
+        targetInfo = { category: "korean", level_id };
         } else {
         return res.status(400).json({ error: "Invalid target value" });
         }
 
-        const result = await classroomService.postRegisterCourse(sec_id, title, professor_id, targetInfo);
+        const result = await classroomService.postRegisterCourse(
+        sec_id,
+        title,
+        professor_id,
+        targetInfo
+        );
 
         res.status(200).json({ message: "등록 완료", course: result });
-
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Internal Server Error" });

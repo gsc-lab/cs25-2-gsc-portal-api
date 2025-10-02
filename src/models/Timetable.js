@@ -89,7 +89,7 @@ export async function getAdminTimetable(targetDate) {
 }
 
 // 강의 등록
-export async function registerCourse(sec_id, title, professor_id, target) {
+export async function postRegisterCourse(sec_id, title, professor_id, target) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -138,10 +138,10 @@ export async function registerCourse(sec_id, title, professor_id, target) {
         );
         } else if (target.category === "special") {
         await conn.query(
-            `INSERT INTO course_target (target_id, course_id, language_id)
-            VALUES (?, ?, ?)`,
-            [target_id, course_id, "JP"]
-        );
+            `INSERT INTO course_target (target_id, course_id, level_id, language_id)
+            VALUES (?, ?, ?, ?)`,
+            [target_id, course_id, target.level_id || null, "JP"]
+            );
         }
 
         await conn.commit();
@@ -214,66 +214,81 @@ export async function postRegisterHoliday(
         const [lastRow] = await conn.query(
             "SELECT event_id FROM course_event ORDER BY event_id DESC LIMIT 1"
         );
-        const lastId = lastRow.length > 0 ? lastRow[0].event_id : null;
-
-        let targetScheduleIds = [];
+        let lastId = lastRow.length > 0 ? lastRow[0].event_id : null;
 
         if (event_type === "CANCEL") {
-            // 휴강: course_id + 교시 범위로 schedule_id 조회
+            // course_id + 교시 범위로 schedule_id 조회
             const [rows] = await conn.query(
                 `
                 SELECT cs.schedule_id
                 FROM course_schedule cs
                 JOIN time_slot ts ON cs.time_slot_id = ts.time_slot_id
                 WHERE cs.course_id = ?
-                AND ts.time_slot_id BETWEEN ? AND ?
+                AND CAST(ts.time_slot_id AS UNSIGNED) BETWEEN ? AND ?
                 `,
                 [course_id, start_period, end_period]
             );
 
             if (rows.length === 0) throw new Error("휴강 대상 수업 슬롯을 찾을 수 없음");
-            targetScheduleIds = rows.map(r => r.schedule_id);
 
-            } else if (event_type === "MAKEUP") {
-                if (!Array.isArray(cancel_event_ids) || cancel_event_ids.length === 0) {
-                    throw new Error("보강 등록 시 최소 1개 이상의 휴강 event_id가 필요합니다");
-                }
-
-                const placeholders = cancel_event_ids.map(() => "?").join(",");
-
-                const [rows] = await conn.query(
+            // 교시별 이벤트 생성
+            for (let i = 0; i < rows.length; i++) {
+                lastId = generateEventId(lastId); // 항상 새로운 id
+                await conn.query(
                     `
-                    SELECT schedule_id 
-                    FROM course_event 
-                    WHERE event_id IN (${placeholders}) AND event_type = 'CANCEL'
+                    INSERT INTO course_event (event_id, schedule_id, event_type, event_date, classroom)
+                    VALUES (?, ?, 'CANCEL', ?, ?)
                     `,
-                    cancel_event_ids
+                    [lastId, rows[i].schedule_id, event_date, classroom]
                 );
+            }
 
-                if (rows.length === 0) throw new Error("대상 휴강 이벤트를 찾을 수 없음");
-                targetScheduleIds = rows.map(r => r.schedule_id);
-                console.log("cancel_event_ids:", cancel_event_ids);
-                console.log("rows:", rows);
-                console.log("targetScheduleIds:", targetScheduleIds);
-            } else {
+            await conn.commit();
+            return { message: "휴강 등록 완료" };
+
+        } else if (event_type === "MAKEUP") {
+            if (!Array.isArray(cancel_event_ids) || cancel_event_ids.length === 0) {
+                throw new Error("보강 등록 시 최소 1개 이상의 휴강 event_id가 필요합니다");
+            }
+
+            // 휴강 이벤트 → schedule_id 매핑 조회
+            const placeholders = cancel_event_ids.map(() => "?").join(",");
+            const [rows] = await conn.query(
+                `
+                SELECT event_id, schedule_id
+                FROM course_event
+                WHERE event_id IN (${placeholders}) AND event_type = 'CANCEL'
+                `,
+                cancel_event_ids
+            );
+
+            if (rows.length === 0) throw new Error("대상 휴강 이벤트를 찾을 수 없음");
+
+            const eventMap = new Map(rows.map(r => [r.event_id, r.schedule_id]));
+
+            // 보강 이벤트 생성
+            for (let i = 0; i < cancel_event_ids.length; i++) {
+                const cancelId = cancel_event_ids[i];
+                const scheduleId = eventMap.get(cancelId);
+                if (!scheduleId) throw new Error(`휴강(${cancelId})의 schedule_id를 찾을 수 없음`);
+
+                lastId = generateEventId(lastId);
+                await conn.query(
+                    `
+                    INSERT INTO course_event 
+                        (event_id, schedule_id, event_type, event_date, classroom, parent_event_id)
+                    VALUES (?, ?, 'MAKEUP', ?, ?, ?)
+                    `,
+                    [lastId, scheduleId, event_date, classroom, cancelId]
+                );
+            }
+
+            await conn.commit();
+            return { message: "보강 등록 완료" };
+
+        } else {
             throw new Error("지원하지 않는 event_type 입니다");
         }
-
-        // 이벤트 등록 처리
-        for (let i = 0; i < targetScheduleIds.length; i++) {
-            const newEventId = generateEventId(lastId, i + 1);
-
-            await conn.query(
-                `
-                INSERT INTO course_event (event_id, schedule_id, event_type, event_date, classroom)
-                VALUES (?, ?, ?, ?, ?)
-                `,
-                [newEventId, targetScheduleIds[i], event_type, event_date, classroom]
-            );
-        }
-
-        await conn.commit();
-        return { message: "휴보강 등록 완료" };
 
     } catch (err) {
         await conn.rollback();
@@ -282,6 +297,12 @@ export async function postRegisterHoliday(
         conn.release();
     }
 }
+
+
+
+
+
+
 
 
 
@@ -321,16 +342,6 @@ export async function getHukaStudentTimetable() {
     return rows;
 }
 
-
-
-
-
-
-
-
-
-
-
 // helper 함수
 // Course ID 생성
 function generateCourseId(lastId) {
@@ -352,9 +363,9 @@ function generateScheduleId(lastId, offset = 0) {
     return "SCH" + String(num + 1 + offset).padStart(3, "0");
 }
 // Event ID 생성
-function generateEventId(lastId, offset = 0) {
+function generateEventId(lastId) {
     if (!lastId) return "E001";
-    const num = parseInt(lastId.substring(1));
-    return "E" + String(num + 1 + offset).padStart(3, "0");
+    const num = parseInt(lastId.substring(1)) + 1;
+    return "E" + String(num).padStart(3, "0");
 }
 
