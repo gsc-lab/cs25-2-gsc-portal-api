@@ -275,17 +275,26 @@ CONSTRAINT fk_ndn_notice FOREIGN KEY (notice_id) REFERENCES notice(notice_id)   
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE course_event (
-    event_id     VARCHAR(10) PRIMARY KEY,
-    schedule_id  VARCHAR(10) NOT NULL,
-    event_type   ENUM('CANCEL','MAKEUP') NOT NULL,
-    event_date   DATE NOT NULL,
-    classroom    VARCHAR(100),
+    event_id        VARCHAR(10) PRIMARY KEY,
+    schedule_id     VARCHAR(10) NOT NULL,
+    event_type      ENUM('CANCEL','MAKEUP') NOT NULL,
+    event_date      DATE NOT NULL,
+    classroom       VARCHAR(100),
+    parent_event_id VARCHAR(10) NULL, -- 보강일 경우 연결된 휴강 이벤트 ID
+
     UNIQUE KEY ux_event_sched_date_type (schedule_id, event_date, event_type),
     KEY ix_event_date (event_date),
+    KEY ix_event_parent (parent_event_id),
+
     CONSTRAINT fk_event_sched FOREIGN KEY (schedule_id)
-    REFERENCES course_schedule(schedule_id)
-    ON UPDATE CASCADE ON DELETE CASCADE
+        REFERENCES course_schedule(schedule_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    CONSTRAINT fk_event_parent FOREIGN KEY (parent_event_id)
+        REFERENCES course_event(event_id)
+        ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 
 CREATE TABLE notification_delivery_event (
