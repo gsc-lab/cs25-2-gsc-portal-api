@@ -52,10 +52,18 @@ export async function getAllCourses() {
             c.course_id,
             c.title,
             CASE
+                WHEN ct.language_id = 'KR' THEN '한국어'          -- ✅ 한국어 먼저
                 WHEN c.is_special = TRUE THEN '특강'
-                WHEN ct.language_id = 'KR' AND c.is_special = FALSE THEN '한국어'
                 ELSE '정규'
-            END AS type
+            END AS type,
+            CASE
+                WHEN ct.language_id = 'KR' THEN 'korean'                -- ✅ target도 한국어 먼저
+                WHEN c.is_special = TRUE THEN 'special'
+                WHEN ct.grade_id = '1' THEN '1'
+                WHEN ct.grade_id = '2' THEN '2'
+                WHEN ct.grade_id = '3' THEN '3'
+                ELSE NULL
+            END AS target
         FROM course c
         JOIN course_target ct ON c.course_id = ct.course_id;
         `
