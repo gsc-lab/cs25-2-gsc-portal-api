@@ -4,12 +4,6 @@ SET NAMES 'utf8mb4';
 INSERT INTO grade (grade_id, name) VALUES
 ('1','1학년'),('2','2학년'),('3','3학년');
 
-INSERT INTO level (level_id, name) VALUES
-('1','JLPT N1'),('2','JLPT N2'),('3','JLPT N3'),('4','TOPIC 4급'),('5','TOPIC 6급');
-
-INSERT INTO level_class (class_id, level_id, name) VALUES
-('1','1','A'),('2','1','B'),('3','2','A'),('4','2','B'),('5','3','A'),('6','4',NULL), ('7','5',NULL);
-
 INSERT INTO language (language_id, name) VALUES
 ('KR','한국어'),('JP','일본어'),('EN','영어');
 
@@ -28,7 +22,6 @@ INSERT INTO time_slot (time_slot_id, start_time, end_time) VALUES
 ('9','18:00:00','18:50:00'),
 ('10','19:00:00','19:50:00'),
 ('11','20:00:00','20:50:00');
-
 
 INSERT INTO classroom (classroom_id, building, room_number, room_type) VALUES
 ('101','본관','101','CLASSROOM'),
@@ -73,20 +66,7 @@ INSERT INTO user_role (user_id, role_type) VALUES
 ('2725001','student'),
 ('2725999','student');
 
-INSERT INTO student_entity (user_id, grade_id, class_id, language_id, is_international, status) VALUES
-('2423001','2','3','JP','korean','enrolled'),
-('2423002','2','4','KR','korean','enrolled'),
-('2423003','2','4','KR','korean','enrolled'),
-('2423004','1','1','JP','korean','enrolled'),
-('2423005','3','5','JP','korean','enrolled'),
-('2423006','1','7','KR','international','enrolled'),
-('2423007','2','6','EN','international','enrolled'),
-('2423008','2','3','JP','korean','leave'),
-('2423009','1','1','KR','korean','dropped'),
-('2524001','3','5','JP','korean','leave'),
-('2725001','1','7','KR','international','dropped');
-
--- ===== Courses =====
+-- ===== Courses (먼저 Course 정의 필요) =====
 INSERT INTO course (course_id, sec_id, title, is_special) VALUES
 ('C001','2025-1','인공지능 개론',0),
 ('C002','2025-1','데이터베이스',0),
@@ -97,18 +77,41 @@ INSERT INTO course (course_id, sec_id, title, is_special) VALUES
 ('C007','2025-1','JLPT N2 특강',1),
 ('C008','2025-1','TOPIK 4급 한국어 특강',1);
 
+-- ===== Course Class (Course 이후에 가능) =====
+INSERT INTO course_class (class_id, course_id, name) VALUES
+('C003A','C003','A'),
+('C003B','C003','B'),
+('C004A','C004','A'),
+('C007A','C007','A'),
+('C008A','C008','A');
+
+-- ===== Student Entity (Course Class 이후 가능) =====
+INSERT INTO student_entity (user_id, grade_id, class_id, language_id, is_international, status) VALUES
+('2423001','2','C003A','JP','korean','enrolled'),
+('2423002','2','C004A','KR','korean','enrolled'),
+('2423003','2','C004A','KR','korean','enrolled'),
+('2423004','1','C003A','JP','korean','enrolled'),
+('2423005','3','C007A','JP','korean','enrolled'),
+('2423006','1','C008A','KR','international','enrolled'),
+('2423007','2','C008A','EN','international','enrolled'),
+('2423008','2','C003A','JP','korean','leave'),
+('2423009','1','C003A','KR','korean','dropped'),
+('2524001','3','C007A','JP','korean','leave'),
+('2725001','1','C008A','KR','international','dropped');
+
+-- ===== Course Language / Target / Schedule / Professor / Student =====
 INSERT INTO course_language (course_id, language_id) VALUES
 ('C001','KR'),('C002','KR'),('C003','JP'),('C004','KR');
 
-INSERT INTO course_target (target_id, course_id, grade_id, level_id, language_id) VALUES
-('T001','C001','2',NULL, NULL),
-('T002','C002','2',NULL, NULL),
-('T003','C003','1','1','JP'),
-('T004','C004','1','5','KR'),
-('T005','C005','3',NULL,NULL),
-('T006','C006','2',NULL,NULL),
-('T007','C007',NULL,'2','JP'),
-('T008','C008',NULL,'4','KR'); 
+INSERT INTO course_target (target_id, course_id, grade_id, language_id) VALUES
+('T001','C001','2',NULL),
+('T002','C002','2',NULL),
+('T003','C003','1','JP'),
+('T004','C004','1','KR'),
+('T005','C005','3',NULL),
+('T006','C006','2',NULL),
+('T007','C007',NULL,'JP'),
+('T008','C008',NULL,'KR');
 
 INSERT INTO course_schedule (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week) VALUES
 ('SCH1','101','1','C001','2025-1','MON'),
@@ -153,10 +156,10 @@ INSERT INTO notice (notice_id, user_id, course_id, title, content, created_at) V
 INSERT INTO notice_file (file_id, notice_id) VALUES 
 ('F001',1),('F002',2),('F003',3);
 
-INSERT INTO notice_target (target_id, notice_id, grade_id, level_id, language_id) VALUES
-('NT001',1,'2',NULL,'KR'),
-('NT002',2,'2',NULL,'KR'),
-('NT003',3,NULL,NULL,'KR');
+INSERT INTO notice_target (target_id, notice_id, grade_id, language_id) VALUES
+('NT001',1,'2','KR'),
+('NT002',2,'2','KR'),
+('NT003',3,NULL,'KR');
 
 INSERT INTO course_event (event_id, schedule_id, event_type, event_date) VALUES
 ('E001','SCH1','CANCEL','2025-04-15'),
@@ -186,9 +189,9 @@ INSERT INTO kakao_user (user_id, kakao_id, is_verified) VALUES
 ('2423001','kakao_12345',1),
 ('8888001','kakao_67890',0);
 
-INSERT INTO student_exams (exam_id, user_id, file_id, level_id, exam_type, score) VALUES
-('EX001','2423001','F001','1','JLPT',120),
-('EX002','2725001',NULL,'5','TOPIK',180);
+INSERT INTO student_exams (exam_id, user_id, file_id, exam_type, score) VALUES
+('EX001','2423001','F001','JLPT',120),
+('EX002','2725001',NULL,'TOPIK',180);
 
 INSERT INTO log_entity (log_id, user_id, action) VALUES
 (1,'2423001','LOGIN'),

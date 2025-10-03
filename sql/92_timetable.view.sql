@@ -15,8 +15,6 @@ SELECT
     cp.user_id         AS professor_id,
     ct.grade_id,
     g.name             AS grade_name,
-    ct.level_id,
-    l.name             AS level_name,
     ct.language_id,
     lang.name          AS language_name,
     c.is_special       AS is_special,
@@ -31,6 +29,5 @@ JOIN course_professor cp ON c.course_id = cp.course_id
 JOIN user_account ua ON cp.user_id = ua.user_id
 LEFT JOIN course_target ct ON c.course_id = ct.course_id
 LEFT JOIN grade g ON ct.grade_id = g.grade_id
-LEFT JOIN level l ON ct.level_id = l.level_id
 LEFT JOIN language lang ON ct.language_id = lang.language_id
 LEFT JOIN course_event ce ON cs.schedule_id = ce.schedule_id;
