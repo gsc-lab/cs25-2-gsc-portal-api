@@ -1194,9 +1194,23 @@ paths:
                 items:
                   type: object
                   properties:
-                    course_id: { type: string, example: "C001" }
-                    title: { type: string, example: "인공지능 개론" }
-                    type: { type: string, example: "정규/특강/한국어" }
+                    course_id:
+                      type: string
+                      example: "C001"
+                    title:
+                      type: string
+                      example: "인공지능 개론"
+                    type:
+                      type: string
+                      description: 과목 구분
+                      example: "정규"
+                      enum: ["정규", "특강", "한국어"]
+                    target:
+                      type: string
+                      description: 대상 분류 (학년/특강/한국어)
+                      example: "2"
+                      enum: ["1", "2", "3", "special", "korean"]
+
 
 
   /modal/schedule/{course_id}:
