@@ -172,8 +172,20 @@ export const postRegisterHoliday = async function (req, res) {
     }
 };
 
+// 분반 등록
 
+// 휴보강 이력
+export const getEvents = async function (req, res) {
+    try {
 
+        const result = await classroomService.getEvents()
+        res.status(200).json({result})
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+}
 
 
 
