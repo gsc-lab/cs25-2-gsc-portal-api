@@ -17,6 +17,8 @@ router.post("/registerTimetable", authWithRole("admin"), timetableController.pos
 router.post("/registerHoliday", authWithRole("professor"), timetableController.postRegisterHoliday)
 // 분반 등록
 
+// 휴보강 이력
+router.get("/events", authWithRole("professor"), timetableController.getEvents)
 
 
 // 후까 교수님

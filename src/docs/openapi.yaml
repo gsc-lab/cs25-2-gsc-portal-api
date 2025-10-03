@@ -998,7 +998,7 @@ paths:
 
   /modal/levels/korean:
     get:
-      summary: 한국어 레벨 목록 조회 (TOPIC 계열)
+      summary: 한국어 레벨 목록 조회 (TOPIK 계열)
       tags: ["Modal - Subjects"]
       responses:
         "200":
@@ -1011,7 +1011,7 @@ paths:
                   type: object
                   properties:
                     level_id: { type: string, example: "5" }
-                    name: { type: string, example: TOPIC 6급 }
+                    name: { type: string, example: TOPIK 6급 }
 
   /modal/levels:
     get:
@@ -1117,9 +1117,9 @@ paths:
                   type: object
                   properties:
                     course_id: { type: string, example: "K001" }
-                    title: { type: string, example: "TOPIC 대비 한국어" }
+                    title: { type: string, example: "TOPIK 대비 한국어" }
                     level_id: { type: string, example: "5" }
-                    level_name: { type: string, example: "TOPIC 6급" }
+                    level_name: { type: string, example: "TOPIK 6급" }
 
 
   /modal/subjects/holidays:
@@ -1276,7 +1276,7 @@ paths:
                 summary: 한국어 과목 등록
                 value:
                   sec_id: "2025-1"
-                  title: "TOPIC 6급 대비반"
+                  title: "TOPIK 6급 대비반"
                   professor_id: 8888003
                   target: "korean"
                   level_id: "5"
@@ -1535,10 +1535,10 @@ paths:
                       "10": null
                       "11":
                         course_id: "C008"
-                        title: "TOPIC 4급 한국어 특강"
+                        title: "TOPIK 4급 한국어 특강"
                         room: "실습동-202"
                         professor: "박교수"
-                        level: "TOPIC 4급"
+                        level: "TOPIK 4급"
                         event: null
                       "12": null
                     FRI:
@@ -1683,6 +1683,62 @@ paths:
                       name: "국내3-JP-A(매칭없음)"
                       grade_id: "3"
 
+  /timetables/events:
+    get:
+      summary: 휴보강 이력 조회
+      description: 전체 휴보강 이력을 조회합니다. (프론트에서 학년/과목 필터링 처리)
+      tags:
+        - Timetable
+      responses:
+        "200":
+          description: 휴보강 이력 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        event_status:
+                          type: string
+                          example: "MAKEUP"
+                          description: "휴강/보강 상태 (CANCEL=휴강, MAKEUP=보강)"
+                        event_date:
+                          type: string
+                          format: date-time
+                          example: "2025-10-19"
+                          description: "휴보강 발생일"
+                        grade_id:
+                          type: string
+                          nullable: true
+                          example: "2"
+                          description: "학년 ID (특강의 경우 NULL)"
+                        grade_name:
+                          type: string
+                          nullable: true
+                          example: "2학년"
+                          description: "학년 이름 (특강의 경우 NULL)"
+                        course_id:
+                          type: string
+                          example: "C001"
+                          description: "과목 ID"
+                        course_title:
+                          type: string
+                          example: "인공지능 개론"
+                          description: "과목명"
+                        start_time:
+                          type: string
+                          format: time
+                          example: "09:00:00"
+                          description: "수업 시작 교시 시간"
+                        end_time:
+                          type: string
+                          format: time
+                          example: "09:50:00"
+                          description: "수업 종료 교시 시간"
 
 components:
   securitySchemes:
@@ -1819,10 +1875,10 @@ components:
           "10": null
           "11":
             course_id: "C008"
-            title: "TOPIC 4급 한국어 특강"
+            title: "TOPIK 4급 한국어 특강"
             room: "실습동-202"
             professor: "박교수"
-            level: "TOPIC 4급"
+            level: "TOPIK 4급"
             event: null
           "12": null
         FRI:

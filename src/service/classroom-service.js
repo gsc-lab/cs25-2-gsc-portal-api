@@ -45,6 +45,13 @@ export const postRegisterHoliday = async function (
     );
 };
 
+// 분반 등록
+
+// 휴보강 이력
+export const getEvents = async function () {
+    return await timetableModel.getEvents()
+}
+
 
 
 // 후까 교수님

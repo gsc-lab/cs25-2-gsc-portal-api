@@ -298,6 +298,23 @@ export async function postRegisterHoliday(
     }
 }
 
+// 분반 등록
+
+// 휴보강 이력
+export async function getEvents() {
+    let sql = `
+    SELECT vt.event_status, vt.event_date,
+            vt.grade_id, vt.grade_name,
+            vt.course_id, vt.course_title,
+            vt.start_time, vt.end_time
+    FROM v_timetable vt
+    WHERE vt.event_status IS NOT NULL
+    `;
+
+    const [rows] = await pool.query(sql);
+    return rows
+}
+
 
 
 
