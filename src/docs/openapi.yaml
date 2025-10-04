@@ -6,6 +6,7 @@ tags:
   - name: Auth
   - name: Dashboard
   - name: Notices
+  - name: Files
   - name: Dispatch
   - name: Cleaning
   - name: Timetable
@@ -430,14 +431,14 @@ paths:
       parameters:
         - name: page
           in: query
-          required: true
+          required: false
           schema:
             type: integer
             example: 1
           description: "조회할 페이지 번호 (기본값: 1)"
         - name: size
           in: query
-          required: true
+          required: false
           schema:
             type: integer
             example: 10
@@ -449,13 +450,13 @@ paths:
             type: string
             example: "1학년"
           description: "조회할 게시물 제목"
-        - name: course_title
+        - name: course_id
           in: query
           required: false
           schema:
             type: string
-            example: "캡스톤디자인I"
-          description: "조회할 과목 목록"
+            example: "C001"
+          description: "특정 과목 ID로 필터링합니다. (모달 API를 통해 얻은 ID)"
         - name: course_type
           in: query
           required: false
@@ -469,21 +470,14 @@ paths:
           schema:
             type: string
             example: G1
-          description: "(학생 전용) 특정 학년 타겟 공지를 추가로 필터링합니다."
-        - name: level_id
-          in: query
-          required: false
-          schema:
-            type: string
-            example: N1
-          description: "(학생 전용) 특정 레벨 타겟 공지를 추가로 필터링합니다."
+          description: "타겟 학년으로 필터링합니다."
         - name: language_id
           in: query
           required: false
           schema:
             type: string
             example: JP
-          description: "(학생 전용) 특정 언어 타겟 공지를 추가로 필터링합니다."
+          description: "타겟 언어로 필터링합니다."
       responses:
         "200":
           description: 공지사항 목록 반환
@@ -499,7 +493,7 @@ paths:
       summary: 공지사항 생성 (관리자/교수용)
       description: 새로운 공지사항을 생성합니다.
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -530,6 +524,54 @@ paths:
                   noticeId:
                     type: integer
                     example: 101
+  /notices/form/courses:
+    get:
+      tags:
+        - Notices
+      summary: 공지사항 생성/수정 폼에 필요한 과목 목록 조회
+      description: |
+        - 교수: 자신의 과목만 선택 가능 (자동 필터링)
+        - 관리자: 모든 과목 선택 가능
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: course_type
+          required: false
+          description: 과목 타입으로 필터링합니다.
+          schema:
+            type: string
+            enum: [regular, special, korean]
+            example: regular
+        - in: query
+          name: grade_id
+          description: 학년으로 필터링합니다.
+          schema:
+            type: string
+            example: '1'
+      responses:
+        '200':
+          description: 성공적으로 과목 목록을 조회한 경우
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    course_id:
+                      type: string
+                      example: 'C001'
+                    title:
+                      type: string
+                      example: '인공지능 개론'
+                    grade_id:
+                      type: string
+                      example: '2'
+                    course_type:
+                      type: string
+                      example: 'regular'
+
   /notices/{noticeId}:
     get:
       tags:
@@ -715,6 +757,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /files/{file_id}/download:
+    get:
+      tags:
+        - Files
+      summary: 파일 다운로드
+      description: |
+        - 지정된 file_id에 해당하는 파일을 다운로드합니다.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: file_id
+          required: true
+          description: 다운로드할 파일의 고유 ID
+          schema:
+            type: integer
+            example: 101
+      responses:
+        '200':
+          description: 성공적인 파일 다운로드. 파일의 실제 바이너리 데이터가 반환됩니다.
+          content:
+            # 파일 타입은 매우 다양하므로, 와일드카드 사용
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 해당 file_id를 가진 파일을 찾을 수 없는 경우
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "파일을 찾을 수 없습니다."
+
   /dispatch/direct:
     post:
       tags:
@@ -1799,6 +1878,9 @@ components:
         title:
           type: string
           example: "새로운 공지"
+        content:
+          type: string
+          example: "과제 마감일은 다음주 월요일입니다."
         is_pinned:
           type: boolean
           example: "true"
@@ -1806,9 +1888,15 @@ components:
           type: string
           format: date-time
           example: "2025-09-15T10:30:00Z"
+        course_id:
+          type: string
+          example: "JAPAN G1"
         course_title:
           type: string
           example: "기초 일본어"
+        course_type:
+          type: string
+          example: "general"
         attach_count:
           type: integer
           example: 1
@@ -1840,9 +1928,6 @@ components:
               language_id:
                 type: string
                 example: "JP"
-        content:
-          type: string
-          example: "과제 마감일은 다음주 월요일입니다."
         attachments:
           type: array
           items:
@@ -1860,6 +1945,9 @@ components:
               file_type:
                 type: string
                 example: "application/haansofthwp+xml"
+        thumb_url:
+          type: string
+          example: "/files/5/download"
     NoticeDetail:
       allOf:
         - $ref: "#/components/schemas/NoticeSummary"
@@ -1882,6 +1970,10 @@ components:
           type: string
           description: "공지사항 본문 내용"
           example: "안녕하세요. 10월 주요 학사일정을 안내드립니다."
+        is_pinned:
+          type: boolean
+          description: "중요 공지사항"
+          example: "true"
         course_id:
           type: string
           description: "과목 공지일 경우 해당하는 과목 ID. 전체 공지일 경우 생략 가능."
@@ -2193,46 +2285,18 @@ components:
       type: object
       description: 최초 로그인 사용자가 가입을 위해 제출하는 추가 정보
       required:
-        - name
-        - student_id
-        - phone
-        - email
-        - grade_id
-        - class_id
-        - language_id
+        - user_id
+        - role
+        - status
       properties:
-        name:
-          type: string
-          description: 사용자 본명
-          example: 김민준
-        student_id:
+        user_id:
           type: string
           description: "학번 (예: 2423001)"
           example: "2423001"
-        phone:
+        status:
           type: string
-          description: 연락 가능한 전화번호
-          example: 010-1234-5678
-        email:
-          type: string
-          description: 이메일 주소
-          example: minjun.kim@g.yju.ac.kr
-        grade_id:
-          type: string
-          description: 소속 학년(Grade) ID
-          example: null
-        class_id:
-          type: string
-          description: 소속 반(Class) ID
-          example: null
-        language_id:
-          type: string
-          description: 언어 ID
-          example: null
-        is_international:
-          type: boolean
-          description: 유학생 여부
-          example: null
+          description: "현재 상태확인"
+          example: "enrolled"
     StudentApproval:
       type: object
       description: 학생 승인 대기 목록에 표시될 정보 (v_student_approval 뷰 기반)
