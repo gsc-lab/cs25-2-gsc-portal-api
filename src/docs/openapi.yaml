@@ -1122,6 +1122,49 @@ paths:
                     level_name: { type: string, example: "TOPIK 6급" }
 
 
+  /modal/courses/special/classes:
+    get:
+      summary: "특강 강의 + 반 목록 조회"
+      description: >
+        특강 강의(course.is_special = TRUE)에 속한 각 반(class)을 조회합니다.  
+        각 항목은 강의명과 반명을 결합한 `course_class_label` 형태로 표시됩니다.  
+        예: `JLPT N2 특강 A반`, `일본어 특강 B반`
+      tags:
+        - "Modal - Special"
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "특강 강의 + 반 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    course_id:
+                      type: string
+                      example: "C007"
+                      description: "강의 ID"
+                    course_class_label:
+                      type: string
+                      example: "JLPT N2 특강 A반"
+                      description: "강의명과 반 이름이 결합된 표시용 라벨"
+                    class_id:
+                      type: string
+                      example: "C007A"
+                      description: "반 ID"
+                    class_name:
+                      type: string
+                      example: "A"
+                      description: "반 이름 (A, B 등)"
+        "401":
+          description: "인증 실패 (JWT 토큰 누락 또는 만료)"
+        "500":
+          description: "서버 내부 오류"
+
+
   /modal/subjects/holidays:
     get:
       summary: 휴강 이벤트 조회 (학년별)

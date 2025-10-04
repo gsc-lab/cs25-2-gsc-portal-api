@@ -52,12 +52,12 @@ export async function getAllCourses() {
             c.course_id,
             c.title,
             CASE
-                WHEN ct.language_id = 'KR' THEN '한국어'          -- ✅ 한국어 먼저
+                WHEN ct.language_id = 'KR' THEN '한국어'
                 WHEN c.is_special = TRUE THEN '특강'
                 ELSE '정규'
             END AS type,
             CASE
-                WHEN ct.language_id = 'KR' THEN 'korean'                -- ✅ target도 한국어 먼저
+                WHEN ct.language_id = 'KR' THEN 'korean'
                 WHEN c.is_special = TRUE THEN 'special'
                 WHEN ct.grade_id = '1' THEN '1'
                 WHEN ct.grade_id = '2' THEN '2'
@@ -101,6 +101,25 @@ export async function getKoreanLevels() {
     )
     return rows;
 }
+
+// 특강 스케줄 조회
+export async function getSpecialSchedule() {
+    const [rows] = await pool.query (
+        `
+        SELECT
+            c.course_id,
+            CONCAT(c.title, ' ', cc.name, '반') AS course_class_label,
+            cc.class_id,
+            cc.name AS class_name
+        FROM course c
+        JOIN course_class cc ON c.course_id = cc.course_id
+        WHERE c.is_special = TRUE
+        ORDER BY c.title, cc.name;
+        `
+    )
+    return rows;
+}
+
 
 // 휴강 조회
 export async function getHolidays(grade_id) {

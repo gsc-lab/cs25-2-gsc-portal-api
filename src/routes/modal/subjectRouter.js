@@ -25,6 +25,9 @@ router.get('/classes', authWithRole("professor"), subjectController.getClassesBy
 // 한국어 레벨 목록 조회
 router.get('/levels/korean', authWithRole("professor"), subjectController.getKoreanLevels);
 
+// 특강 스케줄 조회
+router.get("/courses/special/classess", authWithRole("professor"), subjectController.getSpecialSchedule)
+
 // 휴강 조회
 router.get('/holidays', authWithRole("professor"), subjectController.getHolidays);
 

@@ -87,6 +87,19 @@ export const getKoreanLevels = async function (req, res) {
     }
 }
 
+// 특강 스케줄 조회
+export const getSpecialSchedule = async function (req, res) {
+    try {
+        const result = await subjectService.getSpecialSchedule();
+        res.status(200).json(result)
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+
+
 // 휴강 조회
 export const getHolidays = async function (req, res) {
     try {
