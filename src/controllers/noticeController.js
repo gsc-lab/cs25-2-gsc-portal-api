@@ -1,5 +1,4 @@
 import * as noticeService from "../service/notice-service.js";
-import {dispatchByNoticeId, markNoticeAsRead} from "../service/notice-service.js";
 
 // 리스트
 export async function fetchNotices(req, res, next) {
@@ -28,11 +27,11 @@ export async function fetchNoticesId(req, res, next) {
   }
 }
 
-// 공지 작성
+// 작성
 export async function createNotice(req, res, next) {
   try {
     const { user, body: noticeData, files } = req;
-    console.log('현재 로그인된사용자',user)
+    console.log("현재 로그인된사용자", user);
 
     const result = await noticeService.addNotice(user, noticeData, files);
 
@@ -42,11 +41,11 @@ export async function createNotice(req, res, next) {
   }
 }
 
-// 공지 수정
+// 수정
 export async function updateNotice(req, res, next) {
   try {
     const { notice_id } = req.params;
-    const { user, body: noticeData, files: newFiles } = req.body;
+    const { user, body: noticeData, files: newFiles } = req;
 
     const result = await noticeService.updateNotice(
       notice_id,
@@ -74,12 +73,15 @@ export async function deleteNotice(req, res, next) {
   }
 }
 
-export async function dispatchNotice(req, res, next){
+// 디스 패치 (임시 mock:)
+export async function dispatchNotice(req, res, next) {
   try {
     const { notice_id } = req.params;
     const { user } = req;
 
-    const jobInfo = await noticeService.dispatchByNoticeId(notice_id, user, { mock: true });
+    const jobInfo = await noticeService.dispatchByNoticeId(notice_id, user, {
+      mock: true,
+    });
 
     res.status(202).json(jobInfo);
   } catch (error) {
@@ -87,6 +89,7 @@ export async function dispatchNotice(req, res, next){
   }
 }
 
+// 읽음 처리 (학생)
 export async function noticeAsRead(req, res, next) {
   try {
     const { notice_id } = req.params;
@@ -100,6 +103,7 @@ export async function noticeAsRead(req, res, next) {
   }
 }
 
+// 읽음 현황 (교수/관리자)
 export async function getNoticeStatus(req, res, next) {
   try {
     const { notice_id } = req.params;
@@ -113,6 +117,7 @@ export async function getNoticeStatus(req, res, next) {
   }
 }
 
+// 교수 과목 목록 (필터 포함)
 export async function getCourses(req, res, next) {
   try {
     const filters = req.query;

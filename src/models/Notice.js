@@ -1,7 +1,7 @@
 // Notice.js
 import pool from "../db/connection.js";
-import { v4 as uuidv4 } from "uuid";
 
+// 공지사항 목록 조회 (필터 + 권한)
 export async function findBySpec(spec, query) {
   const { user } = spec;
   const {
@@ -145,7 +145,7 @@ export async function findBySpec(spec, query) {
   return rows;
 }
 
-// 공지사항 상세조회
+// 공지사항 상세 조회
 export async function findById(noticeId) {
   const sql = `SELECT * from v_notice_details WHERE notice_id = ?`;
   const [rows] = await pool.query(sql, [noticeId]);
@@ -157,7 +157,7 @@ export async function findById(noticeId) {
   return rows[0];
 }
 
-// 공지사항 작성
+// 공지사항 CRUD
 export async function createNotice(noticeInfo, course_id, userId, connection) {
   const { title, content, is_pinned = 0 } = noticeInfo;
   const sql = `INSERT INTO notice (title, content, is_pinned, user_id, course_id, created_at)
@@ -172,26 +172,6 @@ export async function createNotice(noticeInfo, course_id, userId, connection) {
   ]);
   return result.insertId;
 }
-
-// 첨부파일 생성
-export const createFiles = async (noticeId, files, connection) => {
-  const sql = `INSERT INTO notice_file (notice_id, file_id) VALUES ?`;
-  const values = files.map((id) => [noticeId, id]);
-  await connection.query(sql, [values]);
-};
-
-// 타겟층 생성
-export const createTargets = async (noticeId, targets, connection) => {
-  const sql = `INSERT INTO notice_target (notice_id, grade_id, class_id, language_id) VALUES ?`;
-  const values = targets.map((t) => [
-    noticeId,
-    t.grade_id,
-    t.class_id,
-    t.language_id,
-  ]);
-  console.log(values);
-  await connection.query(sql, [values]);
-};
 
 // 공지사항 수정
 export async function updateNotice(noticeId, patch, connection) {
@@ -216,22 +196,42 @@ export async function deleteNotice(noticeId) {
   return result.affectedRows;
 }
 
-// 첨부파일 삭제
-export const deleteFiles = async (noticeId) => {
-  const sql = `DELETE FROM notice_file WHERE notice_id = ?`;
+// 첨부파일 생성
+export const createFiles = async (noticeId, files, connection) => {
+  const sql = `INSERT IGNORE INTO notice_file (notice_id, file_id) VALUES ?`;
+  const values = files.map((id) => [noticeId, id]);
+  await connection.query(sql, [values]);
+};
 
-  const [result] = await pool.query(sql, [noticeId]);
+// 첨부파일 삭제
+export const deleteFiles = async (noticeId, connection) => {
+  const sql = `DELETE FROM notice_file WHERE notice_id = ?`;
+  const [result] = await connection.query(sql, [noticeId]);
   return result.affectedRows;
+};
+
+// 타겟층 생성
+export const createTargets = async (noticeId, targets, connection) => {
+  const sql = `INSERT IGNORE INTO notice_target (notice_id, grade_id, class_id, language_id) VALUES ?`;
+  const values = targets.map((t) => [
+    noticeId,
+    t.grade_id,
+    t.class_id,
+    t.language_id,
+  ]);
+  console.log(values);
+  await connection.query(sql, [values]);
 };
 
 // 타겟층 삭제
 export const deleteTargets = async (noticeId, connection) => {
-  const sql = `DELETE FROM notice_target WHERE target_id = ?`;
+  const sql = `DELETE FROM notice_target WHERE notice_id = ?`;
 
   const [result] = await connection.query(sql, [noticeId]);
   return result.affectedRows;
 };
 
+// 공지 대상자(학생) 자동 채우기
 export const populateDeliverNotice = async (noticeId, connection) => {
   const sql = `
     INSERT IGNORE INTO notification_delivery_notice (notice_id, user_id, status)
@@ -279,12 +279,23 @@ export const populateDeliverNotice = async (noticeId, connection) => {
       AND NOT EXISTS (SELECT 1 FROM notice_target WHERE notice_id = ?);
   `;
 
-  const params = [noticeId, noticeId, noticeId, noticeId, noticeId, noticeId, noticeId, noticeId, noticeId]
+  const params = [
+    noticeId,
+    noticeId,
+    noticeId,
+    noticeId,
+    noticeId,
+    noticeId,
+    noticeId,
+    noticeId,
+    noticeId,
+  ];
   const [result] = await connection.query(sql, params);
-  console.log('Populate Result', result);
+  console.log("Populate Result", result);
   return result.affectedRows;
-}
+};
 
+// 발송 대상자 조회 (user_id 배열)
 export const getDispatchTargets = async (noticeId) => {
   const sql = `
         SELECT user_id
@@ -295,15 +306,20 @@ export const getDispatchTargets = async (noticeId) => {
   const [rows] = await pool.query(sql, [noticeId]);
 
   // user_id 배열을 반환
-  return rows.map(row => row.user_id)
+  return rows.map((row) => row.user_id);
 };
 
 // TODO 카카오 메세지 발송 시 업데이트
-export const updateRecipients = async (noticeId, userIds = [], newStatus = "SENT") => {
+// 카카오 발송 성공 시 상태 업데이트
+export const updateRecipients = async (
+  noticeId,
+  userIds = [],
+  newStatus = "SENT",
+) => {
   if (!userIds.length) return 0;
 
   const ids = userIds.map(Number);
-  const placeholders = ids.map(() => '?').join(',');
+  const placeholders = ids.map(() => "?").join(",");
   const sql = `
     UPDATE notification_delivery_notice
       SET status = ?,
@@ -314,36 +330,38 @@ export const updateRecipients = async (noticeId, userIds = [], newStatus = "SENT
   `;
   console.log("userIds for bulk update:", userIds);
 
-  const params = [newStatus, newStatus, Number(noticeId), ...userIds];
+  const params = [newStatus, newStatus, Number(noticeId), ...ids];
   const [result] = await pool.query(sql, params);
-  console.log('Excuting bulk Update ', sql, params);
+  console.log("Excuting bulk Update ", sql, params);
 
   return result.affectedRows;
-}
+};
 
+// 학생이 공지 읽었을 때 상태 변경
 export const updateStudentStatus = async (noticeId, userId) => {
   const sql = `
         UPDATE notification_delivery_notice SET read_at = NOW()
         WHERE notice_id = ? AND user_id = ? AND read_at IS NULL
-  `
+  `;
   const [result] = await pool.query(sql, [noticeId, userId]);
 
   return result.affectedRows;
-}
+};
 
+// 읽음 상태 조회
 export const getNoticeReadStatus = async (noticeId) => {
   const sql = `
         SELECT student_name, user_id, status, read_at, send_at
         FROM v_notice_read_status
         WHERE notice_id = ? ORDER BY read_at IS NULL, read_at
-  `
+  `;
 
   const [rows] = await pool.query(sql, [noticeId]);
 
   return rows;
-}
+};
 
-// 필터링 조건 객체 예: { grade_id: '1', course_type: 'regular' }
+// 교수 과목 조회 (필터링)
 export const findProfessorCourses = async (user, filters = {}) => {
   let sql = `
       SELECT DISTINCT 
@@ -364,7 +382,7 @@ export const findProfessorCourses = async (user, filters = {}) => {
   const params = [];
 
   // 역할에 따라 분기
-  if (user.role === 'professor') {
+  if (user.role === "professor") {
     whereClauses.push(`cp.user_id = ?`);
     params.push(user.user_id);
   }
@@ -379,21 +397,21 @@ export const findProfessorCourses = async (user, filters = {}) => {
   }
 
   if (course_type) {
-    if (course_type === 'regular') {
+    if (course_type === "regular") {
       whereClauses.push(`c.is_special = 0`);
-    } else if (course_type === 'special') {
+    } else if (course_type === "special") {
       whereClauses.push(`c.is_special = 1`);
-    } else if (course_type === 'korean') {
+    } else if (course_type === "korean") {
       whereClauses.push(`c.is_special = 2`);
     }
   }
 
   if (whereClauses.length > 0) {
-    sql += ` WHERE ` + whereClauses.join(' AND ');
+    sql += ` WHERE ` + whereClauses.join(" AND ");
   }
 
   sql += ` ORDER BY c.course_id`;
 
   const [rows] = await pool.query(sql, params);
   return rows;
-}
+};

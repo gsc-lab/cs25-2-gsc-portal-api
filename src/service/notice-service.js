@@ -1,12 +1,11 @@
+// import
 import * as noticeModel from "../models/Notice.js";
 import * as fileService from "../service/file-service.js";
 import pool from "../db/connection.js";
 import { ForbiddenError, NotFoundError } from "../errors/index.js";
-
 import { v4 as uuidv4 } from "uuid";
-import {findProfessorCourses, updateRecipients} from "../models/Notice.js";
 
-// 권한 가시성 규칙 적용 전체 조회
+// 목록 조회
 export const getNotices = async (spec, query) => {
   return await noticeModel.findBySpec(spec, query);
 };
@@ -22,7 +21,7 @@ export const detailNotices = async (noticeId) => {
   return detailNt;
 };
 
-// 작성
+// 생성
 export const addNotice = async (user, noticeData, files) => {
   const { course_id, ...noticeInfo } = noticeData;
   let { targets } = noticeData;
@@ -31,8 +30,8 @@ export const addNotice = async (user, noticeData, files) => {
   if (targets && typeof targets === "string") {
     try {
       parsedTargets = JSON.parse(targets);
-    } catch (e) {
-      throw new Error('targets의 형식이 올바른 JSON이 아닙니다');
+    } catch {
+      throw new Error("targets의 형식이 올바른 JSON이 아닙니다");
     }
   } else if (Array.isArray(targets)) {
     parsedTargets = targets;
@@ -84,9 +83,22 @@ export const addNotice = async (user, noticeData, files) => {
   }
 };
 
-// 공지사항 수정
+// 수정
 export const updateNotice = async (noticeId, data, newFiles, user) => {
   const notice = await noticeModel.findById(noticeId);
+
+  let { targets } = data;
+
+  let parsedTargets = [];
+  if (targets && typeof targets === "string") {
+    try {
+      parsedTargets = JSON.parse(targets);
+    } catch {
+      throw new Error("targets의 형식이 올바른 JSON이 아닙니다");
+    }
+  } else if (Array.isArray(targets)) {
+    parsedTargets = targets;
+  }
 
   if (!notice) {
     throw new NotFoundError(`${noticeId} not found`);
@@ -119,8 +131,8 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
       await noticeModel.createFiles(noticeId, finalFileIds, connection);
     }
 
-    if (data.targets && data.targets.length > 0) {
-      await noticeModel.createTargets(noticeId, data.targets, connection);
+    if (parsedTargets && parsedTargets.length > 0) {
+      await noticeModel.createTargets(noticeId, parsedTargets, connection);
     }
 
     await connection.commit();
@@ -133,7 +145,7 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
   }
 };
 
-// 공지사항 삭제
+// 삭제
 export const deleteNotice = async (noticeId, user) => {
   const notice = await noticeModel.findById(noticeId);
   if (!notice) {
@@ -157,37 +169,42 @@ export const deleteNotice = async (noticeId, user) => {
   return { message: "공지사항이 성공적으로 삭제되었습니다." };
 };
 
+// 디스패치 (발송) 액션
 export const dispatchByNoticeId = async (noticeId, user, { mock = true }) => {
   const notice = await noticeModel.findById(noticeId);
-  const channel = "KAKAO"
+  // const channel = "KAKAO";
 
   if (user.role === "student") {
     return { message: "학생은 발송 권한이 없습니다." };
   }
 
   if (user.role === "professor" && notice.author.user_id !== user.user_id) {
-    return { message: "본인 공지만 발송할 수 있습니다."};
+    return { message: "본인 공지만 발송할 수 있습니다." };
   }
 
   // 대상자 해석
   const userIds = await noticeModel.getDispatchTargets(noticeId);
-  if (!userIds.length) return { message: '발송 대상자가 없습니다.' };
+  if (!userIds.length) return { message: "발송 대상자가 없습니다." };
 
   const jobId = `JOB_${uuidv4()}`;
-  const jobData = { jobId, noticeId, dispatch: userIds, channel };
+  // const jobData = { jobId, noticeId, dispatch: userIds, channel };
 
   if (mock) {
     // 1) QUEUE 상태로 표기
     // await noticeModel.markQueued(noticeId, userIds, channel);
 
     // 2) (가짜) 발송 성공 처리 - 전부 SENT로
-    const accepted = await noticeModel.updateRecipients(noticeId, userIds, 'SENT');
+    const accepted = await noticeModel.updateRecipients(
+      noticeId,
+      userIds,
+      "SENT",
+    );
 
     return {
       job_id: jobId,
       accepted,
       rejected: userIds.length - accepted,
-      reason: '임시(mock) 디스패치: 즉시 SENT 처리',
+      reason: "임시(mock) 디스패치: 즉시 SENT 처리",
     };
   }
 
@@ -198,32 +215,36 @@ export const dispatchByNoticeId = async (noticeId, user, { mock = true }) => {
     job_id: jobId,
     accepted: 0,
     rejected: 0,
-    reason: '큐에 적재됨',
+    reason: "큐에 적재됨",
   };
 };
-export const markNoticeAsRead = async (noticeId, user) => {
 
+// 읽음 처리
+export const markNoticeAsRead = async (noticeId, user) => {
   if (user.role !== "student") {
-    return { message: '학생만 읽음 처리가 가능합니다.' };
+    return { message: "학생만 읽음 처리가 가능합니다." };
   }
-  const affectedRows = await noticeModel.updateStudentStatus(noticeId, user.user_id);
+  const affectedRows = await noticeModel.updateStudentStatus(
+    noticeId,
+    user.user_id,
+  );
 
   return { updated: affectedRows };
 };
 
+// 읽음 현황
 export const getNoticeReadStatusById = async (noticeId, user) => {
-  console.log (user);
-  if (user.role !== 'professor' && user.role !== 'admin') {
+  console.log(user);
+  if (user.role !== "professor" && user.role !== "admin") {
     throw new ForbiddenError("읽음 현황을 조회할 권한이 없습니다.");
   }
 
   const readStatusList = await noticeModel.getNoticeReadStatus(noticeId);
 
   return readStatusList;
-}
+};
 
- export const filterCourses = async (user, filters) => {
-
-
+// 과목 조회 필터
+export const filterCourses = async (user, filters) => {
   return await noticeModel.findProfessorCourses(user, filters);
-}
+};

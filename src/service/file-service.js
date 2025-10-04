@@ -41,7 +41,7 @@ const determineMimeType = (file) => {
     if (extensionType) finalMimeType = extensionType;
   }
   return finalMimeType;
-}
+};
 
 export const getFileDownload = async (fileId) => {
   const [rows] = await pool.query(
