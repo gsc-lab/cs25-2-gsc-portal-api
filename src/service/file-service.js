@@ -8,44 +8,40 @@ export const addFiles = async (files, connection) => {
     return [];
   }
 
-  const sql = `INSERT INTO file_assets (file_id, file_name, file_url, size_type, file_type) VALUES ?`;
+  const insertedFileIds = [];
 
-  const values = files.map((file) => {
-    const originalFilename = file.originalname;
-    let finalMimeType = file.mimetype;
+  const db = connection || pool;
 
-    // 기본 타입이 불분명하면, 확장자로 다시 조회
-    if (finalMimeType === "application/octet-stream") {
-      const extension = path.extname(originalFilename).toLowerCase();
+  for (const file of files) {
+    const sql = `INSERT INTO file_assets (file_name, file_url, size_type, file_type) VALUES (?, ?, ?, ?)`;
 
-      if (extension === ".hwpx") {
-        finalMimeType = "application/haansofthwp+xml";
-      } else if (extension === ".hwp") {
-        finalMimeType = "application/haansofthwp";
-      } else {
-        const extensionType = mime.lookup(originalFilename);
-        if (extensionType) {
-          finalMimeType = extensionType;
-        }
-      }
+    const finalMimeType = determineMimeType(file);
+    const params = [file.originalname, file.path, file.size, finalMimeType];
+
+    const [result] = await db.query(sql, params);
+
+    if (result.insertId) {
+      insertedFileIds.push(result.insertId);
     }
+  }
 
-    const uuid = file.filename.split(".")[0];
-    const fileId = "FI" + uuid.substring(0, 8);
-    return [
-      fileId,
-      originalFilename, // 원본 파일
-      file.path, // 저장 경로
-      file.size, // 파일 크기
-      finalMimeType, // 조회된 타입으로 교체
-    ];
-  });
-
-  await (connection || pool).query(sql, [values]);
-
-  // 배열 반환
-  return values.map((v) => v[0]);
+  return insertedFileIds;
 };
+
+const determineMimeType = (file) => {
+  const originalFilename = file.originalname;
+  let finalMimeType = file.mimeType;
+
+  if (!finalMimeType || finalMimeType === "application/octet-stream") {
+    const extension = path.extname(originalFilename).toLowerCase();
+    if (extension === ".hwpx") return "application/haansofthwp+xml";
+    if (extension === ".hwp") return "application/haansofthwp";
+
+    const extensionType = mime.lookup(originalFilename);
+    if (extensionType) finalMimeType = extensionType;
+  }
+  return finalMimeType;
+}
 
 export const getFileDownload = async (fileId) => {
   const [rows] = await pool.query(
