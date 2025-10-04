@@ -8,10 +8,9 @@ export async function findBySpec(spec, query) {
     page = 1,
     size = 10,
     search,
-    course_name,
     course_type,
+    course_id,
     grade_id,
-    level_id,
     language_id,
   } = query;
   const offset = (page - 1) * size;
@@ -24,9 +23,9 @@ export async function findBySpec(spec, query) {
     queryParams.push(`%${search}%`);
   }
 
-  if (course_name) {
-    whereClauses.push(`v.course_title LIKE ?`);
-    queryParams.push(`%${course_name}%`);
+  if (course_id) {
+    whereClauses.push(`v.course_id = ?`);
+    queryParams.push(course_id);
   }
 
   // 모든 역할에 공통으로 적용되는 옵션 필터
@@ -40,12 +39,7 @@ export async function findBySpec(spec, query) {
     );
     queryParams.push(grade_id);
   }
-  if (level_id) {
-    whereClauses.push(
-      `JSON_CONTAINS(v.targets, CAST(JSON_OBJECT('level_id', ?) AS JSON))`,
-    );
-    queryParams.push(level_id);
-  }
+
   if (language_id) {
     whereClauses.push(
       `JSON_CONTAINS(v.targets, CAST(JSON_OBJECT('language_id', ?) AS JSON))`,
@@ -188,15 +182,14 @@ export const createFiles = async (noticeId, files, connection) => {
 
 // 타겟층 생성
 export const createTargets = async (noticeId, targets, connection) => {
-  const sql = `INSERT INTO notice_target (target_id, notice_id, grade_id, class_id, level_id, language_id) VALUES ?`;
+  const sql = `INSERT INTO notice_target (notice_id, grade_id, class_id, language_id) VALUES ?`;
   const values = targets.map((t) => [
-    "NT" + uuidv4().substring(0, 8),
     noticeId,
     t.grade_id,
     t.class_id,
-    t.level_id,
     t.language_id,
   ]);
+  console.log(values);
   await connection.query(sql, [values]);
 };
 
@@ -239,69 +232,156 @@ export const deleteTargets = async (noticeId, connection) => {
   return result.affectedRows;
 };
 
-
-// 공지사항과 타겟을 매칭
-export const dispatchNotice = async (noticeId) => {
+export const populateDeliverNotice = async (noticeId, connection) => {
   const sql = `
-       SELECT s.user_id
-       FROM notice n
-       JOIN course_student s ON n.course_id = course_id
-       WHERE n.notice_id = ?
-         AND n.course_id IS NOT NULL
-         AND se.status = 'enrolled'
-       
-       UNION
-       
-       SELECT se.user_id
-       FROM notice n
-       JOIN notice_target nt ON n.notice_id = nt.notice_id
-       JOIN sutudent_entity se ON 1=1 -- 모든 학생을 대상으로 필터링 시작
-       LEFT JOIN level_class lc ON se.class_id = lc.class_id -- 학생의 레벨 정보를 위함
-       WHERE n.notice_id = ?
-        AND se.status = 'enrolled'
-        AND n.course_id IS NULL -- 과목 없음
-        AND (
-            (nt.grade_id IS NULL OR nt.grade_id = se.grade_id) AND
-            (nt.class_id IS NULL OR nt.class_id = class_id) AND
-            (nt.language_id IS NULL OR nt.language_id = language_id) AND
-            (nt.level_id IS NULL OR nt.level_id = level_id) 
-         )
-       
-       UNION
-       
-       SELECT se.user_id
-       FROM notice n, student_entity se
-       WHERE n.notice_id = ?
-        AND n.course_id IS NULL
-        AND NOT EXISTS (SELECT 1 FROM notice_target nt WHERE nt.notice_id = n.notice_id)
-        AND se.status = 'enrolled'`
+    INSERT IGNORE INTO notification_delivery_notice (notice_id, user_id, status)
 
-  const [rows] = await pool.query(sql, [noticeId, noticeId, noticeId]);
+    -- CASE 1: '과목 공지'인 경우 (course_id가 지정됨)
+    -- -> 해당 과목의 수강생만 대상.
+    SELECT
+      n.notice_id,
+      cs.user_id,
+      'QUEUED'
+    FROM notice n
+           JOIN course_student cs ON n.course_id = cs.course_id
+    WHERE n.notice_id = ? AND n.course_id IS NOT NULL
 
-  // user_id 추출
+    UNION ALL
+
+    -- CASE 2: '전체 공지'이면서 '타겟이 지정된' 경우 (course_id가 없음)
+    -- -> 모든 타겟 조건을 만족하는 재학생만 대상.
+    SELECT
+      ? AS notice_id,
+      se.user_id,
+      'QUEUED'
+    FROM student_entity se
+    WHERE EXISTS (SELECT 1 FROM notice WHERE notice_id = ? AND course_id IS NULL)
+      AND EXISTS (SELECT 1 FROM notice_target WHERE notice_id = ?)
+      AND se.status = 'enrolled'
+      AND (
+            SELECT COUNT(*) FROM notice_target nt
+            WHERE nt.notice_id = ?
+              AND (nt.grade_id IS NULL OR nt.grade_id = se.grade_id)
+              AND (nt.language_id IS NULL OR nt.language_id = se.language_id)
+              AND (nt.class_id IS NULL OR nt.class_id = se.class_id)
+          ) = (SELECT COUNT(*) FROM notice_target WHERE notice_id = ?)
+
+    UNION ALL
+
+    -- CASE 3: '전체 공지'이면서 '타겟이 지정되지 않은' 경우 (course_id가 없음)
+    -- -> 모든 재학생을 대상.
+    SELECT
+      ? AS notice_id,
+      se.user_id,
+      'QUEUED'
+    FROM student_entity se
+    WHERE EXISTS (SELECT 1 FROM notice WHERE notice_id = ? AND course_id IS NULL)
+      AND NOT EXISTS (SELECT 1 FROM notice_target WHERE notice_id = ?);
+  `;
+
+  const params = [noticeId, noticeId, noticeId, noticeId, noticeId, noticeId, noticeId, noticeId, noticeId]
+  const [result] = await connection.query(sql, params);
+  console.log('Populate Result', result);
+  return result.affectedRows;
+}
+
+export const getDispatchTargets = async (noticeId) => {
+  const sql = `
+        SELECT user_id
+        FROM notification_deliver_notice
+        WHERE notice_id = ?;
+       `;
+
+  const [rows] = await pool.query(sql, [noticeId]);
+
+  // user_id 배열을 반환
   return rows.map(row => row.user_id)
-}
+};
 
-export const readStatusByNoticeId = async (noticeId, user) => {
+// TODO 카카오 메세지 발송 시 업데이트
+export const updateDeliveryStatus = async (noticeId, newStatus = "SENT") => {
   const sql = `
-        UPDATE notification_delivery_notice SET status 'SENT', send_at = NOW()
+        UPDATE notification_delivery_notice SET status = ?, send_at = NOW()
         WHERE notice_id = ? AND status = 'QUEUED'`
+
+  const [result] = await pool.query(sql, [noticeId, newStatus]);
+
+  return result.affectedRows;
 }
 
-// export const updateFiles = async (noticeId, files, fileId, connection) => {
-//   const sql = `UPDATE notice_file SET notice_id = ? WHERE notice_id = ? `;
-//   const values = files.map((id) => [noticeId, id]);
-//   await connection.query(sql, [values]);
-// };
-//
-// export const updateTargets = async (noticeId, targetId, connection) => {
-//   const sql = `UPDATE notice_target SET notice_id = ?, grade_id = ?, class_id = ?, level_id = ?, language_id = ? WHERE target_id = ?`;
-//   const values = targetId.map((t) => [
-//     noticeId,
-//     t.grade_id,
-//     t.class_id,
-//     t.level_id,
-//     t.language_id,
-//   ]);
-//   await connection.query(sql, [values]);
-// };
+export const updateStudentStatus = async (noticeId, userId) => {
+  const sql = `
+        UPDATE notification_delivery_notice SET read_at = NOW()
+        WHERE notice_id = ? AND user_id = ? AND read_at IS NULL
+  `
+  const [result] = await pool.query(sql, [noticeId, userId]);
+
+  return result.affectedRows;
+}
+
+export const getNoticeReadStatus = async (noticeId) => {
+  const sql = `
+        SELECT student_name, user_id, status, read_at, send_at
+        FROM v_notice_read_status
+        WHERE notice_id = ? ORDER BY read_at IS NULL, read_at
+  `
+
+  const [rows] = await pool.query(sql, [noticeId]);
+
+  return rows;
+}
+
+// 필터링 조건 객체 예: { grade_id: '1', course_type: 'regular' }
+export const findProfessorCourses = async (user, filters = {}) => {
+  let sql = `
+      SELECT DISTINCT 
+          c.course_id,
+          c.title,
+          ct.grade_id,
+          (CASE 
+               WHEN c.is_special = 2 THEN 'korean'
+               WHEN c.is_special = 1 THEN 'special'
+               ELSE 'regular'
+          END) AS course_type
+      FROM course c
+      JOIN course_professor cp ON c.course_id = cp.course_id
+      LEFT JOIN course_target ct ON c.course_id = ct.course_id
+  `;
+
+  const whereClauses = [];
+  const params = [];
+
+  // 역할에 따라 분기
+  if (user.role === 'professor') {
+    whereClauses.push(`cp.user_id = ?`);
+    params.push(user.user_id);
+  }
+
+  // 관리자는 모두 확인 가능
+
+  const { grade_id, course_type } = filters;
+
+  if (grade_id) {
+    whereClauses.push(`ct.grade_id = ?`);
+    params.push(grade_id);
+  }
+
+  if (course_type) {
+    if (course_type === 'regular') {
+      whereClauses.push(`c.is_special = 0`);
+    } else if (course_type === 'special') {
+      whereClauses.push(`c.is_special = 1`);
+    } else if (course_type === 'korean') {
+      whereClauses.push(`c.is_special = 2`);
+    }
+  }
+
+  if (whereClauses.length > 0) {
+    sql += ` WHERE ` + whereClauses.join(' AND ');
+  }
+
+  sql += ` ORDER BY c.course_id`;
+
+  const [rows] = await pool.query(sql, params);
+  return rows;
+}
