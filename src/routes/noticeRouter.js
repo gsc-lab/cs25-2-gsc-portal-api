@@ -16,12 +16,11 @@ router.post(
   "/",
   authWithRole("professor"),
   uploadForNotices.array("files", 10),
-  noticeController.createNotice, noticeController.dispatchNotice
+  noticeController.createNotice
 );
 router.patch(
   "/:notice_id",
   authWithRole("professor"),
-
   uploadForNotices.array("files", 10),
   noticeController.updateNotice,
 );
@@ -30,5 +29,13 @@ router.delete(
   authWithRole("professor"),
   noticeController.deleteNotice,
 );
+
+router.post("/:notice_id/dispatch", authWithRole("professor"), noticeController.dispatchNotice)
+
+router.get("/:notice_id/status", authWithRole("professor"), noticeController.getNoticeStatus);
+
+router.patch("/:notice_id/read", authWithRole("student"), noticeController.noticeAsRead);
+
+router.get("/form/courses", authWithRole("professor"), noticeController.getCourses);
 
 export default router;
