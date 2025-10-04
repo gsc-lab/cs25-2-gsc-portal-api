@@ -98,6 +98,23 @@ export const getSpecialSchedule = async function (req, res) {
     }
 }
 
+// 특강 학생 조회
+export const getCourseStudents = async function (req, res) {
+    try {
+        const { course_id } = req.params;
+        
+        if (!course_id) {
+            res.status(400).json({ error: "course_id is required" });
+        }
+
+        const result = await subjectService.getCourseStudents(course_id);
+        res.status(200).json(result);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
 
 
 // 휴강 조회

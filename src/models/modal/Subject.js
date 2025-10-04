@@ -120,6 +120,35 @@ export async function getSpecialSchedule() {
     return rows;
 }
 
+// 특강 학생 조회
+// ✅ models/subjectModel.js 또는 models/modalModel.js 안에서
+export async function getCourseStudents(course_id) {
+    const [rows] = await pool.query(`
+        SELECT 
+            ua.user_id,
+            ua.name,
+            ua.email,
+            cs.course_id,
+            cs.class_id
+        FROM course_student cs
+        JOIN user_account ua ON ua.user_id = cs.user_id
+        WHERE cs.course_id = ?
+        ORDER BY ua.name;
+    `, [course_id]);
+
+    const all_students = rows;
+    const assigned_students = rows.filter(s => s.class_id !== null);
+    const unassigned_students = rows.filter(s => s.class_id === null);
+
+    // ⚠️ 여기서는 res.json이 아니라 그냥 return
+    return {
+        all_students,
+        assigned_students,
+        unassigned_students
+    };
+}
+
+
 
 // 휴강 조회
 export async function getHolidays(grade_id) {

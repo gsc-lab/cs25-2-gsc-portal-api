@@ -40,6 +40,12 @@ export const getSpecialSchedule = async function() {
     return await subjectModal.getSpecialSchedule();
 }
 
+// 특강 학생 조회
+export const getCourseStudents = async function(course_id) {
+    return await subjectModal.getCourseStudents(course_id)
+}
+
+
 // 휴강 조회
 export const getHolidays = async function(grade_id) {
     return await subjectModal.getHolidays(grade_id);
