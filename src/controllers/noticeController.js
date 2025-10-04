@@ -79,7 +79,7 @@ export async function dispatchNotice(req, res, next){
     const { notice_id } = req.params;
     const { user } = req;
 
-    const jobInfo = await noticeService.dispatchByNoticeId(notice_id, user);
+    const jobInfo = await noticeService.dispatchByNoticeId(notice_id, user, { mock: true });
 
     res.status(202).json(jobInfo);
   } catch (error) {

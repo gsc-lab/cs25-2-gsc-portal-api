@@ -148,13 +148,13 @@ export async function findBySpec(spec, query) {
 // 공지사항 상세조회
 export async function findById(noticeId) {
   const sql = `SELECT * from v_notice_details WHERE notice_id = ?`;
-  const [row] = await pool.query(sql, [noticeId]);
+  const [rows] = await pool.query(sql, [noticeId]);
 
-  if (row.length > 0) {
-    row[0].attachments = row[0].attachments || [];
+  if (!rows.length) {
+    return null;
   }
-
-  return row[0];
+  rows[0].attachments = rows[0].attachments || [];
+  return rows[0];
 }
 
 // 공지사항 작성
@@ -288,7 +288,7 @@ export const populateDeliverNotice = async (noticeId, connection) => {
 export const getDispatchTargets = async (noticeId) => {
   const sql = `
         SELECT user_id
-        FROM notification_deliver_notice
+        FROM notification_delivery_notice
         WHERE notice_id = ?;
        `;
 
@@ -299,12 +299,24 @@ export const getDispatchTargets = async (noticeId) => {
 };
 
 // TODO 카카오 메세지 발송 시 업데이트
-export const updateDeliveryStatus = async (noticeId, newStatus = "SENT") => {
-  const sql = `
-        UPDATE notification_delivery_notice SET status = ?, send_at = NOW()
-        WHERE notice_id = ? AND status = 'QUEUED'`
+export const updateRecipients = async (noticeId, userIds = [], newStatus = "SENT") => {
+  if (!userIds.length) return 0;
 
-  const [result] = await pool.query(sql, [noticeId, newStatus]);
+  const ids = userIds.map(Number);
+  const placeholders = ids.map(() => '?').join(',');
+  const sql = `
+    UPDATE notification_delivery_notice
+      SET status = ?,
+          send_at = CASE WHEN ? = 'SENT' THEN NOW() ELSE send_at END
+      WHERE notice_id = ?
+        AND user_id IN (${placeholders})
+        AND status = 'QUEUED'
+  `;
+  console.log("userIds for bulk update:", userIds);
+
+  const params = [newStatus, newStatus, Number(noticeId), ...userIds];
+  const [result] = await pool.query(sql, params);
+  console.log('Excuting bulk Update ', sql, params);
 
   return result.affectedRows;
 }

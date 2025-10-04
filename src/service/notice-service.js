@@ -4,7 +4,7 @@ import pool from "../db/connection.js";
 import { ForbiddenError, NotFoundError } from "../errors/index.js";
 
 import { v4 as uuidv4 } from "uuid";
-import {findProfessorCourses} from "../models/Notice.js";
+import {findProfessorCourses, updateRecipients} from "../models/Notice.js";
 
 // 권한 가시성 규칙 적용 전체 조회
 export const getNotices = async (spec, query) => {
@@ -157,41 +157,50 @@ export const deleteNotice = async (noticeId, user) => {
   return { message: "공지사항이 성공적으로 삭제되었습니다." };
 };
 
-export const dispatchByNoticeId = async (noticeId, user) => {
+export const dispatchByNoticeId = async (noticeId, user, { mock = true }) => {
   const notice = await noticeModel.findById(noticeId);
   const channel = "KAKAO"
 
+  if (user.role === "student") {
+    return { message: "학생은 발송 권한이 없습니다." };
+  }
+
   if (user.role === "professor" && notice.author.user_id !== user.user_id) {
-    return [];
+    return { message: "본인 공지만 발송할 수 있습니다."};
   }
 
+  // 대상자 해석
   const userIds = await noticeModel.getDispatchTargets(noticeId);
+  if (!userIds.length) return { message: '발송 대상자가 없습니다.' };
 
-  if (userIds.length === 0) {
-    return { message: "발송 대상자가 없습니다." };
+  const jobId = `JOB_${uuidv4()}`;
+  const jobData = { jobId, noticeId, dispatch: userIds, channel };
+
+  if (mock) {
+    // 1) QUEUE 상태로 표기
+    // await noticeModel.markQueued(noticeId, userIds, channel);
+
+    // 2) (가짜) 발송 성공 처리 - 전부 SENT로
+    const accepted = await noticeModel.updateRecipients(noticeId, userIds, 'SENT');
+
+    return {
+      job_id: jobId,
+      accepted,
+      rejected: userIds.length - accepted,
+      reason: '임시(mock) 디스패치: 즉시 SENT 처리',
+    };
   }
 
-  console.log(`Dispatching notice ${noticeId} to ${userIds.length} users`);
-  const jobId = `JOB_${uuidv4()}`
-
-  const jobData = {
-    jobId,
-    noticeId,
-    dispatch: userIds,
-    channel,
-  };
-
-  // TODO 메세지 발송 큐에 추가
-  // ('send0notice-message', jobData);
+  // TODO: 실제 큐 적재(나중에 카카오 프로바이더 붙일 때)
+  // await queue.add('send-notice', jobData);
 
   return {
     job_id: jobId,
-    accepted: userIds.length,
+    accepted: 0,
     rejected: 0,
-    reason: "작업이 성공적으로 추가"
-  }
-}
-
+    reason: '큐에 적재됨',
+  };
+};
 export const markNoticeAsRead = async (noticeId, user) => {
 
   if (user.role !== "student") {
