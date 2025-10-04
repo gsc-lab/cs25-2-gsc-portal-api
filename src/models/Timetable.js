@@ -3,51 +3,48 @@ import { getWeekRange } from "../utils/timetableDateCalculator.js";
 import { formatTimetable } from "../utils/timetableFormatter.js";
 
 // 시간표 조회 (학생, 교수, 관리자)
-// 학생
 export async function getStudentTimetable(user_id, targetDate) {
     const { weekStart, weekEnd } = getWeekRange(targetDate);
 
-        const sql = `
-            SELECT DISTINCT vt.*,
-                lc.name AS class_group
-            FROM v_timetable vt
-            JOIN student_entity se ON se.user_id = ?
-            LEFT JOIN level_class lc ON se.class_id = lc.class_id
-            WHERE
-                se.status = 'enrolled'
-                AND (
-                    -- 정규과목: 학년 매칭
-                    (vt.is_special = 0 AND vt.grade_id = se.grade_id)
+    const sql = `
+        SELECT DISTINCT vt.*,
+            lc.name AS class_group
+        FROM v_timetable vt
+        JOIN student_entity se 
+            ON se.user_id = ? 
+            AND se.status = 'enrolled'
+        LEFT JOIN level_class lc 
+            ON se.class_id = lc.class_id
+        WHERE
+            (
+                -- 정규과목: 학년 매칭
+                (vt.is_special = 0 AND vt.grade_id = se.grade_id)
 
-                    -- 일본어 특강: 한국인만 JLPT 레벨 매칭
-                    OR (vt.is_special = 1
-                        AND se.is_international = 'korean'
-                        AND vt.level_id IN (1,2,3)   -- JLPT 레벨
-                        AND vt.level_id = lc.level_id
-                        AND vt.language_id = 'JP')
+                -- 일본어 특강: 한국인만 (JLPT 레벨 매칭은 나중에 필요시 추가)
+                OR (vt.is_special = 1
+                    AND se.is_international = 'korean'
+                    AND vt.language_id = 'JP')
 
-                    -- 한국어 특강: 외국인만 TOPIK 레벨 매칭
-                    OR (vt.is_special = 1
-                        AND se.is_international = 'international'
-                        AND vt.level_id IN (4,5)     -- TOPIK 레벨
-                        AND lc.level_id = vt.level_id -- 학생 TOPIK 레벨 매칭
-                        AND vt.language_id = 'KR')
-                )
-                AND (
-                    -- 정규 수업: 학기 기간 안에만
-                    (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
+                -- 한국어 특강: 외국인만
+                OR (vt.is_special = 1
+                    AND se.is_international = 'international'
+                    AND vt.language_id = 'KR')
+            )
+            AND (
+                -- 정규 수업: 학기 기간 안에만
+                (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
 
-                    -- 이벤트: 이번 주차 안에 있는 것만
-                    OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
-                )
-            ORDER BY FIELD(vt.day,'MON','TUE','WED','THU','FRI'), vt.start_time;
-        `;
-
+                -- 이벤트: 이번 주차 안에 있는 것만
+                OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
+            )
+        ORDER BY FIELD(vt.day,'MON','TUE','WED','THU','FRI'), vt.start_time;
+    `;
 
     const params = [user_id, targetDate, weekStart, weekEnd];
     const [rows] = await pool.query(sql, params);
-    return formatTimetable(rows)
-};
+    return formatTimetable(rows);
+}
+
 
 // 교수
 export async function getProfessorTimetable(user_id, targetDate) {
@@ -156,24 +153,49 @@ export async function postRegisterCourse(sec_id, title, professor_id, target) {
 }
 
 // 시간표 등록
-export async function registerTimetable(classroom_id, course_id, day_of_week, start_period, end_period) {
+export async function registerTimetable(classroom_id, course_id, day_of_week, start_period, end_period, class_name = null) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
-        // schedule_id 조회
-        const [lastRow] = await conn.query(
-            "SELECT schedule_id FROM course_schedule ORDER BY schedule_id DESC LIMIT 1"
-        );
+        let class_id = null;
+
+        // ✅ class_name이 넘어온 경우 → course_id + class_name 조합으로 class_id 생성
+        if (class_name) {
+            class_id = course_id + class_name;  // 예: "C003" + "A" → "C003A"
+
+            // DB에 없으면 course_class에 새로 등록
+            const [exists] = await conn.query(
+                "SELECT 1 FROM course_class WHERE class_id = ?",
+                [class_id]
+            );
+            if (exists.length === 0) {
+                await conn.query(
+                    "INSERT INTO course_class (class_id, course_id, name) VALUES (?, ?, ?)",
+                    [class_id, course_id, class_name]
+                );
+            }
+        }
+
+        // schedule_id 조회 (숫자 기준 정렬)
+        const [lastRow] = await conn.query(`
+            SELECT schedule_id 
+            FROM course_schedule 
+            ORDER BY CAST(SUBSTRING(schedule_id, 4) AS UNSIGNED) DESC 
+            LIMIT 1
+        `);
         const lastId = lastRow.length > 0 ? lastRow[0].schedule_id : null;
 
+
+        // 교시 범위만큼 반복
         for (let i = 0; i <= end_period - start_period; i++) {
             const period = start_period + i;
             const schedule_id = generateScheduleId(lastId, i);
 
             const sql = `
-                INSERT INTO course_schedule (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week)
-                SELECT ?, ?, ?, c.course_id, c.sec_id, ?
+                INSERT INTO course_schedule 
+                (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week, class_id)
+                SELECT ?, ?, ?, c.course_id, c.sec_id, ?, ?
                 FROM course c
                 WHERE c.course_id = ?`;
 
@@ -182,7 +204,8 @@ export async function registerTimetable(classroom_id, course_id, day_of_week, st
                 classroom_id,
                 period,
                 day_of_week,
-                course_id 
+                class_id,   // ✅ 정규과목이면 null, 특강이면 자동 생성된 class_id
+                course_id
             ]);
         }
 
@@ -195,6 +218,8 @@ export async function registerTimetable(classroom_id, course_id, day_of_week, st
         conn.release();
     }
 }
+
+
 
 // 휴보강 등록
 export async function postRegisterHoliday(

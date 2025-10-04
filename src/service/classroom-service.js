@@ -19,8 +19,8 @@ export const postRegisterCourse = async (sec_id, title, professor_id, targetInfo
 };
 
 // 시간표 등록
-export const postRegisterTimetable = async function (classroom_id, course_id, day_of_week, start_period, end_period) {
-    return await timetableModel.registerTimetable(classroom_id, course_id, day_of_week, start_period, end_period);
+export const postRegisterTimetable = async function (classroom_id, course_id, day_of_week, start_period, end_period, class_id) {
+    return await timetableModel.registerTimetable(classroom_id, course_id, day_of_week, start_period, end_period, class_id);
 }
 
 // 휴보강 등록 Service

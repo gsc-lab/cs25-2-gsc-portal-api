@@ -98,20 +98,23 @@ export const postRegisterCourse = async (req, res) => {
 // 시간표 등록
 export const postRegisterTimetable = async function (req, res) {
     try {
-        const { classroom_id, start_period, end_period,course_id, day_of_week } = req.body;
+        const { classroom_id, start_period, end_period, course_id, day_of_week, class_id } = req.body;
 
         if (!classroom_id || !start_period || !end_period || !course_id || !day_of_week) {
-            return res.status(400).json({ error: "classroom, start_period, end_period, course_id, day_of_week are required" })
+            return res.status(400).json({ error: "classroom_id, start_period, end_period, course_id, day_of_week are required" })
         }
 
-        const result = await classroomService.postRegisterTimetable(classroom_id, course_id, day_of_week, start_period, end_period)
+        const result = await classroomService.postRegisterTimetable(
+            classroom_id, course_id, day_of_week, start_period, end_period, class_id || null
+        );
 
-        res.status(200).json({ message: "등록 완료", course: result})
+        res.status(200).json({ message: "등록 완료", course: result });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Internal Server Error" });
     }
 }
+
 
 // 휴보강 등록
 export const postRegisterHoliday = async function (req, res) {
