@@ -231,7 +231,7 @@ CREATE TABLE notice_file (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE notice_target (
-                               target_id   INT PRIMARY KEY AUTO_INCREMENT,,
+                               target_id   INT PRIMARY KEY AUTO_INCREMENT,
                                notice_id   INT NOT NULL,
                                grade_id    VARCHAR(10),
                                language_id VARCHAR(10),
@@ -362,22 +362,32 @@ CREATE TABLE weekend_attendance_votes (
 
 -- =========================================================
 -- 06. Cleaning
+-- (simple rotation: generate once per semester, read-only on UI)
 -- =========================================================
-CREATE TABLE cleaning_assignment (
-                                     assignment_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                                     grade_id      VARCHAR(10) NOT NULL,
-                                     classroom_id  VARCHAR(10) NOT NULL,
-                                     work_date     DATE NOT NULL,
-                                     team_size     TINYINT NOT NULL DEFAULT 4,
-                                     members_json  JSON,
-                                     status        ENUM('SCHEDULED','DONE','MISSED','CANCELLED') NOT NULL DEFAULT 'SCHEDULED',
-                                     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-                                     confirmed_at  DATETIME,
-                                     UNIQUE KEY ux_cleaning_scope_day (grade_id, classroom_id, work_date),
-                                     KEY ix_cleaning_date (work_date),
-                                     CONSTRAINT chk_cleaning_team_size CHECK (team_size > 0),
-                                     CONSTRAINT fk_clean_grade FOREIGN KEY (grade_id)      REFERENCES grade(grade_id)         ON UPDATE CASCADE ON DELETE CASCADE,
-                                     CONSTRAINT fk_clean_room  FOREIGN KEY (classroom_id)  REFERENCES classroom(classroom_id) ON UPDATE CASCADE ON DELETE CASCADE
+CREATE TABLE cleaning_roster (
+  roster_id    BIGINT PRIMARY KEY AUTO_INCREMENT,
+  section      VARCHAR(10) NOT NULL,         -- 예: 2025-2
+  grade_id     VARCHAR(10) NOT NULL,         -- 예: G1
+  classroom_id VARCHAR(10) NOT NULL,         -- 학기/연도 고정 강의실
+  work_date    DATE NOT NULL,                -- 주차 기준일(또는 실제 청소일)
+  team_size    TINYINT NOT NULL DEFAULT 4,   -- 팀 구성 인원 수
+  created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_roster_scope_day (section, grade_id, work_date),
+  KEY ix_cleaning_date (work_date),
+  CONSTRAINT chk_cleaning_team_size CHECK (team_size > 0),
+  CONSTRAINT fk_clean_grade FOREIGN KEY (grade_id)     REFERENCES grade(grade_id)         ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_clean_room  FOREIGN KEY (classroom_id) REFERENCES classroom(classroom_id) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE cleaning_roster_member (
+  roster_id BIGINT NOT NULL,
+  user_id   VARCHAR(10) NOT NULL,           -- FK → user_account.user_id (학생)
+  work_date DATE NOT NULL,                  -- 부모의 work_date를 복제 저장
+  PRIMARY KEY (roster_id, user_id),
+  UNIQUE KEY uq_no_double_per_day (user_id, work_date), -- 같은 날 중복 배정 금지(전역)
+  KEY ix_member_user (user_id),
+  CONSTRAINT fk_member_roster FOREIGN KEY (roster_id) REFERENCES cleaning_roster(roster_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_member_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id)      ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
