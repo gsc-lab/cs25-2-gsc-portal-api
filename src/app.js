@@ -8,6 +8,7 @@ import adminRouter from "./routes/adminRouter.js";
 import authRouter from "./routes/authRouter.js";
 import noticeRouter from "./routes/noticeRouter.js";
 import fileRouter from "./routes/fileRouter.js";
+import cleaningRouter from "./routes/cleaningRouter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,5 +28,6 @@ app.use("/admin", adminRouter);
 app.use("/auth", authRouter);
 app.use("/notices", noticeRouter);
 app.use("/files", fileRouter);
+app.use("/cleaning-rosters", cleaningRouter);
 
 export default app;
