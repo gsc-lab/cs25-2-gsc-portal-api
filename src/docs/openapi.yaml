@@ -870,13 +870,6 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - name: section
-          in: query
-          required: false
-          schema:
-            type: string
-            example: 2025-2
-          description: "조회할 학기 (예: 2025년 2학기)"
         - name: grade_id
           in: query
           required: true
@@ -897,6 +890,73 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CleaningRosterResponse"
+    delete:
+      tags:
+        - Cleaning
+      summary: 특정 학년의 학기별 청소 당번 삭제
+      description: |
+        지정된 학기(section)의 특정 학년(grade_id)에 해당하는 모든 청소 당번 데이터를 삭제합니다.
+        **안정성을 위해 학년(grade_id) 지정은 필수입니다.**
+      security:
+        - bearerAuth: [ ] # 관리자만 가능
+      parameters:
+        - name: section
+          in: query
+          required: true
+          description: 삭제할 학기
+          schema:
+            type: string
+            example: "2025-2"
+        - name: grade_id
+          in: query
+          required: true
+          description: 삭제할 학년 ID
+          schema:
+            type: string
+            example: 1
+      responses:
+        "200":
+          description: 삭제 성공
+        "400":
+          description: 잘못된 요청 (필수 파라미터 누락)
+        "403":
+          description: 권한 없음 (관리자 X)
+        "404":
+          description: 삭제할 데이터를 찾을 수 없음
+  /cleaning-rosters/generate:
+    post:
+      tags:
+        - Cleaning
+      summary: 학기 전 주차/전 학년 로스터 자동 생성
+      description: 학기 시작 시 한 번 실행하여 주간 로스터를 자동 생성합니다. **이미 데이터가 존재하는 주차는 새로운 팀으로 덮어쓰므로, 여러 번 실행해도 안전합니다.**
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateRostersRequest"
+            examples:
+              default:
+                value:
+                  section: "2025-2"
+                  weekday: "MON"
+                  team_size: 4
+                  grade_rooms:
+                    - { grade_id: "1", classroom_id: "C-304" }
+                    - { grade_id: "2", classroom_id: "C-405" }
+      responses:
+        "201":
+          description: 생성 결과 요약
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateRostersResult"
+        "400":
+          description: 잘못된 요청(파라미터/형식 오류)
+        "409":
+          description: 충돌(잘못된 중복 또는 생성 불가 주차)
   /classrooms/polls:
     get:
       summary: 이번 주 강의실 개방 투표 현황 조회
@@ -1793,6 +1853,105 @@ paths:
 
 components:
   schemas:
+    CleaningRosterResponse:
+      type: object
+      properties:
+        section:
+          type: string
+          example: "2025-2"
+        rosters:
+          type: array
+          items:
+            $ref: "#/components/schemas/CleaningRosterItem"
+
+    CleaningRosterItem:
+        type: object
+        properties:
+          grade_id:
+            type: string
+            example: "G1"
+          classroom_name:
+            type: string
+            example: "창조관-304"
+          weekly_duties:
+            type: array
+            items:
+              $ref: "#/components/schemas/CleaningWeeklyDuty"
+
+    CleaningWeeklyDuty:
+        type: object
+        properties:
+          work_date:
+            type: string
+            format: date
+            example: "2025-09-15"
+          members:
+            type: array
+            items:
+              type: string
+            example: [ "G1 Student 01", "G1 Student 02" ]
+
+    GenerateRostersRequest:
+        type: object
+        required: [ section, weekday, team_size, grade_rooms ]
+        properties:
+          section:
+            type: string
+            example: "2025-2"
+          weekday:
+            type: string
+            enum: [ MON, TUE, WED, THU, FRI ]
+            example: "MON"
+          team_size:
+            type: integer
+            minimum: 1
+            maximum: 10
+            example: 4
+          grade_rooms:
+            type: array
+            minItems: 1
+            items:
+              $ref: "#/components/schemas/GradeRoom"
+
+    GradeRoom:
+        type: object
+        required: [ grade_id, classroom_id ]
+        properties:
+          grade_id:
+            type: string
+            example: "1"
+          classroom_id:
+            type: string
+            example: "C-304"
+
+    GenerateRostersResult:
+        type: object
+        properties:
+          section:
+            type: string
+            example: "2025-2"
+          generated:
+            type: object
+            additionalProperties:
+              type: object
+              properties:
+                weeks:
+                  type: integer
+                  example: 15
+                teams:
+                  type: integer
+                  example: 15
+                members_assigned:
+                  type: integer
+                  example: 60
+          skipped_existing:
+            type: integer
+            example: 2
+          conflicts:
+            type: array
+            items:
+              type: string
+            example: [ ]
     Timetable:
       type: object
       properties:
@@ -2207,6 +2366,7 @@ components:
         message:
           type: string
           example: Error message details.
+
     DashboardSchedule:
       type: object
       properties:
@@ -2481,17 +2641,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CleaningRoster"
-    CleaningRosterResponse:
-      type: object
-      description: 학년별로 그룹화된 학기 전체 청소 당번표
-      properties:
-        section:
-          type: string
-          example: 2025-2
-        rosters:
-          type: array
-          items:
-            $ref: "#/components/schemas/GradeCleaningRoster"
       example:
         section: 2025-2
         rosters:
