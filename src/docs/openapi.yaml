@@ -1713,71 +1713,94 @@ paths:
   /timetables/student/{user_id}:
     get:
       summary: 학생 시간표 조회 (주간)
+      description: |
+        특정 학생의 주간 시간표를 조회합니다.  
+        - 정규 수업, 특강, 한국어, 상담(후카) 일정이 모두 포함됩니다.  
+        - 요청한 날짜(`date`)가 속한 주간 범위를 서버에서 계산하여 해당 주차의 모든 일정을 반환합니다.
       tags: [Timetable]
       parameters:
         - in: path
           name: user_id
           required: true
-          schema: { type: string }
+          schema: { type: string, example: "2423004" }
+          description: 학생의 사용자 ID
         - in: query
           name: date
           required: true
-          schema: { type: string, format: date, example: "2025-09-17" }
-          description: 포함 주의 임의 날짜(서버가 week_start/week_end 계산)
+          schema: { type: string, format: date, example: "2025-10-20" }
+          description: 조회 기준 날짜 (서버가 자동으로 해당 주의 시작/종료일 계산)
       responses:
         "200":
-          description: 주간 시간표 데이터
+          description: 주간 시간표 데이터 (수업 + 상담 포함)
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/TimetableWeeklyResponse" }
+              schema:
+                $ref: "#/components/schemas/TimetableWeeklyResponse"
+        "404":
+          description: 해당 학생의 시간표가 존재하지 않습니다.
+        "500":
+          description: 서버 내부 오류
 
   /timetables/professor/{user_id}:
     get:
       summary: 교수 시간표 조회 (주간)
+      description: |
+        특정 교수의 주간 시간표를 조회합니다.  
+        - 담당 수업 및 교수 상담(후카) 일정이 포함됩니다.  
+        - 학기 범위(`section`) 및 주차(`week_start ~ week_end`) 기준으로 필터링됩니다.
       tags: [Timetable]
       parameters:
         - in: path
           name: user_id
           required: true
-          schema: { type: string }
+          schema: { type: string, example: "8888001" }
+          description: 교수의 사용자 ID
         - in: query
           name: date
           required: true
-          schema: { type: string, format: date, example: "2025-09-17" }
-          description: 포함 주의 임의 날짜(서버가 week_start/week_end 계산)
+          schema: { type: string, format: date, example: "2025-10-20" }
+          description: 조회 기준 날짜 (서버가 해당 주차 범위를 자동 계산)
       responses:
         "200":
-          description: 주간 시간표 데이터
+          description: 주간 시간표 데이터 (수업 + 상담 포함)
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/TimetableWeeklyResponse" }
+              schema:
+                $ref: "#/components/schemas/TimetableWeeklyResponse"
+        "404":
+          description: 해당 교수의 시간표가 존재하지 않습니다.
+        "500":
+          description: 서버 내부 오류
 
   /timetables/admin:
     get:
       summary: 전체 시간표 조회 (주간)
       description: |
-        관리자가 전체 시간표를 주간 단위로 조회합니다.  
-        - 모든 학년, 특강, 한국어 포함  
-        - 주간 범위는 `week_start`, `week_end` 쿼리 파라미터로 지정
+        관리자가 전체 학과의 주간 시간표를 조회합니다.  
+        - 1~3학년, 특강, 한국어, 상담(후카) 일정이 모두 포함됩니다.  
+        - 주간 범위는 `week_start`, `week_end` 파라미터로 지정합니다.
       tags: [Timetable]
       parameters:
         - in: query
           name: week_start
           required: true
-          schema: { type: string, format: date }
+          schema: { type: string, format: date, example: "2025-10-20" }
+          description: 주간 시작일 (월요일)
         - in: query
           name: week_end
           required: true
-          schema: { type: string, format: date }
+          schema: { type: string, format: date, example: "2025-10-26" }
+          description: 주간 종료일 (일요일)
       responses:
         "200":
-          description: 주간 시간표 데이터
+          description: 전체 주간 시간표 데이터 (수업 + 상담 포함)
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Timetable"
+                $ref: "#/components/schemas/TimetableWeeklyResponse"
+        "500":
+          description: 서버 내부 오류
+
 
   /timetables/classes/{class_id}/assign:
     post:
@@ -2033,25 +2056,28 @@ components:
 
     TimetableWeeklyResponse:
       type: object
-      properties:
-        meta:
-          $ref: "#/components/schemas/WeekMeta"
-        data:
-          type: array
-          items: { $ref: "#/components/schemas/Timetable" }
+      description: |
+        주간 시간표 데이터는 요일별/교시별로 구조화되어 반환됩니다.
       example:
-        meta:
-          week_start: "2025-09-15"
-          week_end: "2025-09-21"
-        data:
-          - course_id: C001
-            course_title: 인공지능 개론
-            day: WED
-            start_time: "10:00:00"
-            end_time: "10:50:00"
-            building: 본관
-            room_number: "101"
-            professor_name: 이교수
+        MON:
+          "1": []
+          "2": []
+          "3": []
+          "4": []
+          "5": [{ title: "웹프로그래밍", professor: "이교수", room: "본관-201", source: "CLASS" }]
+          "6": [{ title: "상담", professor: "후카 교수", room: "실습동 301호", source: "COUNSELING" }]
+          "7": []
+        TUE:
+          "1": []
+          "2": []
+          "3": []
+          "4": []
+          "5": []
+          "6": []
+          "7": []
+        WED: { "1": [], "2": [], "3": [] }
+        THU: { "1": [], "2": [], "3": [] }
+        FRI: { "1": [], "2": [], "3": [] }
 
     TimetableCell:
       type: object
