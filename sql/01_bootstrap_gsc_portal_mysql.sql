@@ -210,6 +210,27 @@ CREATE TABLE course_student (
     CONSTRAINT fk_cs_class  FOREIGN KEY (class_id) REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE huka_schedule (
+    schedule_id VARCHAR(10) PRIMARY KEY,
+    student_id VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+    schedule_type ENUM('REGULAR', 'CUSTOM') NOT NULL,
+    day_of_week ENUM('MON','TUE','WED','THU','FRI') NULL,
+    date DATE NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    location VARCHAR(50),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_hs_student FOREIGN KEY (student_id)
+        REFERENCES user_account(user_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+
+
+
 
 -- =========================================================
 -- 04. Files, Notice, Events, Logs

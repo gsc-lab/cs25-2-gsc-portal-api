@@ -135,17 +135,20 @@ INSERT INTO course_professor (user_id, course_id) VALUES
 ('8888002','C007'),
 ('8888002','C008');
 
-INSERT INTO course_student (user_id, course_id) VALUES
-('2423004','C003'),
-('2725001','C003'),
-('2423006','C004'),
-('2423007','C004'),
-('2725001','C004');
-('2423004', 'C007', NULL),
-('2423005', 'C007', NULL),
-('2524001', 'C007', NULL),
-('2423006', 'C008', NULL),
-('2725001', 'C008', NULL);
+INSERT INTO course_student (user_id, course_id, class_id) VALUES
+('2423001', 'C007', NULL),
+('2423002', 'C007', 'C007A'),
+('2423003', 'C007', 'C007A'),
+('2423004', 'C007', 'C007A'),
+('2423005', 'C007', 'C007A'),
+('2524001', 'C007', NULL);
+
+INSERT INTO huka_schedule
+(schedule_id, student_id, schedule_type, day_of_week, date, start_time, end_time, location, created_at, updated_at)
+VALUES
+('HK001', '2423004', 'REGULAR', 'MON', NULL, '13:00', '13:30', '실습동 301호', NOW(), NOW()),
+('HK002', '2423004', 'CUSTOM', NULL, '2025-10-10', '14:00', '14:30', '본관 201호', NOW(), NOW());
+
 
 -- ===== Notice & Files & Events =====
 INSERT INTO file_assets (file_id, file_name, file_url, size_type, file_type) VALUES
