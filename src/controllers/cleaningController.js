@@ -1,5 +1,5 @@
 import * as cleaningService from "../service/cleaning_service.js";
-
+import { NotFoundError } from "../errors/index.js";
 export const generateCleaningRosters = async (req, res, next) => {
   try {
     const rosterInfo = req.body;
@@ -7,7 +7,6 @@ export const generateCleaningRosters = async (req, res, next) => {
     const result = await cleaningService.generateRosters(rosterInfo);
     res.status(201).json(result);
   } catch (error) {
-    console.error("Error in generateCleaningRosters controller:", error);
     next(error);
   }
 };
@@ -29,7 +28,7 @@ export const deleteRosterByGrade = async (req, res, next) => {
     const { section, grade_id } = req.query;
 
     if (!section) {
-      return res.status(400).json({ message: "학기는 필수 파라미터입니다." });
+      throw new NotFoundError(`${section} not found`);
     }
 
     const result = await cleaningService.removeRosters(section, grade_id);

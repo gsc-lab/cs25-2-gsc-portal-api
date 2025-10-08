@@ -1,5 +1,6 @@
 import * as CleaningModel from "../models/Cleaning.js";
 import pool from "../db/connection.js";
+import { InternalServerError, BadRequestError } from "../errors/index.js";
 
 export const generateRosters = async (rosterInfo) => {
   // 요청 Body에서 필요한 정보들을 구조 분해 할당으로 추출
@@ -8,7 +9,7 @@ export const generateRosters = async (rosterInfo) => {
   // 해당 학기의 시작일과 종료일을 조회
   const sectionInfo = await CleaningModel.findBySection(section);
   if (!sectionInfo || !sectionInfo.start_date || !sectionInfo.end_date) {
-    throw new Error(`유효하지 않은 학기 ID입니다: ${section}`);
+    throw new BadRequestError(`유효하지 않은 학기 ID입니다: ${section}`);
   }
 
   const week_start = sectionInfo.start_date;
@@ -104,7 +105,7 @@ export const generateRosters = async (rosterInfo) => {
     await connection.rollback();
 
     console.log("당번 생성 중 오류", error);
-    throw error;
+    throw new InternalServerError('서버 오류가 발생했습니다.');
   }
 };
 
@@ -172,7 +173,7 @@ export const findRosterWeek = async (date, gradeId) => {
 
 export const removeRosters = async (section, gradeId) => {
   if (!gradeId) {
-    throw new Error(`삭제할 학년(grade_id) 반드시 지정해야 합니다.`);
+    throw new BadRequestError(`삭제할 학년(grade_id) 반드시 지정해야 합니다.`);
   }
   const deletedCount = await CleaningModel.deleteRosters(section, gradeId);
   if (deletedCount === 0) {
