@@ -100,9 +100,9 @@ VALUES ('8888002', '[C003] 과제 안내', '본문...', 0, 'C003', NOW());
 INSERT INTO notice_file (file_id, notice_id) VALUES
                                                  (1,1),(2,2);
 
-INSERT INTO notice_target (target_id, notice_id, grade_id, language_id, class_id) VALUES
-                                                                                      ('NT001',1,'2','KR','CL01'),
-                                                                                      ('NT002',2,'2','KR','CL02');
+INSERT INTO notice_target (notice_id, grade_id, language_id, class_id) VALUES
+                                                                                      ('2','KR','CL01'),
+                                                                                      (2,'2','KR','CL02');
 
 INSERT INTO course_event (event_id, schedule_id, event_type, event_date) VALUES
     ('E001','SCH1','CANCEL','2025-04-15');
