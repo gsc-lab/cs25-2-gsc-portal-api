@@ -1832,59 +1832,48 @@ paths:
         "500":
           description: 서버 내부 오류 (DB 트랜잭션 실패 등)
 
+
   /timetables/huka/student:
     get:
-      summary: 후까 교수님 담당 학생 정보 조회
-      description: 후까 교수님이 담당하는 학생 정보를 학년별로 반환합니다.
-      tags: [Timetable]
+      summary: 학생 상담 시간표 조회
+      tags: ["Timetable"]
+      description: >
+        교수, 관리자, 학생 모두 상담 시간표를 조회할 수 있습니다.  
+        (정규 상담 및 일회성 상담 모두 반환합니다)
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 조회할 사용자 ID (교수/학생 ID)
+        - name: targetDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-10-08"
+          description: 조회 기준 날짜 (주차 단위 계산용)
       responses:
         "200":
-          description: 후까 교수님이 담당하는 학생 목록
+          description: 상담 시간표 데이터
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    user_id:
-                      type: string
-                      example: "2423004"
-                    name:
-                      type: string
-                      example: "국내1-JP-A"
-                    grade_id:
-                      type: string
-                      example: "1"
-              examples:
-                sample:
-                  summary: 샘플 학생 목록
-                  value:
-                    - user_id: "2423004"
-                      name: "국내1-JP-A"
-                      grade_id: "1"
-                    - user_id: "2423006"
-                      name: "유학생-KR"
-                      grade_id: "1"
-                    - user_id: "2423001"
-                      name: "김성식"
-                      grade_id: "2"
-                    - user_id: "2423002"
-                      name: "이유진"
-                      grade_id: "2"
-                    - user_id: "2423003"
-                      name: "국내2-KR-A"
-                      grade_id: "2"
-                    - user_id: "2423007"
-                      name: "유학생-EN"
-                      grade_id: "2"
-                    - user_id: "2423005"
-                      name: "국내3-JP-A(매칭없음)"
-                      grade_id: "3"
+                type: object
+                properties:
+                  MON:
+                    type: object
+                    example:
+                      "8": { "student": "국내1-JP-A", "location": "실습동301호" }
+                      "9": { "student": "2423004", "location": "본관201호" }
     post:
-      summary: 후까 상담 정규 일정 등록
-      description: 교수님이 지정 요일(매주 반복)로 학생 상담 일정을 등록합니다.
-      tags: [Timetable]
+      summary: 정규 상담 등록 (매주 고정 상담)
+      tags: ["Timetable"]
+      description: >
+        여러 학생을 대상으로 특정 요일·교시 범위의 **정규 상담 일정을 등록**합니다.  
+        `time_slot_id`는 자동 매핑됩니다.
       security:
         - bearerAuth: []
       requestBody:
@@ -1899,15 +1888,18 @@ paths:
                   items:
                     type: string
                   example: ["2423004", "2423005"]
+                sec_id:
+                  type: string
+                  example: "2025-1"
                 day_of_week:
                   type: string
-                  example: "MON"
-                start_time:
-                  type: string
-                  example: "13:00"
-                end_time:
-                  type: string
-                  example: "13:30"
+                  enum: ["MON", "TUE", "WED", "THU", "FRI"]
+                start_slot:
+                  type: integer
+                  example: 8
+                end_slot:
+                  type: integer
+                  example: 9
                 location:
                   type: string
                   example: "실습동 301호"
@@ -1920,16 +1912,14 @@ paths:
                 type: object
                 example:
                   message: "2명의 정규 상담 일정이 등록되었습니다."
-        "400":
-          description: 잘못된 요청
-        "500":
-          description: 서버 내부 오류
 
   /timetables/huka/student/custom:
     post:
-      summary: 수정 상담 등록
-      description: 기존 정규 상담을 일시적으로 수정합니다. 지정한 날짜에 대해 정규 요일 대신 커스텀 일정을 우선 적용합니다.
-      tags: [Timetable]
+      summary: 일회성 상담 등록 (개별 일정 수정)
+      tags: ["Timetable"]
+      description: >
+        특정 주차의 **개별(임시) 상담 일정을 등록**합니다.  
+        같은 주차의 `REGULAR` 상담은 자동으로 덮어씌워집니다.
       security:
         - bearerAuth: []
       requestBody:
@@ -1943,33 +1933,32 @@ paths:
                   type: array
                   items:
                     type: string
-                  example: ["2423004", "2423005"]
+                  example: ["2423004"]
+                sec_id:
+                  type: string
+                  example: "2025-1"
                 date:
                   type: string
                   format: date
                   example: "2025-10-15"
-                start_time:
-                  type: string
-                  example: "14:00"
-                end_time:
-                  type: string
-                  example: "14:30"
+                start_slot:
+                  type: integer
+                  example: 9
+                end_slot:
+                  type: integer
+                  example: 10
                 location:
                   type: string
-                  example: "상담실 203호"
+                  example: "본관 201호"
       responses:
         "200":
-          description: 등록 완료
+          description: 수정 상담 등록 완료
           content:
             application/json:
               schema:
                 type: object
                 example:
-                  message: "2명의 일회성 상담 일정이 등록되었습니다."
-        "400":
-          description: 잘못된 요청
-        "500":
-          description: 서버 내부 오류
+                  message: "1명의 상담 일정이 수정되었습니다."
 
   /timetables/events:
     get:
