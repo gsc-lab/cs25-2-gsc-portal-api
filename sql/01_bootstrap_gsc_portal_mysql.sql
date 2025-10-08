@@ -212,32 +212,26 @@ CREATE TABLE course_student (
 
 CREATE TABLE huka_schedule (
     schedule_id VARCHAR(10) PRIMARY KEY,
-    student_id VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-    professor_id VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+    student_id VARCHAR(10) NOT NULL,
+    professor_id VARCHAR(10) NOT NULL,
     sec_id VARCHAR(10) NOT NULL,
     schedule_type ENUM('REGULAR', 'CUSTOM') NOT NULL,
     day_of_week ENUM('MON','TUE','WED','THU','FRI') NULL,
     date DATE NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    location VARCHAR(50),
+    time_slot_id VARCHAR(10) NOT NULL,
+    location VARCHAR(50),              -- ← 교실 대신 자유입력 문자열
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_hs_student FOREIGN KEY (student_id)
         REFERENCES user_account(user_id)
-        ON UPDATE CASCADE
-        ON DELETE CASCADE,
-
+        ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_hs_professor FOREIGN KEY (professor_id)
         REFERENCES user_account(user_id)
-        ON UPDATE CASCADE
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_hs_section FOREIGN KEY (sec_id)
-        REFERENCES section(sec_id)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_hs_timeslot FOREIGN KEY (time_slot_id)
+        REFERENCES time_slot(time_slot_id)
+        ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 

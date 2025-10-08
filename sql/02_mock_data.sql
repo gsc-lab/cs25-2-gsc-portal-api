@@ -144,19 +144,19 @@ INSERT INTO course_student (user_id, course_id, class_id) VALUES
 ('2524001', 'C007', NULL);
 
 INSERT INTO huka_schedule
-(schedule_id, student_id, professor_id, sec_id, schedule_type, day_of_week, date, start_time, end_time, location, created_at, updated_at)
+(schedule_id, student_id, professor_id, sec_id, schedule_type, day_of_week, date, time_slot_id, location, created_at, updated_at)
 VALUES
 -- 🔹 정규 상담 (매주 월요일)
-('HK001', '2423004', '8888001', '2025-1', 'REGULAR', 'MON', NULL, '13:00', '13:30', '실습동 301호', NOW(), NOW()),
-('HK002', '2423005', '8888001', '2025-1', 'REGULAR', 'TUE', NULL, '11:00', '11:30', '실습동 302호', NOW(), NOW()),
+('HK001', '2423004', '8888001', '2025-1', 'REGULAR', 'MON', NULL, '8', '실습동 301호', NOW(), NOW()),
+('HK002', '2423005', '8888001', '2025-1', 'REGULAR', 'TUE', NULL, '9', '실습동 302호', NOW(), NOW()),
 
--- 🔹 일회성 상담 (지정 날짜)
-('HK003', '2423004', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-10', '14:00', '14:30', '본관 201호', NOW(), NOW()),
-('HK004', '2423005', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-15', '14:00', '14:30', '상담실 203호', NOW(), NOW()),
+-- 🔹 수정 상담 (지정 날짜)
+('HK003', '2423004', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-10', '8', '본관 201호', NOW(), NOW()),
+('HK004', '2423005', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-15', '9', '상담실 203호', NOW(), NOW()),
 
 -- 🔹 다른 학생 (유학생)
-('HK005', '2725001', '8888001', '2025-1', 'REGULAR', 'FRI', NULL, '10:00', '10:30', '국제관 101호', NOW(), NOW()),
-('HK006', '2725001', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-20', '15:00', '15:30', '국제관 202호', NOW(), NOW());
+('HK005', '2725001', '8888001', '2025-1', 'REGULAR', 'FRI', NULL, '9', '국제관 101호', NOW(), NOW()),
+('HK006', '2725001', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-20', '8', '국제관 202호', NOW(), NOW());
 
 -- ===== Notice & Files & Events =====
 INSERT INTO file_assets (file_id, file_name, file_url, size_type, file_type) VALUES
