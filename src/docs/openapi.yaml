@@ -1165,6 +1165,96 @@ paths:
           description: "서버 내부 오류"
 
 
+  /modal/courses/{course_id}/students:
+    get:
+      summary: "특강 학생 조회 (배정/미배정 구분)"
+      description: >
+        선택한 특강(course_id)에 등록된 학생 목록을 조회합니다.  
+        각 학생은 class_id 존재 여부에 따라 `assigned_students`(배정됨)  
+        또는 `unassigned_students`(미배정) 그룹으로 구분되어 반환됩니다.
+      tags: ["Modal - Special"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: course_id
+          in: path
+          required: true
+          description: "조회할 특강의 ID (예: C003)"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "특강 수강생 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  all_students:
+                    type: array
+                    description: 전체 학생 목록
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: string
+                          example: "2423004"
+                        name:
+                          type: string
+                          example: "김철수"
+                        email:
+                          type: string
+                          example: "kim@g.yju.ac.kr"
+                        course_id:
+                          type: string
+                          example: "C003"
+                        class_id:
+                          type: string
+                          nullable: true
+                          example: null
+                  assigned_students:
+                    type: array
+                    description: 이미 반(class)에 배정된 학생 목록
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: string
+                          example: "2725001"
+                        name:
+                          type: string
+                          example: "박지민"
+                        email:
+                          type: string
+                          example: "park@g.yju.ac.kr"
+                        class_id:
+                          type: string
+                          example: "C003A"
+                  unassigned_students:
+                    type: array
+                    description: 아직 반에 배정되지 않은 학생 목록
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: string
+                          example: "2423004"
+                        name:
+                          type: string
+                          example: "김철수"
+                        email:
+                          type: string
+                          example: "kim@g.yju.ac.kr"
+                        class_id:
+                          type: string
+                          example: null
+        "401":
+          description: "인증 실패 (JWT 토큰 만료 또는 미인증)"
+        "500":
+          description: "서버 내부 오류"
+
+
+
   /modal/subjects/holidays:
     get:
       summary: 휴강 이벤트 조회 (학년별)
