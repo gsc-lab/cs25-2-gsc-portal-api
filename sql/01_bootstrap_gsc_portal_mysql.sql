@@ -365,29 +365,29 @@ CREATE TABLE weekend_attendance_votes (
 -- (simple rotation: generate once per semester, read-only on UI)
 -- =========================================================
 CREATE TABLE cleaning_roster (
-  roster_id    BIGINT PRIMARY KEY AUTO_INCREMENT,
-  section      VARCHAR(10) NOT NULL,         -- 예: 2025-2
-  grade_id     VARCHAR(10) NOT NULL,         -- 예: G1
-  classroom_id VARCHAR(10) NOT NULL,         -- 학기/연도 고정 강의실
-  work_date    DATE NOT NULL,                -- 주차 기준일(또는 실제 청소일)
-  team_size    TINYINT NOT NULL DEFAULT 4,   -- 팀 구성 인원 수
-  created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_roster_scope_day (section, grade_id, work_date),
-  KEY ix_cleaning_date (work_date),
-  CONSTRAINT chk_cleaning_team_size CHECK (team_size > 0),
-  CONSTRAINT fk_clean_grade FOREIGN KEY (grade_id)     REFERENCES grade(grade_id)         ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT fk_clean_room  FOREIGN KEY (classroom_id) REFERENCES classroom(classroom_id) ON UPDATE CASCADE ON DELETE CASCADE
+                                 roster_id    BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                 section      VARCHAR(10) NOT NULL,         -- 예: 2025-2
+                                 grade_id     VARCHAR(10) NOT NULL,         -- 예: G1
+                                 classroom_id VARCHAR(10) NOT NULL,         -- 학기/연도 고정 강의실
+                                 work_date    DATE NOT NULL,                -- 주차 기준일(또는 실제 청소일)
+                                 team_size    TINYINT NOT NULL DEFAULT 4,   -- 팀 구성 인원 수
+                                 created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                 UNIQUE KEY uq_roster_scope_day (section, grade_id, work_date),
+                                 KEY ix_cleaning_date (work_date),
+                                 CONSTRAINT chk_cleaning_team_size CHECK (team_size > 0),
+                                 CONSTRAINT fk_clean_grade FOREIGN KEY (grade_id)     REFERENCES grade(grade_id)         ON UPDATE CASCADE ON DELETE CASCADE,
+                                 CONSTRAINT fk_clean_room  FOREIGN KEY (classroom_id) REFERENCES classroom(classroom_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE cleaning_roster_member (
-  roster_id BIGINT NOT NULL,
-  user_id   VARCHAR(10) NOT NULL,           -- FK → user_account.user_id (학생)
-  work_date DATE NOT NULL,                  -- 부모의 work_date를 복제 저장
-  PRIMARY KEY (roster_id, user_id),
-  UNIQUE KEY uq_no_double_per_day (user_id, work_date), -- 같은 날 중복 배정 금지(전역)
-  KEY ix_member_user (user_id),
-  CONSTRAINT fk_member_roster FOREIGN KEY (roster_id) REFERENCES cleaning_roster(roster_id) ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT fk_member_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id)      ON UPDATE CASCADE ON DELETE CASCADE
+                                        roster_id BIGINT NOT NULL,
+                                        user_id   VARCHAR(10) NOT NULL,           -- FK → user_account.user_id (학생)
+                                        work_date DATE NOT NULL,                  -- 부모의 work_date를 복제 저장
+                                        PRIMARY KEY (roster_id, user_id),
+                                        UNIQUE KEY uq_no_double_per_day (user_id, work_date), -- 같은 날 중복 배정 금지(전역)
+                                        KEY ix_member_user (user_id),
+                                        CONSTRAINT fk_member_roster FOREIGN KEY (roster_id) REFERENCES cleaning_roster(roster_id) ON UPDATE CASCADE ON DELETE CASCADE,
+                                        CONSTRAINT fk_member_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id)      ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
@@ -434,27 +434,18 @@ CREATE TABLE counseling_rotation (
 -- 상담 예약 (교수가 학생을 선택하여 날짜 지정)
 -- ---------------------------------------------------------
 CREATE TABLE counseling_booking (
-                                    booking_id    BIGINT PRIMARY KEY AUTO_INCREMENT,                -- 상담 예약 고유 ID
-                                    user_id       VARCHAR(10) NOT NULL,                             -- 상담받는 학생 ID (user_account 참조)
-                                    rule_id       VARCHAR(12) NOT NULL,                             -- 연결된 로테이션 규칙 ID (counseling_rotation 참조)
-                                    time_slot_id  VARCHAR(10) NOT NULL,                             -- 상담 시간대 (time_slot 참조)
-                                    booking_date  DATE NOT NULL,                                    -- 상담 날짜
-                                    status        ENUM('SCHEDULED','CANCELLED','COMPLETED')         -- 상담 상태 (예약됨 / 취소됨 / 완료됨)
-                  NOT NULL DEFAULT 'SCHEDULED',
+                                    booking_id    BIGINT PRIMARY KEY AUTO_INCREMENT,                 -- 상담 예약 고유 ID
+                                    user_id       VARCHAR(10) NOT NULL,                              -- 상담받는 학생 ID
+                                    rule_id       VARCHAR(12) NOT NULL,                              -- 연결된 로테이션 규칙 ID
+                                    time_slot_id  VARCHAR(10) NOT NULL,                              -- 상담 시간대
+                                    booking_date  DATE NOT NULL,                                     -- 상담 날짜
+                                    status        ENUM('SCHEDULED','CANCELLED','COMPLETED') NOT NULL DEFAULT 'SCHEDULED', -- 상담 상태
                                     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,                -- 예약 생성 일시
 
-                                    CONSTRAINT fk_cb_user
-                                        FOREIGN KEY (user_id) REFERENCES user_account(user_id)
-                                            ON UPDATE CASCADE ON DELETE CASCADE,
+                                    CONSTRAINT fk_cb_user FOREIGN KEY (user_id)      REFERENCES user_account(user_id)     ON UPDATE CASCADE ON DELETE CASCADE,
+                                    CONSTRAINT fk_cb_slot FOREIGN KEY (time_slot_id) REFERENCES time_slot(time_slot_id)   ON UPDATE CASCADE ON DELETE RESTRICT,
+                                    CONSTRAINT fk_cb_rule FOREIGN KEY (rule_id)      REFERENCES counseling_rotation(rule_id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
-                                    CONSTRAINT fk_cb_slot
-                                        FOREIGN KEY (time_slot_id) REFERENCES time_slot(time_slot_id)
-                                            ON UPDATE CASCADE ON DELETE RESTRICT,
-
-                                    CONSTRAINT fk_cb_rule
-                                        FOREIGN KEY (rule_id) REFERENCES counseling_rotation(rule_id)
-                                            ON UPDATE CASCADE ON DELETE RESTRICT,
-
-                                    UNIQUE KEY ux_cb_user_day_slot (user_id, booking_date, time_slot_id), -- 같은 학생의 중복 예약 방지
-                                    KEY ix_cb_rule_date (rule_id, booking_date)                            -- rule별 예약 조회 인덱스
+                                    UNIQUE KEY ux_cb_user_day_slot (user_id, booking_date, time_slot_id),
+                                    KEY ix_cb_rule_date (rule_id, booking_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
