@@ -17,31 +17,36 @@ export function formatTimetable(rows) {
     const days = ["MON", "TUE", "WED", "THU", "FRI"];
     const timetable = {};
 
-    // 틀 만들기
+    // 기본 구조 세팅
     for (const d of days) {
         timetable[d] = {};
-        for (let p = 1; p <= 12; p++) {
-        timetable[d][p] = [];
-        }
+        for (let p = 1; p <= 12; p++) timetable[d][p] = [];
     }
 
-    // rows 채우기
+    if (!rows || rows.length === 0) {
+        // 데이터가 없으면 기본 구조 그대로 반환
+        return timetable;
+    }
+
     for (const row of rows) {
         const period = periodMap[row.start_time];
-        if (!period) continue;
+        const day = row.day_of_week;
+        
+        if (!period || !day || !timetable[day]) continue;
 
-        timetable[row.day][period] = {
-        course_id: row.course_id,
-        title: row.course_title,
-        room: `${row.building}-${row.room_number}`,
-        professor: row.professor_name,
-        level: row.level_name,
-        class_group: row.class_name,
+        // 공통 데이터
+        const base = {
+        title: row.course_title || "상담",
+        professor: row.professor_name || null,
+        room: row.location || `${row.building}-${row.room_number}` || "-",
+        source: row.source_type || "CLASS",
         event: row.event_status
             ? { status: row.event_status, date: row.event_date }
             : null
         };
+
+        timetable[day][period].push(base);
     }
 
     return timetable;
-    }
+}

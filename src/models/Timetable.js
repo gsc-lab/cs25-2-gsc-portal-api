@@ -7,83 +7,207 @@ export async function getStudentTimetable(user_id, targetDate) {
     const { weekStart, weekEnd } = getWeekRange(targetDate);
 
     const sql = `
-        SELECT DISTINCT vt.*,
-            lc.name AS class_group
+        -- 🔹 정규 수업 + 특강 + 한국어
+        SELECT 
+            vt.day AS day_of_week,
+            ts.start_time,
+            ts.end_time,
+            vt.course_id,
+            vt.course_title,
+            vt.professor_name,
+            CONCAT(vt.building, '-', vt.room_number) AS location,
+            vt.is_special,
+            vt.language_id,
+            'CLASS' AS source_type
         FROM v_timetable vt
         JOIN student_entity se 
-            ON se.user_id = ? 
+            ON se.user_id = ?
             AND se.status = 'enrolled'
-        LEFT JOIN level_class lc 
-            ON se.class_id = lc.class_id
+        LEFT JOIN time_slot ts ON vt.start_time = ts.start_time
         WHERE
             (
-                -- 정규과목: 학년 매칭
                 (vt.is_special = 0 AND vt.grade_id = se.grade_id)
-
-                -- 일본어 특강: 한국인만 (JLPT 레벨 매칭은 나중에 필요시 추가)
-                OR (vt.is_special = 1
-                    AND se.is_international = 'korean'
-                    AND vt.language_id = 'JP')
-
-                -- 한국어 특강: 외국인만
-                OR (vt.is_special = 1
-                    AND se.is_international = 'international'
-                    AND vt.language_id = 'KR')
+                OR (vt.is_special = 1 AND se.is_international = 'korean' AND vt.language_id = 'JP')
+                OR (vt.is_special = 1 AND se.is_international = 'international' AND vt.language_id = 'KR')
             )
+            -- 정규 수업은 학기 범위 내에 있는지 확인
+            AND (? BETWEEN vt.start_date AND vt.end_date)
+            AND vt.event_date IS NULL
+
+        UNION ALL
+
+        -- 🔹 상담 일정 (REGULAR + CUSTOM)
+        SELECT 
+            vhk.day AS day_of_week,
+            ts.start_time,
+            ts.end_time,
+            NULL AS course_id,
+            '상담' AS course_title,
+            up.name AS professor_name,
+            vhk.location AS location,
+            NULL AS is_special,
+            NULL AS language_id,
+            'COUNSELING' AS source_type
+        FROM v_huka_timetable vhk
+        JOIN time_slot ts ON vhk.time_slot_id = ts.time_slot_id
+        JOIN user_account up ON up.user_id = vhk.professor_id
+        JOIN section sec ON vhk.sec_id = sec.sec_id
+        WHERE 
+            vhk.student_id = ?
             AND (
-                -- 정규 수업: 학기 기간 안에만
-                (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
-
-                -- 이벤트: 이번 주차 안에 있는 것만
-                OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
+                -- 🔹 REGULAR 상담: 학기 기간 안에서만 표시
+                (vhk.schedule_type = 'REGULAR'
+                AND ? BETWEEN sec.start_date AND sec.end_date)
+                OR 
+                -- 🔹 CUSTOM 상담: 해당 주차 범위 안에 있을 때 표시
+                (vhk.schedule_type = 'CUSTOM'
+                AND vhk.event_date BETWEEN ? AND ?)
             )
-        ORDER BY FIELD(vt.day,'MON','TUE','WED','THU','FRI'), vt.start_time;
+        ORDER BY FIELD(day_of_week,'MON','TUE','WED','THU','FRI'), start_time;
     `;
 
-    const params = [user_id, targetDate, weekStart, weekEnd];
+    const params = [
+        user_id, targetDate,  // v_timetable
+        user_id, targetDate, weekStart, weekEnd // v_huka_timetable
+    ];
+
     const [rows] = await pool.query(sql, params);
     return formatTimetable(rows);
 }
 
 
-// 교수
 export async function getProfessorTimetable(user_id, targetDate) {
     const { weekStart, weekEnd } = getWeekRange(targetDate);
 
     const sql = `
-    SELECT vt.*
-    FROM v_timetable vt
-    WHERE vt.professor_id = ?
-    AND (
-        (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
-        OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
-    )
-    ORDER BY FIELD(vt.day,'MON','TUE','WED','THU','FRI'), vt.start_time;
+        -- 🔹 교수 담당 정규 수업
+        SELECT 
+            vt.day AS day_of_week,
+            ts.start_time,
+            ts.end_time,
+            vt.course_id,
+            vt.course_title,
+            vt.professor_name,
+            CONCAT(vt.building, '-', vt.room_number) AS location,
+            vt.is_special,
+            vt.language_id,
+            'CLASS' AS source_type
+        FROM v_timetable vt
+        LEFT JOIN time_slot ts ON vt.start_time = ts.start_time
+        WHERE vt.professor_id = ?
+        AND (
+            (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
+            OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
+        )
+
+        UNION ALL
+
+        -- 🔹 교수 상담 일정 (REGULAR + CUSTOM)
+        SELECT 
+            vhk.day AS day_of_week,
+            ts.start_time,
+            ts.end_time,
+            NULL AS course_id,
+            CONCAT('상담(', ua.name, ')') AS course_title,
+            up.name AS professor_name,
+            vhk.location AS location,
+            NULL AS is_special,
+            NULL AS language_id,
+            'COUNSELING' AS source_type
+        FROM v_huka_timetable vhk
+        JOIN time_slot ts ON vhk.time_slot_id = ts.time_slot_id
+        JOIN user_account ua ON ua.user_id = vhk.student_id
+        JOIN user_account up ON up.user_id = vhk.professor_id
+        JOIN section sec ON vhk.sec_id = sec.sec_id
+        WHERE vhk.professor_id = ?
+        AND (
+            -- REGULAR 상담은 학기 기간 내만 표시
+            (vhk.schedule_type = 'REGULAR'
+                AND ? BETWEEN sec.start_date AND sec.end_date)
+            OR
+            -- CUSTOM 상담은 해당 주차 범위 내만 표시
+            (vhk.schedule_type = 'CUSTOM'
+                AND vhk.event_date BETWEEN ? AND ?)
+        )
+
+        ORDER BY FIELD(day_of_week,'MON','TUE','WED','THU','FRI'), start_time;
     `;
 
-    const params = [user_id, targetDate, weekStart, weekEnd];
+    const params = [
+        user_id, targetDate, weekStart, weekEnd,  // v_timetable
+        user_id, targetDate, weekStart, weekEnd   // v_huka_timetable
+    ];
+
     const [rows] = await pool.query(sql, params);
     return formatTimetable(rows);
-};
+}
+
+
 
 // 관리자
 export async function getAdminTimetable(targetDate) {
     const { weekStart, weekEnd } = getWeekRange(targetDate);
 
     const sql = `
-    SELECT *
-    FROM v_timetable vt
-    WHERE (
-        (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
-        OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
-    )
-    ORDER BY FIELD(vt.day,'MON','TUE','WED','THU','FRI'), vt.start_time;
+        -- 🔹 전체 수업
+        SELECT 
+            vt.day AS day_of_week,
+            ts.start_time,
+            ts.end_time,
+            vt.course_id,
+            vt.course_title,
+            vt.professor_name,
+            CONCAT(vt.building, '-', vt.room_number) AS location,
+            vt.is_special,
+            vt.language_id,
+            'CLASS' AS source_type
+        FROM v_timetable vt
+        LEFT JOIN time_slot ts ON vt.start_time = ts.start_time
+        WHERE (
+            (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
+            OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
+        )
+
+        UNION ALL
+
+        -- 🔹 전체 상담 일정 (REGULAR + CUSTOM)
+        SELECT 
+            vhk.day AS day_of_week,
+            ts.start_time,
+            ts.end_time,
+            NULL AS course_id,
+            CONCAT('상담(', ua.name, ')') AS course_title,
+            up.name AS professor_name,
+            vhk.location AS location,
+            NULL AS is_special,
+            NULL AS language_id,
+            'COUNSELING' AS source_type
+        FROM v_huka_timetable vhk
+        JOIN time_slot ts ON vhk.time_slot_id = ts.time_slot_id
+        JOIN user_account ua ON ua.user_id = vhk.student_id
+        JOIN user_account up ON up.user_id = vhk.professor_id
+        JOIN section sec ON vhk.sec_id = sec.sec_id
+        WHERE (
+            (vhk.schedule_type = 'REGULAR'
+                AND ? BETWEEN sec.start_date AND sec.end_date)
+            OR
+            (vhk.schedule_type = 'CUSTOM'
+                AND vhk.event_date BETWEEN ? AND ?)
+        )
+
+        ORDER BY FIELD(day_of_week,'MON','TUE','WED','THU','FRI'), start_time;
     `;
 
-    const params = [targetDate, weekStart, weekEnd];
+    const params = [
+        targetDate, weekStart, weekEnd, // v_timetable
+        targetDate, weekStart, weekEnd  // v_huka_timetable
+    ];
+
     const [rows] = await pool.query(sql, params);
     return formatTimetable(rows);
 }
+
+
 
 // 강의 등록
 export async function postRegisterCourse(sec_id, title, professor_id, target) {
