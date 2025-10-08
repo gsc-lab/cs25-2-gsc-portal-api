@@ -388,8 +388,8 @@ export async function getHukaStudentTimetable() {
     return rows;
 }
 
-// 학생 상담 등록
-export async function postHukaStudentTimetable(student_ids, professor_id, day_of_week, start_time, end_time, location) {
+// 학생 정규 상담 등록
+export async function postHukaStudentTimetable(student_ids, professor_id, sec_id, day_of_week, start_time, end_time, location) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -406,9 +406,9 @@ export async function postHukaStudentTimetable(student_ids, professor_id, day_of
 
             await conn.query(`
                 INSERT INTO huka_schedule 
-                (schedule_id, student_id, professor_id, schedule_type, day_of_week, start_time, end_time, location)
-                VALUES (?, ?, ?, 'REGULAR', ?, ?, ?, ?)
-            `, [newId, student_id, professor_id, day_of_week, start_time, end_time, location]);
+                (schedule_id, student_id, professor_id, sec_id, schedule_type, day_of_week, start_time, end_time, location)
+                VALUES (?, ?, ?, ?, 'REGULAR', ?, ?, ?, ?)
+            `, [newId, student_id, professor_id, sec_id, day_of_week, start_time, end_time, location]);
         }
 
         await conn.commit();
@@ -422,8 +422,8 @@ export async function postHukaStudentTimetable(student_ids, professor_id, day_of
 }
 
 
-// 학생 상담 수정
-export async function postHukaCustomSchedule(student_ids, professor_id, date, start_time, end_time, location) {
+// 수정 상담 등록
+export async function postHukaCustomSchedule(student_ids, professor_id, sec_id, date, start_time, end_time, location) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -440,9 +440,9 @@ export async function postHukaCustomSchedule(student_ids, professor_id, date, st
 
             await conn.query(`
                 INSERT INTO huka_schedule 
-                (schedule_id, student_id, professor_id, schedule_type, date, start_time, end_time, location)
-                VALUES (?, ?, ?, 'CUSTOM', ?, ?, ?, ?)
-            `, [newId, student_id, professor_id, date, start_time, end_time, location]);
+                (schedule_id, student_id, professor_id, sec_id, schedule_type, date, start_time, end_time, location)
+                VALUES (?, ?, ?, ?, 'CUSTOM', ?, ?, ?, ?)
+            `, [newId, student_id, professor_id, sec_id, date, start_time, end_time, location]);
         }
 
         await conn.commit();
@@ -454,6 +454,7 @@ export async function postHukaCustomSchedule(student_ids, professor_id, date, st
         conn.release();
     }
 }
+
 
 
 
