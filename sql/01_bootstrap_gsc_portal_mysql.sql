@@ -213,6 +213,7 @@ CREATE TABLE course_student (
 CREATE TABLE huka_schedule (
     schedule_id VARCHAR(10) PRIMARY KEY,
     student_id VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+    professor_id VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
     schedule_type ENUM('REGULAR', 'CUSTOM') NOT NULL,
     day_of_week ENUM('MON','TUE','WED','THU','FRI') NULL,
     date DATE NULL,
@@ -221,11 +222,18 @@ CREATE TABLE huka_schedule (
     location VARCHAR(50),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
     CONSTRAINT fk_hs_student FOREIGN KEY (student_id)
+        REFERENCES user_account(user_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_hs_professor FOREIGN KEY (professor_id)
         REFERENCES user_account(user_id)
         ON UPDATE CASCADE
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 
 
 

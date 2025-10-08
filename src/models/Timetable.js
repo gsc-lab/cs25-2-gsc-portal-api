@@ -389,7 +389,7 @@ export async function getHukaStudentTimetable() {
 }
 
 // 학생 상담 등록
-export async function postHukaStudentTimetable(student_ids, day_of_week, start_time, end_time, location) {
+export async function postHukaStudentTimetable(student_ids, professor_id, day_of_week, start_time, end_time, location) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -405,13 +405,14 @@ export async function postHukaStudentTimetable(student_ids, day_of_week, start_t
             const newId = generateHukaScheduleId(lastId, i);
 
             await conn.query(`
-                INSERT INTO huka_schedule (schedule_id, student_id, schedule_type, day_of_week, start_time, end_time, location)
-                VALUES (?, ?, 'REGULAR', ?, ?, ?, ?)
-            `, [newId, student_id, day_of_week, start_time, end_time, location]);
+                INSERT INTO huka_schedule 
+                (schedule_id, student_id, professor_id, schedule_type, day_of_week, start_time, end_time, location)
+                VALUES (?, ?, ?, 'REGULAR', ?, ?, ?, ?)
+            `, [newId, student_id, professor_id, day_of_week, start_time, end_time, location]);
         }
 
         await conn.commit();
-        return { message: `${student_ids.length}명의 상담 일정이 등록되었습니다.` };
+        return { message: `${student_ids.length}명의 정규 상담 일정이 등록되었습니다.` };
     } catch (err) {
         await conn.rollback();
         throw err;
@@ -420,12 +421,14 @@ export async function postHukaStudentTimetable(student_ids, day_of_week, start_t
     }
 }
 
+
 // 학생 상담 수정
-export async function postHukaCustomSchedule(student_ids, date, start_time, end_time, location) {
+export async function postHukaCustomSchedule(student_ids, professor_id, date, start_time, end_time, location) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
+        // 마지막 schedule_id 조회
         const [lastRow] = await conn.query(`
             SELECT schedule_id FROM huka_schedule ORDER BY schedule_id DESC LIMIT 1
         `);
@@ -436,9 +439,10 @@ export async function postHukaCustomSchedule(student_ids, date, start_time, end_
             const newId = generateHukaScheduleId(lastId, i);
 
             await conn.query(`
-                INSERT INTO huka_schedule (schedule_id, student_id, schedule_type, date, start_time, end_time, location)
-                VALUES (?, ?, 'CUSTOM', ?, ?, ?, ?)
-            `, [newId, student_id, date, start_time, end_time, location]);
+                INSERT INTO huka_schedule 
+                (schedule_id, student_id, professor_id, schedule_type, date, start_time, end_time, location)
+                VALUES (?, ?, ?, 'CUSTOM', ?, ?, ?, ?)
+            `, [newId, student_id, professor_id, date, start_time, end_time, location]);
         }
 
         await conn.commit();

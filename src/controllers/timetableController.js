@@ -220,12 +220,13 @@ export const getHukaStudentTimetable = async function (req, res) {
 
 export const postHukaStudentTimetable = async function (req, res) {
     try {
+        const professor_id = req.user.user_id
         const { student_ids, day_of_week, start_time, end_time, location } = req.body;
-        if (!student_ids || !day_of_week || !start_time || !end_time || !location) {
-            return res.status(400).json({ error: "student_ids, day_of_week, start_time, end_time, location are required" })
+        if (!student_ids || !professor_id || !day_of_week || !start_time || !end_time || !location) {
+            return res.status(400).json({ error: "student_ids, professor_id, day_of_week, start_time, end_time, location are required" })
         }
 
-        const result = await classroomService.postHukaStudentTimetable(student_ids, day_of_week, start_time, end_time, location);
+        const result = await classroomService.postHukaStudentTimetable(student_ids, professor_id, day_of_week, start_time, end_time, location);
         return res.status(200).json({ message: "등록 완료", result })
     } catch (err) {
         console.error(err);
@@ -235,12 +236,13 @@ export const postHukaStudentTimetable = async function (req, res) {
 
 export const postHukaCustomSchedule = async function (req, res) {
     try {
+        const professor_id = req.user.user_id
         const { student_ids, date, start_time, end_time, location } = req.body;
-        if (!student_ids || !date || !start_time || !end_time || !location) {
+        if (!student_ids || !professor_id || !date || !start_time || !end_time || !location) {
             return res.status(400).json({ error: "student_ids, date, start_time, end_time, location are required" })
         }
 
-        const result = await classroomService.postHukaCustomSchedule(student_ids, date, start_time, end_time, location);
+        const result = await classroomService.postHukaCustomSchedule(student_ids, professor_id,date, start_time, end_time, location);
         return res.status(200).json({ message: "등록 완료", result })
     } catch (err) {
         console.error(err);
