@@ -222,21 +222,21 @@ export const getHukaStudentTimetable = async function (req, res) {
 export const postHukaStudentTimetable = async function (req, res) {
     try {
         const professor_id = req.user.user_id;
-        const { student_ids, day_of_week, start_time, end_time, location, sec_id } = req.body;
+        const { student_ids, sec_id, day_of_week, start_slot, end_slot, location} = req.body;
 
-        if (!student_ids || !professor_id || !day_of_week || !start_time || !end_time || !location || !sec_id) {
+        if (!student_ids || !professor_id || !sec_id || !day_of_week || !start_slot || !end_slot || !location) {
             return res.status(400).json({
-                error: "student_ids, professor_id, day_of_week, start_time, end_time, location, sec_id are required"
+                error: "student_ids, professor_id, sec_id, day_of_week, start_slot, end_slot and location are required"
             });
         }
 
         const result = await classroomService.postHukaStudentTimetable(
-            student_ids,
-            professor_id,
-            sec_id,
-            day_of_week,
-            start_time,
-            end_time,
+            student_ids, 
+            professor_id, 
+            sec_id, 
+            day_of_week, 
+            start_slot, 
+            end_slot, 
             location
         );
 
@@ -251,21 +251,21 @@ export const postHukaStudentTimetable = async function (req, res) {
 export const postHukaCustomSchedule = async function (req, res) {
     try {
         const professor_id = req.user.user_id;
-        const { student_ids, date, start_time, end_time, location, sec_id } = req.body;
+        const { student_ids, sec_id, date, start_slot, end_slot, location } = req.body;
 
-        if (!student_ids || !professor_id || !date || !start_time || !end_time || !location || !sec_id) {
+        if (!student_ids || !professor_id || !date || !start_slot || !end_slot || !location) {
             return res.status(400).json({
                 error: "student_ids, professor_id, date, start_time, end_time, location, sec_id are required"
             });
         }
 
         const result = await classroomService.postHukaCustomSchedule(
-            student_ids,
-            professor_id,
-            sec_id,
-            date,
-            start_time,
-            end_time,
+            student_ids, 
+            professor_id, 
+            sec_id, 
+            date, 
+            start_slot, 
+            end_slot, 
             location
         );
 

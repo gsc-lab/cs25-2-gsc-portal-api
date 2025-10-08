@@ -348,9 +348,6 @@ export async function postAssignStudents(classId, student_ids) {
     }
 }
 
-
-
-
 // 휴보강 이력
 export async function getEvents() {
     let sql = `
@@ -388,8 +385,8 @@ export async function getHukaStudentTimetable() {
     return rows;
 }
 
-// 학생 정규 상담 등록
-export async function postHukaStudentTimetable(student_ids, professor_id, sec_id, day_of_week, start_time, end_time, location) {
+// 학생 정규 상담 등록 (교시 범위 포함)
+export async function postHukaStudentTimetable(student_ids, professor_id, sec_id, day_of_week, start_slot, end_slot, location) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -400,15 +397,19 @@ export async function postHukaStudentTimetable(student_ids, professor_id, sec_id
         `);
         const lastId = lastRow.length ? lastRow[0].schedule_id : null;
 
-        for (let i = 0; i < student_ids.length; i++) {
-            const student_id = student_ids[i];
-            const newId = generateHukaScheduleId(lastId, i);
+        let offset = 0;
 
-            await conn.query(`
-                INSERT INTO huka_schedule 
-                (schedule_id, student_id, professor_id, sec_id, schedule_type, day_of_week, start_time, end_time, location)
-                VALUES (?, ?, ?, ?, 'REGULAR', ?, ?, ?, ?)
-            `, [newId, student_id, professor_id, sec_id, day_of_week, start_time, end_time, location]);
+        for (const student_id of student_ids) {
+            // ① 교시 범위 반복 (예: 8~10)
+            for (let slot = start_slot; slot <= end_slot; slot++) {
+                const newId = generateHukaScheduleId(lastId, offset++);
+
+                await conn.query(`
+                    INSERT INTO huka_schedule 
+                    (schedule_id, student_id, professor_id, sec_id, schedule_type, day_of_week, time_slot_id, location)
+                    VALUES (?, ?, ?, ?, 'REGULAR', ?, ?, ?)
+                `, [newId, student_id, professor_id, sec_id, day_of_week, slot, location]);
+            }
         }
 
         await conn.commit();
@@ -422,8 +423,8 @@ export async function postHukaStudentTimetable(student_ids, professor_id, sec_id
 }
 
 
-// 수정 상담 등록
-export async function postHukaCustomSchedule(student_ids, professor_id, sec_id, date, start_time, end_time, location) {
+// 수정(일회성) 상담 등록 (교시 범위 포함)
+export async function postHukaCustomSchedule(student_ids, professor_id, sec_id, date, start_slot, end_slot, location) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -434,19 +435,23 @@ export async function postHukaCustomSchedule(student_ids, professor_id, sec_id, 
         `);
         const lastId = lastRow.length ? lastRow[0].schedule_id : null;
 
-        for (let i = 0; i < student_ids.length; i++) {
-            const student_id = student_ids[i];
-            const newId = generateHukaScheduleId(lastId, i);
+        let offset = 0;
 
-            await conn.query(`
-                INSERT INTO huka_schedule 
-                (schedule_id, student_id, professor_id, sec_id, schedule_type, date, start_time, end_time, location)
-                VALUES (?, ?, ?, ?, 'CUSTOM', ?, ?, ?, ?)
-            `, [newId, student_id, professor_id, sec_id, date, start_time, end_time, location]);
+        for (const student_id of student_ids) {
+            // ② 교시 범위 반복 (예: 8~9)
+            for (let slot = start_slot; slot <= end_slot; slot++) {
+                const newId = generateHukaScheduleId(lastId, offset++);
+
+                await conn.query(`
+                    INSERT INTO huka_schedule 
+                    (schedule_id, student_id, professor_id, sec_id, schedule_type, date, time_slot_id, location)
+                    VALUES (?, ?, ?, ?, 'CUSTOM', ?, ?, ?)
+                `, [newId, student_id, professor_id, sec_id, date, slot, location]);
+            }
         }
 
         await conn.commit();
-        return { message: `${student_ids.length}명의 일회성 상담 일정이 등록되었습니다.` };
+        return { message: `${student_ids.length}명의 상담 일정이 수정되었습니다.` };
     } catch (err) {
         await conn.rollback();
         throw err;
@@ -454,6 +459,7 @@ export async function postHukaCustomSchedule(student_ids, professor_id, sec_id, 
         conn.release();
     }
 }
+
 
 
 

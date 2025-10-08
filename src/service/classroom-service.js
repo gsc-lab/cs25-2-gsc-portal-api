@@ -61,10 +61,10 @@ export const getHukaStudentTimetable = async function() {
     return await timetableModel.getHukaStudentTimetable();
 }
 
-export const postHukaStudentTimetable = async function (student_ids, professor_id, sec_id, day_of_week, start_time, end_time, location) {
-    return await timetableModel.postHukaStudentTimetable(student_ids, professor_id, sec_id, day_of_week, start_time, end_time, location);
+export const postHukaStudentTimetable = async function (student_ids, professor_id, sec_id, day_of_week, start_slot, end_slot, location) {
+    return await timetableModel.postHukaStudentTimetable(student_ids, professor_id, sec_id, day_of_week, start_slot, end_slot, location);
 }
 
-export const postHukaCustomSchedule = async function (student_ids, professor_id, sec_id, date, start_time, end_time, location) {
-    return await timetableModel.postHukaCustomSchedule(student_ids, professor_id, sec_id, date, start_time, end_time, location);
+export const postHukaCustomSchedule = async function (student_ids, professor_id, sec_id, date, start_slot, end_slot, location) {
+    return await timetableModel.postHukaCustomSchedule(student_ids, professor_id, sec_id, date, start_slot, end_slot, location);
 }
