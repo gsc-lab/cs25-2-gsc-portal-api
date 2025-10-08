@@ -1869,7 +1869,7 @@ components:
         properties:
           grade_id:
             type: string
-            example: "G1"
+            example: "1"
           classroom_name:
             type: string
             example: "창조관-304"
@@ -1889,7 +1889,7 @@ components:
             type: array
             items:
               type: string
-            example: [ "G1 Student 01", "G1 Student 02" ]
+            example: [ "김하늘", "김수지", "이바다", "나재현" ]
 
     GenerateRostersRequest:
         type: object
@@ -2080,7 +2080,7 @@ components:
             properties:
               grade_id:
                 type: string
-                example: "G1"
+                example: "1"
               level_id:
                 type: string
                 example: "N1"
@@ -2384,22 +2384,6 @@ components:
           type: string
           format: time
           example: "11:50:00"
-    DashboardCleaning:
-      type: object
-      properties:
-        grade_id:
-          type: string
-          example: G1
-        classroom_name:
-          type: string
-          example: 청문관-405
-        members:
-          type: array
-          items:
-            type: string
-          example:
-            - G1 Student 01
-            - G1 Student 02
     DashboardResponse:
       type: object
       properties:
@@ -2414,10 +2398,11 @@ components:
         cleaning_duty:
           type: array
           items:
-            $ref: "#/components/schemas/DashboardCleaning"
+            $ref: "#/components/schemas/CleaningRosterResponse"
         weekend_poll:
-          $ref: "#/components/schemas/WeekendPollStatus"
-          nullable: true
+          type: array
+          items:
+            $ref: "#/components/schemas/WeekendPollStatus"
       example:
         schedule:
           - course_title: 기초 공학
@@ -2429,7 +2414,7 @@ components:
             title: "[G1] 2차 과제 안내"
             created_at: "2025-09-15T10:30:00Z"
         cleaning_duty:
-          - grade_id: G1
+          - grade_id: 1
             classroom_name: 청문관-405
             members:
               - 학생1
