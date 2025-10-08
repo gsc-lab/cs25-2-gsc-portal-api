@@ -2,6 +2,7 @@ CREATE OR REPLACE VIEW v_timetable AS
 SELECT
     c.course_id,
     c.title            AS course_title,
+    cs.sec_id,
     sec.year           AS year,
     sec.semester       AS semester,
     sec.start_date     AS start_date,

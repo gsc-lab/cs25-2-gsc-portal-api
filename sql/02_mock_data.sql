@@ -180,7 +180,7 @@ INSERT INTO notice_target (target_id, notice_id, grade_id, language_id) VALUES
 INSERT INTO course_event (event_id, schedule_id, event_type, event_date) VALUES
 ('E001','SCH1','CANCEL','2025-04-15'),
 ('E002','SCH3','MAKEUP','2025-05-10'),
-('E003','SCH6','CANCEL','2025-04-20'),
+('E003','SCH6','CANCEL','2025-04-21'),
 ('E004','SCH9','MAKEUP','2025-04-25');
 
 -- ===== Reservations & Polls & Cleaning =====
