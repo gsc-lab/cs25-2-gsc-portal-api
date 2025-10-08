@@ -1777,29 +1777,52 @@ paths:
       summary: 전체 시간표 조회 (주간)
       description: |
         관리자가 전체 학과의 주간 시간표를 조회합니다.  
-        - 1~3학년, 특강, 한국어, 상담(후카) 일정이 모두 포함됩니다.  
-        - 주간 범위는 `week_start`, `week_end` 파라미터로 지정합니다.
+        - **1~3학년**, **특강**, **한국어**, **상담(후카)** 일정이 모두 포함됩니다.  
+        - 주간 범위는 `week_start`, `week_end` 파라미터로 지정합니다.  
+        - 휴강(`CANCEL`) 및 보강(`MAKEUP`) 이벤트도 반영됩니다.
       tags: [Timetable]
       parameters:
         - in: query
           name: week_start
           required: true
-          schema: { type: string, format: date, example: "2025-10-20" }
-          description: 주간 시작일 (월요일)
+          schema:
+            type: string
+            format: date
+            example: "2025-10-20"
+          description: 주간 시작일 (월요일 기준)
         - in: query
           name: week_end
           required: true
-          schema: { type: string, format: date, example: "2025-10-26" }
-          description: 주간 종료일 (일요일)
+          schema:
+            type: string
+            format: date
+            example: "2025-10-26"
+          description: 주간 종료일 (일요일 기준)
       responses:
         "200":
-          description: 전체 주간 시간표 데이터 (수업 + 상담 포함)
+          description: |
+            학년별 주간 시간표 데이터  
+            (정규 수업, 특강, 한국어, 상담, 휴강/보강 포함)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TimetableWeeklyResponse"
+                type: object
+                properties:
+                  "1학년":
+                    $ref: "#/components/schemas/TimetableWeeklyResponse"
+                  "2학년":
+                    $ref: "#/components/schemas/TimetableWeeklyResponse"
+                  "3학년":
+                    $ref: "#/components/schemas/TimetableWeeklyResponse"
+                  "특강":
+                    $ref: "#/components/schemas/TimetableWeeklyResponse"
+                  "한국어":
+                    $ref: "#/components/schemas/TimetableWeeklyResponse"
+        "400":
+          description: 잘못된 요청 (파라미터 누락 또는 형식 오류)
         "500":
           description: 서버 내부 오류
+
 
 
   /timetables/classes/{class_id}/assign:
