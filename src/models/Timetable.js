@@ -366,28 +366,6 @@ export async function getEvents() {
     return rows
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // 후까 교수님
 // 학생 리스트
 export async function getHukaStudentTimetable() {
@@ -410,6 +388,85 @@ export async function getHukaStudentTimetable() {
     return rows;
 }
 
+// 학생 상담 등록
+export async function postHukaStudentTimetable(student_ids, day_of_week, start_time, end_time, location) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // 마지막 schedule_id 조회
+        const [lastRow] = await conn.query(`
+            SELECT schedule_id FROM huka_schedule ORDER BY schedule_id DESC LIMIT 1
+        `);
+        const lastId = lastRow.length ? lastRow[0].schedule_id : null;
+
+        for (let i = 0; i < student_ids.length; i++) {
+            const student_id = student_ids[i];
+            const newId = generateHukaScheduleId(lastId, i);
+
+            await conn.query(`
+                INSERT INTO huka_schedule (schedule_id, student_id, schedule_type, day_of_week, start_time, end_time, location)
+                VALUES (?, ?, 'REGULAR', ?, ?, ?, ?)
+            `, [newId, student_id, day_of_week, start_time, end_time, location]);
+        }
+
+        await conn.commit();
+        return { message: `${student_ids.length}명의 상담 일정이 등록되었습니다.` };
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+}
+
+// 학생 상담 수정
+export async function postHukaCustomSchedule(student_ids, date, start_time, end_time, location) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const [lastRow] = await conn.query(`
+            SELECT schedule_id FROM huka_schedule ORDER BY schedule_id DESC LIMIT 1
+        `);
+        const lastId = lastRow.length ? lastRow[0].schedule_id : null;
+
+        for (let i = 0; i < student_ids.length; i++) {
+            const student_id = student_ids[i];
+            const newId = generateHukaScheduleId(lastId, i);
+
+            await conn.query(`
+                INSERT INTO huka_schedule (schedule_id, student_id, schedule_type, date, start_time, end_time, location)
+                VALUES (?, ?, 'CUSTOM', ?, ?, ?, ?)
+            `, [newId, student_id, date, start_time, end_time, location]);
+        }
+
+        await conn.commit();
+        return { message: `${student_ids.length}명의 일회성 상담 일정이 등록되었습니다.` };
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // helper 함수
 // Course ID 생성
 function generateCourseId(lastId) {
@@ -417,7 +474,6 @@ function generateCourseId(lastId) {
     const num = parseInt(lastId.substring(1));
     return "C" + String(num + 1).padStart(3, "0");
 }
-
 // Target ID 생성
 function generateTargetId(lastId) {
     if (!lastId) return "T001";
@@ -436,4 +492,9 @@ function generateEventId(lastId) {
     const num = parseInt(lastId.substring(1)) + 1;
     return "E" + String(num).padStart(3, "0");
 }
-
+// 상담 일정 ID 생성
+export function generateHukaScheduleId(lastId, offset = 0) {
+    if (!lastId) return "HK001"; // 첫 번째 일정
+    const num = parseInt(lastId.substring(2)); // "HK" 제외하고 숫자만 추출
+    return "HK" + String(num + 1 + offset).padStart(3, "0");
+}

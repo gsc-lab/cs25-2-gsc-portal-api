@@ -19,9 +19,9 @@ router.post("/registerHoliday", authWithRole("professor"), timetableController.p
 router.post("/classes/:classId/assign", authWithRole("professor"), timetableController.postAssignStudents);
 // 휴보강 이력
 router.get("/events", authWithRole("professor"), timetableController.getEvents)
-
-
 // 후까 교수님
 router.get("/huka/student", authWithRole("professor"), timetableController.getHukaStudentTimetable);
+router.post("/huka/student", authWithRole("professor"), timetableController.postHukaStudentTimetable);
+router.post("/huka/student/custom", authWithRole("professor"), timetableController.postHukaCustomSchedule)
 
 export default router;

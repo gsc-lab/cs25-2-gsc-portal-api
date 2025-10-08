@@ -194,7 +194,6 @@ export const postAssignStudents = async function (req, res) {
     }
 }
 
-
 // 휴보강 이력
 export const getEvents = async function (req, res) {
     try {
@@ -208,13 +207,6 @@ export const getEvents = async function (req, res) {
     }
 }
 
-
-
-
-
-
-
-
 // 후까 교수님
 export const getHukaStudentTimetable = async function (req, res) {
     try {
@@ -225,3 +217,35 @@ export const getHukaStudentTimetable = async function (req, res) {
         res.status(500).json({ error: "Internal Server Error" });
     }
 }
+
+export const postHukaStudentTimetable = async function (req, res) {
+    try {
+        const { student_ids, day_of_week, start_time, end_time, location } = req.body;
+        if (!student_ids || !day_of_week || !start_time || !end_time || !location) {
+            return res.status(400).json({ error: "student_ids, day_of_week, start_time, end_time, location are required" })
+        }
+
+        const result = await classroomService.postHukaStudentTimetable(student_ids, day_of_week, start_time, end_time, location);
+        return res.status(200).json({ message: "등록 완료", result })
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+export const postHukaCustomSchedule = async function (req, res) {
+    try {
+        const { student_ids, date, start_time, end_time, location } = req.body;
+        if (!student_ids || !date || !start_time || !end_time || !location) {
+            return res.status(400).json({ error: "student_ids, date, start_time, end_time, location are required" })
+        }
+
+        const result = await classroomService.postHukaCustomSchedule(student_ids, date, start_time, end_time, location);
+        return res.status(200).json({ message: "등록 완료", result })
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+

@@ -50,15 +50,21 @@ export const postAssignStudents = async function (classId, student_ids) {
     return await timetableModel.postAssignStudents(classId, student_ids);
 }
 
-
 // 휴보강 이력
 export const getEvents = async function () {
     return await timetableModel.getEvents()
 }
 
 
-
 // 후까 교수님
 export const getHukaStudentTimetable = async function() {
     return await timetableModel.getHukaStudentTimetable();
+}
+
+export const postHukaStudentTimetable = async function (student_ids, day_of_week, start_time, end_time, location) {
+    return await timetableModel.postHukaStudentTimetable(student_ids, day_of_week, start_time, end_time, location);
+}
+
+export const postHukaCustomSchedule = async function (student_ids, date, start_time, end_time, location) {
+    return await timetableModel.postHukaCustomSchedule(student_ids, date, start_time, end_time, location);
 }
