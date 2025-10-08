@@ -1,13 +1,13 @@
 import pool from "../db/connection.js";
 import { getWeekRange } from "../utils/timetableDateCalculator.js";
-import { formatTimetable } from "../utils/timetableFormatter.js";
+import { formatTimetable, formatTimetableForAdmin } from "../utils/timetableFormatter.js";
 
 // 시간표 조회 (학생, 교수, 관리자)
 export async function getStudentTimetable(user_id, targetDate) {
     const { weekStart, weekEnd } = getWeekRange(targetDate);
 
     const sql = `
-        -- 🔹 정규 수업 + 특강 + 한국어
+        -- 🔹 정규 수업 + 특강 + 한국어 + 휴보강 포함
         SELECT 
             vt.day AS day_of_week,
             ts.start_time,
@@ -18,21 +18,24 @@ export async function getStudentTimetable(user_id, targetDate) {
             CONCAT(vt.building, '-', vt.room_number) AS location,
             vt.is_special,
             vt.language_id,
+            vt.event_status,
+            vt.event_date,
             'CLASS' AS source_type
         FROM v_timetable vt
         JOIN student_entity se 
             ON se.user_id = ?
             AND se.status = 'enrolled'
-        LEFT JOIN time_slot ts ON vt.start_time = ts.start_time
+        JOIN time_slot ts ON vt.start_time = ts.start_time
         WHERE
             (
                 (vt.is_special = 0 AND vt.grade_id = se.grade_id)
                 OR (vt.is_special = 1 AND se.is_international = 'korean' AND vt.language_id = 'JP')
                 OR (vt.is_special = 1 AND se.is_international = 'international' AND vt.language_id = 'KR')
             )
-            -- 정규 수업은 학기 범위 내에 있는지 확인
-            AND (? BETWEEN vt.start_date AND vt.end_date)
-            AND vt.event_date IS NULL
+            AND (
+                (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
+                OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
+            )
 
         UNION ALL
 
@@ -47,6 +50,8 @@ export async function getStudentTimetable(user_id, targetDate) {
             vhk.location AS location,
             NULL AS is_special,
             NULL AS language_id,
+            NULL AS event_status,
+            NULL AS event_date,
             'COUNSELING' AS source_type
         FROM v_huka_timetable vhk
         JOIN time_slot ts ON vhk.time_slot_id = ts.time_slot_id
@@ -55,20 +60,19 @@ export async function getStudentTimetable(user_id, targetDate) {
         WHERE 
             vhk.student_id = ?
             AND (
-                -- 🔹 REGULAR 상담: 학기 기간 안에서만 표시
                 (vhk.schedule_type = 'REGULAR'
-                AND ? BETWEEN sec.start_date AND sec.end_date)
+                    AND ? BETWEEN sec.start_date AND sec.end_date)
                 OR 
-                -- 🔹 CUSTOM 상담: 해당 주차 범위 안에 있을 때 표시
                 (vhk.schedule_type = 'CUSTOM'
-                AND vhk.event_date BETWEEN ? AND ?)
+                    AND vhk.event_date BETWEEN ? AND ?)
             )
+
         ORDER BY FIELD(day_of_week,'MON','TUE','WED','THU','FRI'), start_time;
     `;
 
     const params = [
-        user_id, targetDate,  // v_timetable
-        user_id, targetDate, weekStart, weekEnd // v_huka_timetable
+        user_id, targetDate, weekStart, weekEnd, // v_timetable
+        user_id, targetDate, weekStart, weekEnd  // v_huka_timetable
     ];
 
     const [rows] = await pool.query(sql, params);
@@ -76,11 +80,12 @@ export async function getStudentTimetable(user_id, targetDate) {
 }
 
 
+// 교수
 export async function getProfessorTimetable(user_id, targetDate) {
     const { weekStart, weekEnd } = getWeekRange(targetDate);
 
     const sql = `
-        -- 🔹 교수 담당 정규 수업
+        -- 🔹 교수 담당 정규 수업 + 휴보강 포함
         SELECT 
             vt.day AS day_of_week,
             ts.start_time,
@@ -91,6 +96,8 @@ export async function getProfessorTimetable(user_id, targetDate) {
             CONCAT(vt.building, '-', vt.room_number) AS location,
             vt.is_special,
             vt.language_id,
+            vt.event_status,
+            vt.event_date,
             'CLASS' AS source_type
         FROM v_timetable vt
         LEFT JOIN time_slot ts ON vt.start_time = ts.start_time
@@ -113,6 +120,8 @@ export async function getProfessorTimetable(user_id, targetDate) {
             vhk.location AS location,
             NULL AS is_special,
             NULL AS language_id,
+            NULL AS event_status,
+            NULL AS event_date,
             'COUNSELING' AS source_type
         FROM v_huka_timetable vhk
         JOIN time_slot ts ON vhk.time_slot_id = ts.time_slot_id
@@ -134,8 +143,8 @@ export async function getProfessorTimetable(user_id, targetDate) {
     `;
 
     const params = [
-        user_id, targetDate, weekStart, weekEnd,  // v_timetable
-        user_id, targetDate, weekStart, weekEnd   // v_huka_timetable
+        user_id, targetDate, weekStart, weekEnd,   // 수업
+        user_id, targetDate, weekStart, weekEnd    // 상담
     ];
 
     const [rows] = await pool.query(sql, params);
@@ -144,13 +153,15 @@ export async function getProfessorTimetable(user_id, targetDate) {
 
 
 
+
 // 관리자
 export async function getAdminTimetable(targetDate) {
     const { weekStart, weekEnd } = getWeekRange(targetDate);
 
     const sql = `
-        -- 🔹 전체 수업
+        -- 🔹 전체 수업 + 휴보강 포함
         SELECT 
+            vt.grade_name,
             vt.day AS day_of_week,
             ts.start_time,
             ts.end_time,
@@ -160,6 +171,8 @@ export async function getAdminTimetable(targetDate) {
             CONCAT(vt.building, '-', vt.room_number) AS location,
             vt.is_special,
             vt.language_id,
+            vt.event_status,
+            vt.event_date,
             'CLASS' AS source_type
         FROM v_timetable vt
         LEFT JOIN time_slot ts ON vt.start_time = ts.start_time
@@ -172,6 +185,7 @@ export async function getAdminTimetable(targetDate) {
 
         -- 🔹 전체 상담 일정 (REGULAR + CUSTOM)
         SELECT 
+            NULL AS grade_name,
             vhk.day AS day_of_week,
             ts.start_time,
             ts.end_time,
@@ -181,6 +195,8 @@ export async function getAdminTimetable(targetDate) {
             vhk.location AS location,
             NULL AS is_special,
             NULL AS language_id,
+            NULL AS event_status,
+            NULL AS event_date,
             'COUNSELING' AS source_type
         FROM v_huka_timetable vhk
         JOIN time_slot ts ON vhk.time_slot_id = ts.time_slot_id
@@ -199,13 +215,14 @@ export async function getAdminTimetable(targetDate) {
     `;
 
     const params = [
-        targetDate, weekStart, weekEnd, // v_timetable
-        targetDate, weekStart, weekEnd  // v_huka_timetable
+        targetDate, weekStart, weekEnd,    // 수업
+        targetDate, weekStart, weekEnd     // 상담
     ];
 
     const [rows] = await pool.query(sql, params);
-    return formatTimetable(rows);
+    return formatTimetableForAdmin(rows);
 }
+
 
 
 
