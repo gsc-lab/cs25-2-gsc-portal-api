@@ -29,7 +29,7 @@ router.get('/levels/korean', authWithRole("professor"), subjectController.getKor
 router.get("/courses/special/classess", authWithRole("professor"), subjectController.getSpecialSchedule)
 
 // 특강 학생 조회
-router.get("/courses/:courseId/students", authWithRole("professor"), subjectController.getCourseStudents);
+router.get("/courses/:course_id/students", authWithRole("professor"), subjectController.getCourseStudents);
 
 // 휴강 조회
 router.get('/holidays', authWithRole("professor"), subjectController.getHolidays);

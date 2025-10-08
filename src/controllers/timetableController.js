@@ -176,6 +176,24 @@ export const postRegisterHoliday = async function (req, res) {
 };
 
 // 분반 등록
+export const postAssignStudents = async function (req, res) {
+    try {
+        const { classId } = req.params;
+        const { student_ids } = req.body;
+
+        if (!classId || !student_ids ) {
+            return res.status(400).json({error: "classId and student_ids are required" });
+        }
+
+        const result = await classroomService.postAssignStudents(classId, student_ids)
+
+        return res.status(200).json({ message: "등록 완료", result});
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
 
 // 휴보강 이력
 export const getEvents = async function (req, res) {

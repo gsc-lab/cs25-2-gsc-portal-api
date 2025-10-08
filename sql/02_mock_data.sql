@@ -141,6 +141,11 @@ INSERT INTO course_student (user_id, course_id) VALUES
 ('2423006','C004'),
 ('2423007','C004'),
 ('2725001','C004');
+('2423004', 'C007', NULL),
+('2423005', 'C007', NULL),
+('2524001', 'C007', NULL),
+('2423006', 'C008', NULL),
+('2725001', 'C008', NULL);
 
 -- ===== Notice & Files & Events =====
 INSERT INTO file_assets (file_id, file_name, file_url, size_type, file_type) VALUES

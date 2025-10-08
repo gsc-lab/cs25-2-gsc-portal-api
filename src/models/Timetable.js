@@ -324,6 +324,32 @@ export async function postRegisterHoliday(
 }
 
 // 분반 등록
+export async function postAssignStudents(classId, student_ids) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        for (const userId of student_ids) {
+        await conn.query(
+            `UPDATE course_student
+            SET class_id = ?
+            WHERE user_id = ?;`,
+            [classId, userId]
+        );
+        }
+
+        await conn.commit();
+        return { message: `${student_ids.length}명의 학생이 ${classId} 반에 배정되었습니다.` };
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+}
+
+
+
 
 // 휴보강 이력
 export async function getEvents() {

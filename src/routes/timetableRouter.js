@@ -14,9 +14,9 @@ router.post("/registerCourses", authWithRole("professor"), timetableController.p
 // 시간표 등록
 router.post("/registerTimetable", authWithRole("admin"), timetableController.postRegisterTimetable);
 // 휴보강 등록
-router.post("/registerHoliday", authWithRole("professor"), timetableController.postRegisterHoliday)
+router.post("/registerHoliday", authWithRole("professor"), timetableController.postRegisterHoliday);
 // 분반 등록
-
+router.post("/classes/:classId/assign", authWithRole("professor"), timetableController.postAssignStudents);
 // 휴보강 이력
 router.get("/events", authWithRole("professor"), timetableController.getEvents)
 

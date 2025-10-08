@@ -46,6 +46,10 @@ export const postRegisterHoliday = async function (
 };
 
 // 분반 등록
+export const postAssignStudents = async function (classId, student_ids) {
+    return await timetableModel.postAssignStudents(classId, student_ids);
+}
+
 
 // 휴보강 이력
 export const getEvents = async function () {
