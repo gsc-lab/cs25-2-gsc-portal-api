@@ -1832,7 +1832,6 @@ paths:
         "500":
           description: 서버 내부 오류 (DB 트랜잭션 실패 등)
 
-
   /timetables/huka/student:
     get:
       summary: 후까 교수님 담당 학생 정보 조회
@@ -1882,6 +1881,95 @@ paths:
                     - user_id: "2423005"
                       name: "국내3-JP-A(매칭없음)"
                       grade_id: "3"
+    post:
+      summary: 후까 상담 정규 일정 등록
+      description: 교수님이 지정 요일(매주 반복)로 학생 상담 일정을 등록합니다.
+      tags: [Timetable]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                student_ids:
+                  type: array
+                  items:
+                    type: string
+                  example: ["2423004", "2423005"]
+                day_of_week:
+                  type: string
+                  example: "MON"
+                start_time:
+                  type: string
+                  example: "13:00"
+                end_time:
+                  type: string
+                  example: "13:30"
+                location:
+                  type: string
+                  example: "실습동 301호"
+      responses:
+        "200":
+          description: 등록 완료
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: "2명의 정규 상담 일정이 등록되었습니다."
+        "400":
+          description: 잘못된 요청
+        "500":
+          description: 서버 내부 오류
+
+  /timetables/huka/student/custom:
+    post:
+      summary: 수정 상담 등록
+      description: 기존 정규 상담을 일시적으로 수정합니다. 지정한 날짜에 대해 정규 요일 대신 커스텀 일정을 우선 적용합니다.
+      tags: [Timetable]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                student_ids:
+                  type: array
+                  items:
+                    type: string
+                  example: ["2423004", "2423005"]
+                date:
+                  type: string
+                  format: date
+                  example: "2025-10-15"
+                start_time:
+                  type: string
+                  example: "14:00"
+                end_time:
+                  type: string
+                  example: "14:30"
+                location:
+                  type: string
+                  example: "상담실 203호"
+      responses:
+        "200":
+          description: 등록 완료
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: "2명의 일회성 상담 일정이 등록되었습니다."
+        "400":
+          description: 잘못된 요청
+        "500":
+          description: 서버 내부 오류
 
   /timetables/events:
     get:
