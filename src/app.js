@@ -9,6 +9,7 @@ import authRouter from "./routes/authRouter.js";
 import noticeRouter from "./routes/noticeRouter.js";
 import fileRouter from "./routes/fileRouter.js";
 import cleaningRouter from "./routes/cleaningRouter.js";
+import classroomRouter from "./routes/classroomRouter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,5 +30,6 @@ app.use("/auth", authRouter);
 app.use("/notices", noticeRouter);
 app.use("/files", fileRouter);
 app.use("/cleaning-rosters", cleaningRouter);
+app.use("/classrooms", classroomRouter)
 
 export default app;
