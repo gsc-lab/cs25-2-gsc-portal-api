@@ -43,6 +43,7 @@ export function formatTimetable(rows) {
         if (row.event_status === "CANCEL") {
             timetable[day][period].push({
                 title: "휴강",
+                course_id: row.course_id,
                 professor: row.professor_name || "-",
                 room: row.location || `${row.building}-${row.room_number}` || "-",
                 source: "EVENT",
@@ -55,6 +56,7 @@ export function formatTimetable(rows) {
         if (row.event_status === "MAKEUP") {
             timetable[day][period].push({
                 title: `${row.course_title || "보강"} (보강)`,
+                course_id: row.course_id,
                 professor: row.professor_name || "-",
                 room: row.location || `${row.building}-${row.room_number}` || "-",
                 source: row.source_type || "CLASS",
@@ -66,6 +68,7 @@ export function formatTimetable(rows) {
         // 일반 수업 / 상담
         timetable[day][period].push({
             title: row.course_title || "상담",
+            course_id: row.course_id,
             professor: row.professor_name || null,
             room: row.location || `${row.building}-${row.room_number}` || "-",
             source: row.source_type || "CLASS",
@@ -80,7 +83,7 @@ export function formatTimetable(rows) {
 
 
 export function formatTimetableForAdmin(rows) {
-    const grades = ["1학년", "2학년", "3학년", "특강", "한국어"];
+    const grades = ["1", "2", "3", "special", "korean"];
     const days = ["MON", "TUE", "WED", "THU", "FRI"];
 
     // 기본 구조
@@ -107,21 +110,20 @@ export function formatTimetableForAdmin(rows) {
             day = map[eventDay];
         }
 
-        if (!day || !timetable["1학년"][day]) continue;
-
         // 학년 구분
-        let group = "특강";
-        if (row.language_id === "KR") group = "한국어";
+        let group = "special";
+        if (row.language_id === "KR") group = "korean";
         else if (row.is_special === 0) {
-            if (row.grade_name === "1학년") group = "1학년";
-            else if (row.grade_name === "2학년") group = "2학년";
-            else if (row.grade_name === "3학년") group = "3학년";
+            if (row.grade_name === "1학년") group = "1";
+            else if (row.grade_name === "2학년") group = "2";
+            else if (row.grade_name === "3학년") group = "3";
         }
 
         // 휴강
         if (row.event_status === "CANCEL") {
             timetable[group][day][period].push({
                 title: "휴강",
+                course_id: row.course_id,
                 professor: row.professor_name || "-",
                 room: row.location || "-",
                 source: "EVENT",
@@ -134,6 +136,7 @@ export function formatTimetableForAdmin(rows) {
         if (row.event_status === "MAKEUP") {
             timetable[group][day][period].push({
                 title: `${row.course_title || "보강"} (보강)`,
+                course_id: row.course_id,
                 professor: row.professor_name || "-",
                 room: row.location || "-",
                 source: "CLASS",
@@ -145,6 +148,7 @@ export function formatTimetableForAdmin(rows) {
         // 일반 수업 / 상담
         timetable[group][day][period].push({
             title: row.course_title || "상담",
+            course_id: row.course_id,
             professor: row.professor_name || null,
             room: row.location || "-",
             source: row.source_type || "CLASS",

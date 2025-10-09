@@ -125,7 +125,7 @@ export const postRegisterHoliday = async function (req, res) {
         start_period,
         end_period,
         course_id,
-        cancel_event_ids,  // ✅ 항상 배열
+        cancel_event_ids,  // 항상 배열
         classroom,
         } = req.body;
 
@@ -164,7 +164,7 @@ export const postRegisterHoliday = async function (req, res) {
         start_period,
         end_period,
         course_id,
-        cancel_event_ids || [],  // ✅ CANCEL이면 빈 배열, MAKEUP이면 반드시 배열
+        cancel_event_ids || [],  // CANCEL이면 빈 배열, MAKEUP이면 반드시 배열
         classroom || null
         );
 

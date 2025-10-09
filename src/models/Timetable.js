@@ -8,7 +8,7 @@ export async function getStudentTimetable(user_id, targetDate) {
 
     const sql = `
         -- 🔹 정규 수업 + 특강 + 한국어 + 휴보강 포함
-        SELECT 
+        SELECT
             vt.day AS day_of_week,
             ts.start_time,
             ts.end_time,
