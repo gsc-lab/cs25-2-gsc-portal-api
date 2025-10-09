@@ -12,10 +12,18 @@ const redisClient = createClient({
   },
 });
 
-redisClient.on("connect", () => {
-  console.log("Redis Connected");
+// 서버 다운 방지 핸들러
+redisClient.on('error', (err) => {
+  console.error('Redis Client Error:', err);
 });
 
-await redisClient.connect();
+// 비동기 함수로 감싸 Top-level await 처리
+(async () => {
+  try {
+    await redisClient.connect();
+  } catch (err) {
+    console.error('Redis Client Error:', err);
+  }
+})();
 
 export default redisClient;
