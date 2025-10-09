@@ -17,10 +17,10 @@ INSERT INTO time_slot (time_slot_id, start_time, end_time) VALUES
                                                                ('4','13:00:00','13:50:00');
 
 INSERT INTO classroom (classroom_id, building, room_number, room_type) VALUES
-                                                                           ('101','본관','101','CLASSROOM'),
-                                                                           ('102','본관','102','CLASSROOM'),
-                                                                           ('201','실습동','201','LAB'),
-                                                                           ('202','실습동','202','LAB');
+                                                                           ('CR001','본관','101','CLASSROOM'),
+                                                                           ('CR002','본관','102','CLASSROOM'),
+                                                                           ('CR003','실습동','201','LAB'),
+                                                                           ('CR004','실습동','202','LAB');
 
 -- ===== Users =====
 INSERT INTO user_account (user_id, name, email, phone, status) VALUES
