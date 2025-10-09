@@ -2081,7 +2081,7 @@ components:
               grade_id:
                 type: string
                 example: "G1"
-              level_id:
+              class_id:
                 type: string
                 example: "N1"
               language_id:
@@ -2155,10 +2155,10 @@ components:
           # 배열 전체에 대한 example을 YAML 배열 형식으로 제공
           example:
             - target_grade_id: "G1"
-              target_level_id: "N1"
+              target_class_id: "N1"
               target_language_id: "JP"
             - target_grade_id: "G2"
-              target_level_id: "N3"
+              target_class_id: "N3"
               target_language_id: "EN"
         files:
           type: array
@@ -2193,15 +2193,11 @@ components:
           type: string
           description: 카카오 채널에 사전 승인된 템플릿의 고유 코드
           example: NOTICE_ASSIGNMENT_V2
-        sender_key:
-          type: string
-          description: 알림톡 발송 시 필요한 발신 프로필 키
-          example: KA01-12345ABCDE
-        default_vars:
+        template_params:
           type: object
           description: "모든 수신자에게 공통으로 적용될 템플릿 변수들 (예: #{title})"
           example:
-            notice_title: 2주차 과제 안내
+            title: 2주차 과제 안내
             content_preview: 첨부파일을 확인하여 과제를 제출하세요.
             link_url: https://portal.gsc/notices/124
         per_recipient:
