@@ -12,18 +12,14 @@ const redisClient = createClient({
   },
 });
 
-// 서버 다운 방지 핸들러
-redisClient.on('error', (err) => {
-  console.error('Redis Client Error:', err);
-});
+redisClient.on('connect', () => console.log('Redis is connecting...'));
+redisClient.on('ready', () => console.log('Redis client ready to use.'));
+redisClient.on('error', (err) => console.error('Redis Client Error:', err));
+redisClient.on('end', () => console.log('Redis connection closed.'));
 
-// 비동기 함수로 감싸 Top-level await 처리
-(async () => {
-  try {
-    await redisClient.connect();
-  } catch (err) {
-    console.error('Redis Client Error:', err);
-  }
-})();
+// Nodemon 환경에서 서버가 재시작될 때 충돌 방지
+if (!redisClient.isOpen) {
+  redisClient.connect().catch(console.error);
+}
 
 export default redisClient;
