@@ -360,7 +360,6 @@ CREATE TABLE weekend_attendance_votes (
                                           votes_id  BIGINT PRIMARY KEY AUTO_INCREMENT,
                                           user_id   VARCHAR(10) NOT NULL,
                                           poll_id   VARCHAR(10) NOT NULL,
-                                          will_join BOOLEAN NOT NULL,
                                           voted_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
                                           UNIQUE KEY ux_poll_user_once (poll_id, user_id),
                                           CONSTRAINT fk_vote_user FOREIGN KEY (user_id) REFERENCES user_account(user_id)            ON UPDATE CASCADE ON DELETE CASCADE,
