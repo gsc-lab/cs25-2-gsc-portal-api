@@ -17,7 +17,8 @@ router.delete("/:id/reservations/:reservation_id", authWithRole("student"), clas
 
 // 이번 주 강의실 개방 투표 현황 조회
 router.get("/polls", authWithRole("student"), classroomController.getClassroomPolls)
-
+router.post("/polls", authWithRole("professor"), classroomController.postClassroomPolls)
+router.post("/polls/:poll_id/vote", authWithRole("student"), classroomController.postReservationPolls)
 
 
 export default router

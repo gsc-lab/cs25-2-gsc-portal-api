@@ -28,6 +28,18 @@ export const deleteClassroomReservation = async function (id, reservation_id) {
     return await classroomModels.deleteClassroomReservation(id, reservation_id);
 }
 
-export const getClassroomPolls = async function (date) {
-    return await classroomModels.getClassroomPolls(date);
+export const getClassroomPolls = async function (date, user_id) {
+    return await classroomModels.getClassroomPolls(date, user_id);
+}
+
+export const postClassroomPolls = async function (grade_id, classroom_id, poll_date, target_weekend, required_count) {
+    return await classroomModels.postClassroomPolls(grade_id, classroom_id, poll_date, target_weekend, required_count);
+}
+
+export const addVote = async function (user_id, poll_id) {
+    return await classroomModels.addVote(user_id, poll_id);
+}
+
+export const removeVote = async function (user_id, poll_id) {
+    return await classroomModels.removeVote(user_id, poll_id);
 }

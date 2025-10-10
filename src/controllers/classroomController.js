@@ -101,11 +101,61 @@ export const deleteClassroomReservation = async function (req, res) {
 export const getClassroomPolls = async function (req, res) {
     try {
         const { date } = req.query;
-        if (!date) { return res.status(400).json({error: "date is required"} )};
-        const result = await classroomService.getClassroomPools(date);
+        const user_id = req.user.user_id
+        if (!date || !user_id) { return res.status(400).json({error: "date and user_id are required"} )};
+        const result = await classroomService.getClassroomPolls(date, user_id);
         res.status(200).json(result)
     } catch (err) {
         console.error(err)
-        res.status(500).json({ error: err});
+        res.status(500).json({ error: err.message });
     }
 }
+
+// 강의실 개방 투표 생성
+export const postClassroomPolls = async function (req, res) {
+    try {
+        const { grade_id, classroom_id, poll_date, target_weekend, required_count } = req.body;
+        if (!grade_id || !classroom_id || !poll_date || !target_weekend || !required_count) {
+            return res.status(400).json({ error: "grade_id, classroom_id, poll_date, target_weekend, required_count are required" });
+        }
+        const result =await classroomService.postClassroomPolls(grade_id, classroom_id, poll_date, target_weekend, required_count)
+        res.status(200).json({ message: "투표 생성 완료", result })
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message })
+    }
+
+}
+
+// 강의실 개방 투표
+export const postReservationPolls = async function (req, res) {
+    try {
+        const user_id = req.user.user_id;
+        const { poll_id } = req.params;
+        const { action } = req.body;
+
+        if (!user_id || !poll_id || !action) {
+        return res.status(400).json({ error: "user_id, poll_id, action are required" });
+        }
+
+        let result;
+
+        if (action === "apply") {
+        result = await classroomService.addVote(user_id, poll_id);
+        return res.status(200).json({ message: "투표 신청 완료", result });
+        } 
+        else if (action === "cancel") {
+        result = await classroomService.removeVote(user_id, poll_id);
+        return res.status(200).json({ message: "투표 취소 완료", result });
+        } 
+        else {
+        return res.status(400).json({ error: "Invalid action type. Use 'apply' or 'cancel'." });
+        }
+    } catch (err) {
+        console.error(err);
+        const status = err.statusCode || 500;
+        res.status(status).json({ error: err.message });
+    }
+};
+
+
