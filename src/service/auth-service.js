@@ -4,24 +4,45 @@ import {
   createProfessor,
   createStudent,
   findById,
+  findByEmail,
 } from "../models/Auth.js";
 import { v4 } from "uuid";
 import jwt from "jsonwebtoken";
-import { BadRequestError, UnauthenticatedError } from "../errors/index.js";
+import { BadRequestError, UnauthenticatedError, ConflictError } from "../errors/index.js";
 
 const secret = process.env.JWT_SECRET;
 
 export const registerUser = async (userData) => {
+  const { email, user_id, name, phone } = userData;
+
+  if (!email || !user_id || !name || !phone) {
+    throw new BadRequestError("이메일, 학번, 이름, 전화번호는 필수 항목입니다.");
+  }
+  if (!/^010-\d{4}-\d{4}$/.test(phone)) {
+    throw new BadRequestError("전화번호 형식이 올바르지 않습니다.");
+  }
+
+  const existingUserByEmail = await findByEmail(email);
+  if (existingUserByEmail) {
+    throw new ConflictError("이미 가입된 이메일입니다.");
+  }
+
+  const existingUserById = await findById(user_id);
+  if (existingUserById) {
+    throw new ConflictError("이미 등록된 학번입니다.");
+  }
   try {
     const isStudent = userData.is_student;
 
+    // 학생 생성 로직 호출
     if (isStudent === true) {
       return await createStudent(userData);
     }
+    // 교수 생성 로직 호출
     return await createProfessor(userData);
   } catch (err) {
     console.error("회원 등록 중 오류 발생:", err.stack);
-    throw new BadRequestError("잘못된 요청입니다. 입력값을 확인하세요.");
+    throw new BadRequestError("회원가입 처리 중 오류가 발생했습니다. 입력값을 확인하세요.");
   }
 };
 
@@ -70,13 +91,13 @@ export async function refreshTokens(accessToken, refreshToken, req) {
       );
     }
 
-    // To do -> 회원 조회 (view) 적용
     let user = await findById(userId);
 
     const payload = {
       user_id: user.user_id,
       name: user.name,
-      role: user.role ?? "student",
+      role: user.role,
+      status: user.status
     };
 
     const newJti = v4();
