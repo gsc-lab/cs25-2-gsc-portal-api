@@ -321,17 +321,19 @@ CREATE TABLE reservation (
                              reservation_id BIGINT PRIMARY KEY AUTO_INCREMENT,
                              user_id        VARCHAR(10) NOT NULL,
                              classroom_id   VARCHAR(10) NOT NULL,
-                             title          VARCHAR(100),
-                             start_at       DATETIME NOT NULL,
-                             end_at         DATETIME NOT NULL,
-                             status         ENUM('ACTIVE','CANCELLED','FINISHED') NOT NULL DEFAULT 'ACTIVE',
+                             reserve_date   DATE NOT NULL,
+                             start_time     TIME NOT NULL,
+                             end_time       TIME NOT NULL,
                              created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
-                             KEY ux_start (classroom_id, start_at),
-                             KEY ux_end   (classroom_id, end_at),
-                             KEY ix_reservation_overlap (classroom_id, start_at, end_at),
-                             CONSTRAINT chk_reservation_time CHECK (end_at > start_at),
-                             CONSTRAINT fk_resv_user FOREIGN KEY (user_id)      REFERENCES user_account(user_id)   ON UPDATE CASCADE ON DELETE CASCADE,
-                             CONSTRAINT fk_resv_room FOREIGN KEY (classroom_id) REFERENCES classroom(classroom_id) ON UPDATE CASCADE ON DELETE CASCADE
+                             KEY ix_classroom_date (classroom_id, reserve_date),
+                             KEY ix_reservation_overlap (classroom_id, reserve_date, start_time, end_time),
+                             CONSTRAINT chk_time_range CHECK (end_time > start_time),
+                             CONSTRAINT fk_resv_user FOREIGN KEY (user_id)
+                                 REFERENCES user_account(user_id)
+                                 ON UPDATE CASCADE ON DELETE CASCADE,
+                             CONSTRAINT fk_resv_room FOREIGN KEY (classroom_id)
+                                 REFERENCES classroom(classroom_id)
+                                 ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE weekend_attendance_poll (
@@ -353,7 +355,6 @@ CREATE TABLE weekend_attendance_votes (
                                           votes_id  BIGINT PRIMARY KEY AUTO_INCREMENT,
                                           user_id   VARCHAR(10) NOT NULL,
                                           poll_id   VARCHAR(10) NOT NULL,
-                                          will_join BOOLEAN NOT NULL,
                                           voted_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
                                           UNIQUE KEY ux_poll_user_once (poll_id, user_id),
                                           CONSTRAINT fk_vote_user FOREIGN KEY (user_id) REFERENCES user_account(user_id)            ON UPDATE CASCADE ON DELETE CASCADE,
