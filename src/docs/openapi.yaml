@@ -957,31 +957,64 @@ paths:
           description: 잘못된 요청(파라미터/형식 오류)
         "409":
           description: 충돌(잘못된 중복 또는 생성 불가 주차)
+
   /classrooms/polls:
     get:
-      summary: 이번 주 강의실 개방 투표 현황 조회
+      summary: 주말 강의실 투표 현황 조회
+      description: |
+        선택한 날짜(`date`)가 포함된 주(월~일)의 강의실 개방 투표 현황을 조회합니다.  
+        각 투표는 학년, 날짜, 요일(토요일·일요일), 정원, 현재 참여 인원 수,  
+        그리고 **현재 로그인한 사용자가 투표에 참여했는지 여부(`user_voted`)** 를 포함합니다.  
+        더 이상 `SAT`, `SUN` 구분 없이 하나의 배열 형태로 반환됩니다.
       tags:
         - Classroom - Poll
       parameters:
         - in: query
-          name: start_date
+          name: date
           required: true
           schema:
             type: string
             format: date
-          description: "주 시작일 (예: 2025-09-15)"
-        - in: query
-          name: end_date
-          required: true
-          schema:
-            type: string
-            format: date
-          description: "주 종료일 (예: 2025-09-21)"
+            example: "2025-10-13"
+          description: 기준 날짜 (해당 주의 투표 현황을 조회)
       responses:
         "200":
-          description: 투표 현황 목록
+          description: 주말 투표 현황 데이터
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WeekendPollItem'
+              example:
+                - poll_id: "P001"
+                  grade_name: "1학년"
+                  poll_date: "2025-10-17"
+                  day_of_week: "토요일"
+                  required_count: 8
+                  vote_count: 4
+                  is_opened: false
+                  user_voted: true
+                - poll_id: "P002"
+                  grade_name: "2학년"
+                  poll_date: "2025-10-18"
+                  day_of_week: "일요일"
+                  required_count: 10
+                  vote_count: 0
+                  is_opened: false
+                  user_voted: false
+        "500":
+          description: 서버 내부 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: 강의실 개방 투표 생성
+      description: |
+        새로운 주말 강의실 개방 투표를 등록합니다.  
+        동일한 강의실(`classroom_id`), 날짜(`poll_date`), 요일(`target_weekend`) 조합은 중복 생성이 불가합니다.  
+        투표 ID(`poll_id`)는 서버에서 자동으로 `P001`, `P002` 형태로 생성됩니다.
       tags:
         - Classroom - Poll
       requestBody:
@@ -990,50 +1023,73 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - grade_id
+                - classroom_id
+                - poll_date
+                - target_weekend
+                - required_count
               properties:
                 grade_id:
-                  type: integer
-                  example: 1
+                  type: string
+                  example: "1"
+                  description: 학년 ID (1~3)
                 classroom_id:
                   type: string
-                  example: "101"
+                  example: "CR001"
+                  description: 강의실 ID
                 poll_date:
                   type: string
-                  example: 2025-09-20
+                  format: date
+                  example: "2025-10-24"
+                  description: 투표 일자 (YYYY-MM-DD)
                 target_weekend:
                   type: string
-                  example: 토요일
+                  enum: [SAT, SUN]
+                  example: "SAT"
+                  description: 주말 구분 (`SAT` 또는 `SUN`)
                 required_count:
                   type: integer
                   example: 8
+                  description: 개방 기준 인원수
       responses:
-        "200":
+        "201":
           description: 투표 생성 완료
-  /classrooms/polls/{poll_id}:
-    get:
-      summary: 특정 투표 상세 조회
-      tags:
-        - Classroom - Poll
-      parameters:
-        - in: path
-          name: poll_id
-          required: true
-          schema:
-            type: string
-          description: 투표 ID
-        - in: query
-          name: user_id
-          required: true
-          schema:
-            type: string
-          description: 조회하는 사용자 ID (투표 여부 확인용)
-      responses:
-        "200":
-          description: 투표 상세 정보
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  poll_id:
+                    type: string
+                    example: "P005"
+                    description: 새로 생성된 투표 ID
+                  message:
+                    type: string
+                    example: "투표가 성공적으로 생성되었습니다."
+        "400":
+          description: 잘못된 요청 (필드 누락 또는 중복 투표)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: 서버 내부 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /classrooms/polls/{poll_id}/vote:
     post:
-      summary: 투표 참여하기
+      summary: 투표 신청 / 취소
+      description: |
+        특정 투표(`poll_id`)에 대해 학생이 **신청** 또는 **취소**할 수 있습니다.  
+        `action` 값에 따라 다음과 같이 동작합니다.  
+        - `apply`: 투표 신청  
+        - `cancel`: 투표 취소  
+        <br>  
+        `user_id`는 JWT 토큰에서 자동으로 추출됩니다.
       tags:
         - Classroom - Poll
       parameters:
@@ -1042,20 +1098,52 @@ paths:
           required: true
           schema:
             type: string
-          description: 투표 ID
+          description: "투표 ID (예: P001)"
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - action
               properties:
-                user_id:
+                action:
                   type: string
-                  example: U001
+                  enum: [apply, cancel]
+                  example: apply
+                  description: "투표 신청(`apply`) 또는 취소(`cancel`)"
       responses:
         "200":
-          description: 투표 완료
+          description: 요청 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "투표 신청 완료"
+        "400":
+          description: 잘못된 요청 (이미 신청한 투표 또는 잘못된 action 값)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "이미 투표에 참여했습니다."
+        "404":
+          description: 취소 요청 시, 해당 투표에 참여하지 않았을 경우
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: 서버 내부 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /classrooms/{classroom_id}/reservations:
     get:
@@ -1918,6 +2006,43 @@ paths:
 
 components:
   schemas:
+    WeekendPollItem:
+      type: object
+      properties:
+        poll_id:
+          type: string
+          example: "P001"
+          description: 투표 ID
+        grade_name:
+          type: string
+          example: "1학년"
+          description: 학년명
+        poll_date:
+          type: string
+          format: date
+          example: "2025-10-17"
+          description: 투표 날짜
+        day_of_week:
+          type: string
+          example: "토요일"
+          description: 요일 (토요일 또는 일요일)
+        required_count:
+          type: integer
+          example: 8
+          description: 개방 기준 인원수
+        vote_count:
+          type: integer
+          example: 4
+          description: 현재 투표 참여 인원수
+        is_opened:
+          type: boolean
+          example: false
+          description: 개방 여부 (정원 달성 여부)
+        user_voted:
+          type: boolean
+          example: true
+          description: 현재 로그인한 사용자가 해당 투표에 참여했는지 여부
+
     ClassroomReservationItem:
       type: object
       properties:
