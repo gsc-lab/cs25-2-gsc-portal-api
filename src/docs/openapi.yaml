@@ -297,8 +297,8 @@ paths:
       summary: Google OAuth 인증 URL 요청
       description: 사용자가 로그인 버튼 클릭 시, Google OAuth 인증을 위한 URL을 반환합니다.
       responses:
-        "200":
-          description: 인증 URL 반환 성공
+        "302":
+          description: 성공적으로 Google 인증 페이지로 리다이렉트됩니다.
           content:
             application/json:
               schema:
@@ -312,7 +312,14 @@ paths:
       tags:
         - Auth
       summary: Google OAuth 인증 완료 후 콜백 처리
-      description: Google 인증 성공 후 전달받은 code를 기반으로 토큰 요청 및 사용자 정보를 처리합니다.
+      description: | 
+        Google 인증 성공 후, 백엔드가 이 엔드포인트에서 사용자를 처리합니다.
+        이 API는 JSON을 반환하지 않고, 시나리오에 따라 다른 페이지로 리다이렉트 시킵니다.
+        성공시 **accessToken**과 **refreshToken**이 **httpOnly** 쿠키로 설정됩니다.
+        **시나리오별 리다이렉트 규칙:**
+        - **기존 사용자 로그인 성공:** `/dashboard` (프론트엔드 대시보드 페이지)
+        - **신규 사용자:** `/register` (프론트엔드 회원가입 페이지)
+        - **로그인 실패:** `/login?error={errorCode}` (프론트엔드 로그인 페이지)
       parameters:
         - name: code
           in: query
@@ -321,8 +328,17 @@ paths:
             type: string
           description: Google에서 전달하는 인증 코드
       responses:
-        "200":
-          description: 로그인 성공 (토큰과 사용자 정보 반환)
+        "302":
+          description: |
+            시나리오에 따라 다른 URL로 리다이렉트됩니다.
+            - **성공:** `Location: {FRONTEND_URL}/dashboard`
+            - **신규:** `Location: {FRONTEND_URL}/register`
+            - **실패:** `Location: {FRONTEND_URL}/login?error=invalid_email`
+    
+            **실패 시 `errorCode` 종류:**
+            - `invalid_email`: 허용되지 않은 이메일 도메인
+            - `account_pending`: 관리자 승인 대기 중인 계정
+            - `account_disabled`: 비활성화된 계정
           content:
             application/json:
               schema:
@@ -333,12 +349,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: 최초 로그인 사용자 정보 등록 (회원가입)
+      description: |
+        - Google OAuth 콜백 후 /register 페이지로 이동된 신규 사용자가 추가 정보를 제출하여 가입을 완료합니다.
+        - 이 요청은 Google 로그인 후 백엔드가 설정한 세션을 기반으로 인증됩니다.
+        - 요청 성공 시 해당 사용자의 status는 'pending'(승인 대기)으로 변경됩니다.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegistrationRequest"
+      responses:
+        "201":
+          description: 등록 성공. "관리자 승인 후 로그인이 가능합니다."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: "잘못된 요청 (예: 필수 필드 누락, 유효하지 않은 형식)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 이미 등록된 학번 또는 이메일 (Conflict)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /auth/refresh:
     post:
       tags:
         - Auth
       summary: Access Token 재발급
-      description: 저장된 refresh token을 이용해 access token(jwt)를 재발급합니다.
+      description: |
+        httpOnly 쿠키에 저장된 refreshToken을 사용하여 만료된 accessToken을 재발급합니다.
+        Request Body는 비어있어야 합니다. 서버는 요청에 담긴 쿠키를 자동으로 읽어 처리합니다.
       requestBody:
         required: true
         content:
@@ -351,17 +405,38 @@ paths:
                   example: 1//0gNabcABCDeFgHIJKLmnopQR_StUvWxYz
       responses:
         "200":
-          description: 토큰 재발급 성공
+          description: 토큰 재발급 성공. 새로운 accessToken이 쿠키로 설정됩니다.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
         "401":
-          description: 유효하지 않은 refresh token
+          description: 유효하지 않거나 만료된 refresh token
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: 로그아웃
+      description: |
+        서버에 저장된 현재 기기의 Refresh Token을 무효화하고, 클라이언트의 accessToken 및 refreshToken 쿠키를 삭제합니다.
+      responses:
+        "200":
+          description: 성공적으로 로그아웃되었습니다.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: 성공적으로 로그아웃되었습니다.
   /auth/me:
     get:
       tags:
@@ -379,41 +454,6 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           description: 인증 실패
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  /auth/register:
-    post:
-      tags:
-        - Auth
-      summary: 최초 로그인 사용자 정보 등록 (회원가입)
-      description: |
-        - 구글 OAuth로 최초 로그인한 사용자가 학번, 연락처, 반 등 추가 정보를 제출하여 가입을 완료합니다.
-        - 요청 성공 시 해당 사용자의 status는 'pending'(승인 대기)으로 변경됩니다.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserRegistrationRequest"
-      responses:
-        "201":
-          description: 등록 성공. 생성된 사용자 정보 반환.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        "400":
-          description: "잘못된 요청 (예: 필수 필드 누락, 유효하지 않은 class_id)"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "409":
-          description: 이미 등록된 사용자 (Conflict)
           content:
             application/json:
               schema:
@@ -2018,16 +2058,17 @@ components:
         user_id:
           type: integer
           description: 사용자 고유 ID(학번)
-          example: 1
-        name:
-          type: string
-          example: 홍길동
-        role_type:
+          example: 2423008
+        role:
           type: string
           enum:
             - student
             - professor
             - admin
+        status:
+          type: string
+          description: 현재 승인 상태
+          example: "active"
     NoticeSummary:
       type: object
       properties:
@@ -2080,7 +2121,7 @@ components:
             properties:
               grade_id:
                 type: string
-                example: "G1"
+                example: "1"
               class_id:
                 type: string
                 example: "N1"
@@ -2351,9 +2392,12 @@ components:
     AuthResponse:
       type: object
       properties:
-        token:
+        success:
+          type: boolean
+          example: true
+        message:
           type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          example: "Access Token이 성공적으로 발급"
         user:
           $ref: "#/components/schemas/User"
     ErrorResponse:
@@ -2441,18 +2485,51 @@ components:
       type: object
       description: 최초 로그인 사용자가 가입을 위해 제출하는 추가 정보
       required:
+        - name
         - user_id
-        - role
-        - status
+        - phone
+        - email
+        - is_student
+        - grade_id
+        - class_id
+        - language_id
       properties:
+        name:
+          type: string
+          description: 사용자 본명
+          example: 김민준
         user_id:
           type: string
-          description: "학번 (예: 2423001)"
+          description: "학번"
           example: "2423001"
-        status:
+        phone:
           type: string
-          description: "현재 상태확인"
-          example: "enrolled"
+          description: 연락 가능한 전화번호
+          example: 010-1234-5678
+        email:
+          type: string
+          description: 이메일 주소
+          example: minjun.kim@g.yju.ac.kr
+        is_student:
+          type: boolean
+          description: "학생이면 true, 교수면 false"
+          example: true
+        grade_id:
+          type: string
+          description: 소속 학년(Grade) ID
+          example: null
+        class_id:
+          type: string
+          description: 소속 반(Class) ID
+          example: null
+        language_id:
+          type: string
+          description: 언어 ID
+          example: null
+        is_international:
+          type: boolean
+          description: 유학생 여부
+          example: null
     StudentApproval:
       type: object
       description: 학생 승인 대기 목록에 표시될 정보 (v_student_approval 뷰 기반)

@@ -8,10 +8,10 @@ const secret = process.env.JWT_SECRET;
 
 // ESM 방식 export로 전체 함수 묶어서 내보내기
 export const sign = (user) => {
-  console.log("유저 확인", user);
   const payload = {
     user_id: user.user_id,
     role: user.role,
+    status: user.status,
   };
 
   console.log(payload);

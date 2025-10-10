@@ -49,7 +49,6 @@ async function googleAuthRedirect(req, res) {
       state,
       // prompt: 'consent',
     });
-    console.log("auth url", authorizationUrl);
 
     res.redirect(authorizationUrl);
   } catch {
@@ -82,7 +81,7 @@ async function authCallback(req, res) {
 
         if (!authUser) {
           console.log("유효한 이메일이 아닙니다.");
-          return res.redirect("/");
+          return res.redirect("/?error=invalid_email");
         }
       }
 
@@ -95,7 +94,8 @@ async function authCallback(req, res) {
           email: userInfo.email,
         };
         // 최초 로그인시 회원가입 페이지로 이동
-        return res.redirect("/api/auth/register"); // 회원가입 페이지
+        const frontendRegisterUrl = `${process.env.FE_BASE_URL}/register`;
+        return res.redirect(frontendRegisterUrl); // 회원가입 페이지 (프론트)
       }
       const verdict = checkUserStatus(user.status);
 
@@ -107,7 +107,8 @@ async function authCallback(req, res) {
       if (user) {
         const payload = {
           user_id: user.user_id,
-          role: user.role ?? "student",
+          role: user.role,
+          status: user.status,
         };
         const jti = v4();
         //  JWT 생성
@@ -157,11 +158,19 @@ async function authCallback(req, res) {
 
 async function authLogout(req, res, next) {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.user_id;
     if (userId) {
-      await redisClient.del(userId.toString());
+      const deviceId = req.headers["user-agent"] || "unknown_device";
+      const sessionKey = `session:${userId}`;
+
+      await redisClient.hDel(sessionKey, deviceId);
     }
-    req.logout(() => res.redirect("/"));
+
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+
+    res.status(200).json({ success: true, message: "성공적으로 로그아웃했습니다." });
+
   } catch (err) {
     next(err);
   }

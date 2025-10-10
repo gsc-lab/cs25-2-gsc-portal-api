@@ -14,6 +14,8 @@ import cleaningRouter from "./routes/cleaningRouter.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+import { centralErrorHandler } from "./middleware/errorHandler.js";
+
 const app = express();
 
 const corsOptions = {
@@ -30,11 +32,11 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // api
-// 관리자
 app.use("/admin", adminRouter);
 app.use("/auth", authRouter);
 app.use("/notices", noticeRouter);
 app.use("/files", fileRouter);
 app.use("/cleaning-rosters", cleaningRouter);
 
+app.use(centralErrorHandler);
 export default app;
