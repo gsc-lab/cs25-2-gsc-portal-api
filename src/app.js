@@ -5,6 +5,9 @@ import cookieParser from "cookie-parser";
 
 
 import authRouter from "./routes/authRouter.js";
+
+import { centralErrorHandler } from "./middleware/errorHandler.js";
+
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
@@ -17,4 +20,6 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // 권한 & 인증
 app.use("/api/auth", authRouter);
+
+app.use(centralErrorHandler);
 export default app;
