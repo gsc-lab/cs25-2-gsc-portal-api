@@ -3,8 +3,11 @@ import pool from "../db/connection.js";
 // 이메일 관련 사용자 찾기
 export const findByEmail = async (email) => {
   const [rows] = await pool.query(
-    "SELECT * FROM user_account WHERE email = ?",
-    [email],
+    `SELECT ua.*, ur.role_type as role
+     FROM user_account ua
+     LEFT JOIN user_role ur ON ua.user_id = ur.user_id
+     WHERE ua.email = ?`
+     [email],
   );
   return rows[0];
 };
@@ -12,7 +15,10 @@ export const findByEmail = async (email) => {
 // ID 조회
 export const findById = async (userId) => {
   const [rows] = await pool.query(
-    "SELECT * FROM user_account WHERE user_id = ?",
+    `SELECT ua.*, ur.role_type as role
+     FROM user_account ua
+     LEFT JOIN user_role ur ON ua.user_id = ur.user_id
+     WHERE ua.user_id = ?`,
     [userId],
   );
   return rows[0];
