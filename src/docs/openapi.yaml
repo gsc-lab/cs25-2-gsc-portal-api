@@ -1549,6 +1549,7 @@ paths:
                   day_of_week: "FRI"
                   start_period: 3
                   end_period: 4
+                  class_name: "A"
               korean:
                 summary: 한국어 시간표 등록
                 value:
