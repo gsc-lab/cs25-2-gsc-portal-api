@@ -161,6 +161,7 @@ export function formatTimetableForAdmin(rows) {
     return timetable;
 }
 
+<<<<<<< HEAD
 // 강의실 예약
 export function formatReservation(rows) {
     const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -189,3 +190,7 @@ export function formatReservation(rows) {
 
     return timetable;
 }
+=======
+
+
+>>>>>>> origin/dev
