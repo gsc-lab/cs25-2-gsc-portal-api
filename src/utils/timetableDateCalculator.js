@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 // utils/date.js
->>>>>>> origin/dev
 export function getWeekRange(dateStr) {
   // Asia/Seoul 기준으로 월요일~일요일
     const d = new Date(`${dateStr}T00:00:00+09:00`);
@@ -13,8 +10,4 @@ export function getWeekRange(dateStr) {
         `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
 
     return { weekStart: toYMD(ws), weekEnd: toYMD(we) };
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/dev
