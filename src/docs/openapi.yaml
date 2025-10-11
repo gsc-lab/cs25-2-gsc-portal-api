@@ -1424,62 +1424,6 @@ paths:
                   properties:
                     day_of_week: { type: string, example: 월 }
 
-  /modal/levels/korean:
-    get:
-      summary: 한국어 레벨 목록 조회 (TOPIK 계열)
-      tags: ["Modal - Subjects"]
-      responses:
-        "200":
-          description: 한국어 레벨 목록
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    level_id: { type: string, example: "5" }
-                    name: { type: string, example: TOPIK 6급 }
-
-  /modal/levels:
-    get:
-      summary: 레벨 목록 조회
-      tags: ["Modal - Subjects"]
-      responses:
-        "200":
-          description: 레벨 목록
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    level_id: { type: string, example: "1" }
-                    name: { type: string, example: JLPT N1 }
-
-  /modal/classes/{level_id}:
-    get:
-      summary: 선택한 레벨의 반 목록 조회
-      tags: ["Modal - Subjects"]
-      parameters:
-        - in: path
-          name: level_id
-          required: true
-          schema: { type: string }
-      responses:
-        "200":
-          description: 반 목록
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    class_id: { type: string, example: "1" }
-                    name: { type: string, example: A }
-
   /modal/courses/regular:
     get:
       summary: 정규 과목 목록 조회 (학년별)
@@ -1506,8 +1450,6 @@ paths:
                     course_id: { type: string, example: "C001" }
                     title: { type: string, example: "인공지능 개론" }
 
-
-
   /modal/courses/special:
     get:
       summary: 특강 과목 목록 조회
@@ -1524,11 +1466,88 @@ paths:
                   properties:
                     course_id: { type: string, example: "SP001" }
                     title: { type: string, example: "JLPT 특강" }
-                    level_id: { type: string, example: "1" }
-                    level_name: { type: string, example: "JLPT N1" }
                     class_id: { type: string, example: "1" }
                     class_name: { type: string, example: "A" }
 
+  /modal/courses/special/classes:
+    get:
+      summary: "특강 분반 조회 (level_id 없이 전체)"
+      description: >
+        특강 과목(course.is_special = TRUE)에 속한 모든 반(class) 목록을 조회합니다.  
+        각 항목은 과목명, 반 ID, 반 이름 등을 포함합니다.
+      tags: ["Modal - Subjects"]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "특강 분반 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    course_id:
+                      type: string
+                      example: "C007"
+                      description: "과목 ID"
+                    course_name:
+                      type: string
+                      example: "JLPT N2 특강"
+                      description: "과목명"
+                    class_id:
+                      type: string
+                      example: "C007A"
+                      description: "반 ID"
+                    class_group:
+                      type: string
+                      example: "A"
+                      description: "반 이름 (A, B 등)"
+        "401":
+          description: "인증 실패 (JWT 토큰 누락 또는 만료)"
+        "500":
+          description: "서버 내부 오류"
+
+  /modal/courses/korean/classes:
+    get:
+      summary: "한국어 과목 반 조회"
+      description: >
+        한국어 과목(language_id = 'KR')에 속한 반(class) 목록을 조회합니다.  
+        한국어 집중반, TOPIK 대비반 등 각 반의 정보를 포함합니다.
+      tags: ["Modal - Subjects"]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "한국어 과목 반 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    course_id:
+                      type: string
+                      example: "C008"
+                      description: "과목 ID"
+                    course_name:
+                      type: string
+                      example: "TOPIK 4급 대비반"
+                      description: "과목명"
+                    class_id:
+                      type: string
+                      example: "C008A"
+                      description: "반 ID"
+                    class_group:
+                      type: string
+                      example: "A"
+                      description: "반 이름 (A, B 등)"
+        "401":
+          description: "인증 실패 (JWT 토큰 누락 또는 만료)"
+        "500":
+          description: "서버 내부 오류"
 
   /modal/courses/korean:
     get:
@@ -1546,51 +1565,8 @@ paths:
                   properties:
                     course_id: { type: string, example: "K001" }
                     title: { type: string, example: "TOPIK 대비 한국어" }
-                    level_id: { type: string, example: "5" }
-                    level_name: { type: string, example: "TOPIK 6급" }
-
-
-  /modal/courses/special/classes:
-    get:
-      summary: "특강 강의 + 반 목록 조회"
-      description: >
-        특강 강의(course.is_special = TRUE)에 속한 각 반(class)을 조회합니다.  
-        각 항목은 강의명과 반명을 결합한 `course_class_label` 형태로 표시됩니다.  
-        예: `JLPT N2 특강 A반`, `일본어 특강 B반`
-      tags: ["Modal - Subjects"]
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: "특강 강의 + 반 목록 조회 성공"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    course_id:
-                      type: string
-                      example: "C007"
-                      description: "강의 ID"
-                    course_class_label:
-                      type: string
-                      example: "JLPT N2 특강 A반"
-                      description: "강의명과 반 이름이 결합된 표시용 라벨"
-                    class_id:
-                      type: string
-                      example: "C007A"
-                      description: "반 ID"
-                    class_name:
-                      type: string
-                      example: "A"
-                      description: "반 이름 (A, B 등)"
-        "401":
-          description: "인증 실패 (JWT 토큰 누락 또는 만료)"
-        "500":
-          description: "서버 내부 오류"
-
+                    class_id: { type: string, example: "1" }
+                    class_name: { type: string, example: "A" }
 
   /modal/courses/{course_id}/students:
     get:
@@ -1680,8 +1656,6 @@ paths:
         "500":
           description: "서버 내부 오류"
 
-
-
   /modal/subjects/holidays:
     get:
       summary: 휴강 이벤트 조회 (학년별)
@@ -1738,8 +1712,6 @@ paths:
                     start_time: "10:00:00"
                     end_time: "10:50:00"
 
-
-
   /modal/courses/all:
     get:
       summary: 전체 과목 목록 조회 (정규 + 특강 + 한국어)
@@ -1770,8 +1742,6 @@ paths:
                       description: 대상 분류 (학년/특강/한국어)
                       example: "2"
                       enum: ["1", "2", "3", "special", "korean"]
-
-
 
   /modal/schedule/{course_id}:
     get:

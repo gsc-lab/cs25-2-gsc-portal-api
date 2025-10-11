@@ -13,6 +13,8 @@ import noticeRouter from "./routes/noticeRouter.js";
 import fileRouter from "./routes/fileRouter.js";
 import cleaningRouter from "./routes/cleaningRouter.js";
 import classroomRouter from "./routes/classroomRouter.js";
+import subjectRouter from "./routes/modal/subjectRouter.js"
+import commonRouter from "./routes/modal/commonRouter.js" 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,6 +44,8 @@ app.use("/notices", noticeRouter);
 app.use("/files", fileRouter);
 app.use("/cleaning-rosters", cleaningRouter);
 app.use("/classrooms", classroomRouter)
+app.use("/modal/subjects", subjectRouter)
+app.use("/modal/common", commonRouter)
 
 app.use(centralErrorHandler);
 export default app;
