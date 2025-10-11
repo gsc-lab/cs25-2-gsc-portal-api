@@ -1,53 +1,57 @@
 import pool from '../../db/connection.js';
 
-// 정규 과목 조회
-export async function getcoursesRegular(grade) {
-    
+// 정규 과목 조회 (학년 기준)
+export async function getCoursesRegular(grade_id) {
     const [rows] = await pool.query(
-        `SELECT c.course_id, c.title
-            FROM course c
-            JOIN course_target ct ON c.course_id = ct.course_id
-            WHERE ct.grade_id = ? AND c.is_special = FALSE;
-        `, [grade]
-    )
-
+        `
+        SELECT 
+            c.course_id, 
+            c.title
+        FROM course c
+        JOIN course_target ct ON c.course_id = ct.course_id
+        WHERE ct.grade_id = ? AND c.is_special = FALSE;
+        `,
+        [grade_id]
+    );
     return rows;
 }
 
-// 특강 과목 조회
-export async function getcoursesSpecial() {
-    const [rows] = await pool.query(
-        `
-        SELECT c.course_id, c.title, ct.level_id, l.name AS level_name,
-                lc.class_id, lc.name AS class_name
+// 특강 과목 조회 (레벨 대신 분반 기준)
+export async function getCoursesSpecial() {
+    const [rows] = await pool.query(`
+        SELECT 
+            c.course_id,
+            c.title AS course_title,
+            cc.class_id,
+            cc.name AS class_name
         FROM course c
-        JOIN course_target ct ON c.course_id = ct.course_id
-        JOIN level l ON ct.level_id = l.level_id
-        JOIN level_class lc ON ct.level_id = lc.level_id
-        WHERE c.is_special = TRUE;
-        `
-    )
+        JOIN course_class cc ON c.course_id = cc.course_id
+        WHERE c.is_special = TRUE
+        ORDER BY c.course_id, cc.name;
+    `);
     return rows;
 }
 
-// 한국어 과목 조회
-export async function getcoursesKorean() {
-    const [rows] = await pool.query(
-        `
-        SELECT c.course_id, c.title, ct.level_id, l.name AS level_name
+// 한국어 과목 조회 (language_id='KR' + 반 포함)
+export async function getCoursesKorean() {
+    const [rows] = await pool.query(`
+        SELECT 
+            c.course_id,
+            c.title AS course_title,
+            cc.class_id,
+            cc.name AS class_name
         FROM course c
+        JOIN course_class cc ON c.course_id = cc.course_id
         JOIN course_target ct ON c.course_id = ct.course_id
-        JOIN level l ON ct.level_id = l.level_id
-        WHERE ct.language_id = 'KR';
-        `
-    )
+        WHERE ct.language_id = 'KR'
+        ORDER BY c.course_id, cc.name;
+    `);
     return rows;
 }
 
 // 전체 과목 조회
 export async function getAllCourses() {
-    const [rows] = await pool.query(
-        `
+    const [rows] = await pool.query(`
         SELECT
             c.course_id,
             c.title,
@@ -66,46 +70,46 @@ export async function getAllCourses() {
             END AS target
         FROM course c
         JOIN course_target ct ON c.course_id = ct.course_id;
-        `
-    )
+    `);
     return rows;
 }
 
-// 레벨 목록 조회
-export async function getLevels() {
-    const [rows] = await pool.query(`SELECT level_id, name FROM level;`)
-
+// 특강 분반 조회 (level_id 없이 전체)
+export async function getSpecialClasses() {
+    const [rows] = await pool.query(`
+        SELECT 
+            c.course_id,
+            c.title AS course_name,
+            cc.class_id,
+            cc.name AS class_group
+        FROM course c
+        JOIN course_class cc ON c.course_id = cc.course_id
+        WHERE c.is_special = 1
+        ORDER BY c.course_id, cc.name;
+    `);
     return rows;
 }
 
-// 선택한 레벨의 반 목록 조회
-export async function getClassesByLevel(level_id) {
-    const [rows] = await pool.query(
-        `
-        SELECT class_id, name
-        FROM level_class
-        WHERE level_id = ?;
-        `, [level_id]
-    )
+// 한국어 분반 조회
+export async function getKoreanClasses() {
+    const [rows] = await pool.query(`
+        SELECT 
+            c.course_id,
+            c.title AS course_name,
+            cc.class_id,
+            cc.name AS class_group
+        FROM course c
+        JOIN course_class cc ON c.course_id = cc.course_id
+        JOIN course_target ct ON c.course_id = ct.course_id
+        WHERE ct.language_id = 'KR'
+        ORDER BY c.course_id, cc.name;
+    `);
     return rows;
 }
 
-// 한국어 레벨 목록 조회
-export async function getKoreanLevels() {
-    const [rows] = await pool.query(
-        `
-        SELECT level_id, name
-        FROM level
-        WHERE name LIKE 'TOPIC%'
-        `
-    )
-    return rows;
-}
-
-// 특강 스케줄 조회
+// 특강 스케줄 조회 (course + class 기준)
 export async function getSpecialSchedule() {
-    const [rows] = await pool.query (
-        `
+    const [rows] = await pool.query(`
         SELECT
             c.course_id,
             CONCAT(c.title, ' ', cc.name, '반') AS course_class_label,
@@ -115,15 +119,14 @@ export async function getSpecialSchedule() {
         JOIN course_class cc ON c.course_id = cc.course_id
         WHERE c.is_special = TRUE
         ORDER BY c.title, cc.name;
-        `
-    )
+    `);
     return rows;
 }
 
 // 특강 학생 조회
-// ✅ models/subjectModel.js 또는 models/modalModel.js 안에서
 export async function getCourseStudents(course_id) {
-    const [rows] = await pool.query(`
+    const [rows] = await pool.query(
+        `
         SELECT 
             ua.user_id,
             ua.name,
@@ -134,25 +137,20 @@ export async function getCourseStudents(course_id) {
         JOIN user_account ua ON ua.user_id = cs.user_id
         WHERE cs.course_id = ?
         ORDER BY ua.name;
-    `, [course_id]);
+        `,
+        [course_id]
+    );
 
-    const all_students = rows;
-    const assigned_students = rows.filter(s => s.class_id !== null);
-    const unassigned_students = rows.filter(s => s.class_id === null);
-
-    // ⚠️ 여기서는 res.json이 아니라 그냥 return
     return {
-        all_students,
-        assigned_students,
-        unassigned_students
+        all_students: rows,
+        assigned_students: rows.filter(s => s.class_id !== null),
+        unassigned_students: rows.filter(s => s.class_id === null),
     };
 }
 
-
-
 // 휴강 조회
 export async function getHolidays(grade_id) {
-    const [rows] = await pool.query (
+    const [rows] = await pool.query(
         `
         SELECT
         ce.event_id,
@@ -170,8 +168,8 @@ export async function getHolidays(grade_id) {
         WHERE ce.event_type = 'CANCEL'
         AND ct.grade_id = ?
         ORDER BY ce.event_date;
-        `, [grade_id]
-    )
-
+        `,
+        [grade_id]
+    );
     return rows;
 }
