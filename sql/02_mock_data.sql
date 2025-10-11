@@ -24,17 +24,10 @@ INSERT INTO time_slot (time_slot_id, start_time, end_time) VALUES
 ('11','20:00:00','20:50:00');
 
 INSERT INTO classroom (classroom_id, building, room_number, room_type) VALUES
-<<<<<<< HEAD
-                                                                           ('CR001','본관','101','CLASSROOM'),
-                                                                           ('CR002','본관','102','CLASSROOM'),
-                                                                           ('CR003','실습동','201','LAB'),
-                                                                           ('CR004','실습동','202','LAB');
-=======
-('101','본관','101','CLASSROOM'),
-('102','본관','102','CLASSROOM'),
-('201','실습동','201','LAB'),
-('202','실습동','202','LAB');
->>>>>>> origin/dev
+('CR001','본관','101','CLASSROOM'),
+('CR002','본관','102','CLASSROOM'),
+('CR003','실습동','201','LAB'),
+('CR004','실습동','202','LAB');
 
 -- ===== Users =====
 INSERT INTO user_account (user_id, name, email, phone, status) VALUES
@@ -121,26 +114,26 @@ INSERT INTO course_target (target_id, course_id, grade_id, language_id) VALUES
 ('T008','C008',NULL,'KR');
 
 INSERT INTO course_schedule (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week) VALUES
-('SCH1','101','1','C001','2025-1','MON'),
-('SCH2','101','2','C001','2025-1','WED'),
-('SCH3','102','3','C002','2025-1','TUE'),
-('SCH4','201','4','C003','2025-1','FRI'),
-('SCH5','202','5','C004','2025-1','THU'),
-('SCH6','101','6','C005','2025-1','MON'),
-('SCH7','102','7','C005','2025-1','WED'),
-('SCH8','201','8','C006','2025-1','FRI'),
-('SCH9','202','9','C007','2025-1','TUE'),
-('SCH10','202','10','C008','2025-1','THU');
+('SCH1','CR001','1','C001','2025-1','MON'),
+('SCH2','CR001','2','C001','2025-1','WED'),
+('SCH3','CR002','3','C002','2025-1','TUE'),
+('SCH4','CR003','4','C003','2025-1','FRI'),
+('SCH5','CR004','5','C004','2025-1','THU'),
+('SCH6','CR001','6','C005','2025-1','MON'),
+('SCH7','CR002','7','C005','2025-1','WED'),
+('SCH8','CR003','8','C006','2025-1','FRI'),
+('SCH9','CR004','9','C007','2025-1','TUE'),
+('SCH10','CR004','10','C008','2025-1','THU');
 
-INSERT INTO course_professor (user_id, course_id) VALUES
-('8888001','C001'),
-('8888001','C002'),
-('8888002','C003'),
-('8888002','C004'),
-('8888001','C005'),
-('8888001','C006'),
-('8888002','C007'),
-('8888002','C008');
+INSERT INTO course_professor (user_id, course_id, class_id) VALUES
+('8888001','C001','C003A'),
+('8888001','C002','C003A'),
+('8888002','C003','C003A'),
+('8888002','C004','C004A'),
+('8888001','C005','C007A'),
+('8888001','C006','C007A'),
+('8888002','C007','C007A'),
+('8888002','C008','C008A');
 
 INSERT INTO course_student (user_id, course_id, class_id) VALUES
 ('2423001', 'C007', NULL),
@@ -165,25 +158,6 @@ VALUES
 ('HK005', '2725001', '8888001', '2025-1', 'REGULAR', 'FRI', NULL, '9', '국제관 101호', NOW(), NOW()),
 ('HK006', '2725001', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-20', '8', '국제관 202호', NOW(), NOW());
 
--- ===== Notice & Files & Events =====
-INSERT INTO file_assets (file_id, file_name, file_url, size_type, file_type) VALUES
-('F001','exam_schedule.pdf','/files/exam_schedule.pdf',1024,'PDF'),
-('F002','lecture_intro.png','/files/lecture_intro.png',512,'IMG'),
-('F003','notice_event.pdf','/files/notice_event.pdf',2048,'PDF');
-
-INSERT INTO notice (notice_id, user_id, course_id, title, content, created_at) VALUES
-(1,'8888001','C001','중간고사 안내','인공지능 개론 중간고사는 4월 15일입니다.',NOW()),
-(2,'8888001','C002','과제 제출 안내','데이터베이스 과제는 5월 1일까지 제출하세요.',NOW()),
-(3,'9999001',NULL,'학과 행사 안내','글로벌 시스템 융합과 MT는 4월 5일입니다.',NOW());
-
-INSERT INTO notice_file (file_id, notice_id) VALUES 
-('F001',1),('F002',2),('F003',3);
-
-INSERT INTO notice_target (target_id, notice_id, grade_id, language_id) VALUES
-('NT001',1,'2','KR'),
-('NT002',2,'2','KR'),
-('NT003',3,NULL,'KR');
-
 INSERT INTO course_event (event_id, schedule_id, event_type, event_date) VALUES
 ('E001','SCH1','CANCEL','2025-04-15'),
 ('E002','SCH3','MAKEUP','2025-05-10'),
@@ -191,21 +165,13 @@ INSERT INTO course_event (event_id, schedule_id, event_type, event_date) VALUES
 ('E004','SCH9','MAKEUP','2025-04-25');
 
 -- ===== Reservations & Polls & Cleaning =====
-INSERT INTO reservation (reservation_id, user_id, classroom_id, title, start_at, end_at, status) VALUES
-(1,'2423001','201','AI 프로젝트 회의','2025-04-01 10:00:00','2025-04-01 12:00:00','ACTIVE'),
-(2,'2725001','101','스터디 모임','2025-04-03 09:00:00','2025-04-03 11:00:00','CANCELLED');
+INSERT INTO reservation (user_id, classroom_id, reserve_date, start_time, end_time) VALUES
+('2423001','CR003','2025-04-01','10:00:00','12:00:00'),
+('2725001','CR001','2025-04-03','09:00:00','11:00:00');
 
 INSERT INTO weekend_attendance_poll (poll_id, grade_id, classroom_id, poll_date, target_weekend, required_count, status) VALUES
-('P001','2','101','2025-04-05','SAT',8,1),
-('P002','1','201','2025-04-12','SUN',6,0);
-
-INSERT INTO weekend_attendance_votes (votes_id, user_id, poll_id, will_join) VALUES
-(1,'2423001','P001',1),
-(2,'2725001','P001',0),
-(3,'2423002','P002',1);
-
-INSERT INTO cleaning_assignment (assignment_id, grade_id, classroom_id, work_date, team_size, members_json, status, created_at) VALUES
-(1,'2','101','2025-04-04',4,'[{\"user_id\":\"2423001\",\"name\":\"김성식\",\"role\":\"student\",\"attended\":1}]','SCHEDULED',NOW());
+('P001','2','CR001','2025-04-05','SAT',8,1),
+('P002','1','CR003','2025-04-12','SUN',6,0);
 
 -- ===== Kakao & Exams & Logs =====
 INSERT INTO kakao_user (user_id, kakao_id, is_verified) VALUES
@@ -213,8 +179,9 @@ INSERT INTO kakao_user (user_id, kakao_id, is_verified) VALUES
 ('8888001','kakao_67890',0);
 
 INSERT INTO student_exams (exam_id, user_id, file_id, exam_type, score) VALUES
-('EX001','2423001','F001','JLPT',120),
+('EX001','2423001',NULL,'JLPT',120),
 ('EX002','2725001',NULL,'TOPIK',180);
+
 
 INSERT INTO log_entity (log_id, user_id, action) VALUES
 (1,'2423001','LOGIN'),
@@ -224,9 +191,9 @@ INSERT INTO log_entity (log_id, user_id, action) VALUES
 
 -- ===== Allowed Emails =====
 INSERT INTO allowed_email (email, reason) VALUES
-                                              ('external1@example.com', '산학협력 교수'),
-                                              ('external2@example.com', '졸업생 멘토링'),
-                                              ('testuser@example.com', '개발 테스트용');
+('external1@example.com', '산학협력 교수'),
+('external2@example.com', '졸업생 멘토링'),
+('testuser@example.com', '개발 테스트용');
 
 -- ===== Reservation Mock Data =====
 INSERT INTO reservation (user_id, classroom_id, reserve_date, start_time, end_time, created_at) VALUES
@@ -310,10 +277,6 @@ INSERT INTO reservation (user_id, classroom_id, reserve_date, start_time, end_ti
 ('2423001', 'CR002', '2025-10-24', '13:00:00', '14:00:00', NOW()),
 ('2725001', 'CR003', '2025-10-24', '14:00:00', '15:00:00', NOW()),
 ('8888001', 'CR003', '2025-10-24', '15:00:00', '16:00:00', NOW());
-
-INSERT INTO weekend_attendance_poll VALUES 
-('P001', '1', 'CR001', '2025-10-18', 'SAT', 8, FALSE, NOW()),
-('P002', '2', 'CR002', '2025-10-19', 'SUN', 10, FALSE, NOW());
 
 INSERT INTO weekend_attendance_votes (poll_id, user_id) VALUES
 ('P001', '2423001'),

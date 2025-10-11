@@ -69,17 +69,6 @@ FOREIGN KEY (user_id) REFERENCES user_account(user_id)
 ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE section (
-sec_id     VARCHAR(10) PRIMARY KEY,
-semester   TINYINT NOT NULL,
-year       YEAR NOT NULL,
-start_date DATE,
-end_date   DATE,
-CONSTRAINT chk_section_dates CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
-UNIQUE KEY ux_section_year_sem (year, semester)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-
 CREATE TABLE course (
 course_id  VARCHAR(15) PRIMARY KEY,
 sec_id     VARCHAR(10) NOT NULL,
@@ -101,20 +90,6 @@ CREATE TABLE course_class (
         ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE student_entity (
-    user_id          VARCHAR(10) NOT NULL,
-    grade_id         VARCHAR(10),
-    class_id         VARCHAR(10),
-    language_id      VARCHAR(10),
-    is_international ENUM('korean','international'),
-    status           ENUM('enrolled','leave','dropped'),
-    CONSTRAINT fk_student_user   FOREIGN KEY (user_id)    REFERENCES user_account(user_id),
-    CONSTRAINT fk_student_grade  FOREIGN KEY (grade_id)   REFERENCES grade(grade_id),
-    CONSTRAINT fk_student_class  FOREIGN KEY (class_id)   REFERENCES course_class(class_id) 
-                        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_student_lang   FOREIGN KEY (language_id) REFERENCES language(language_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 CREATE TABLE kakao_user (
                             user_id     VARCHAR(10) PRIMARY KEY,
                             kakao_id    VARCHAR(128) NOT NULL UNIQUE,
@@ -128,21 +103,6 @@ CREATE TABLE kakao_user (
 -- =========================================================
 -- 03. Courses
 -- =========================================================
-CREATE TABLE time_slot (
-time_slot_id VARCHAR(10) PRIMARY KEY,
-start_time   TIME NOT NULL,
-end_time     TIME NOT NULL,
-CONSTRAINT chk_time_slot_order CHECK (end_time > start_time),
-UNIQUE KEY ux_slot_day_time (start_time, end_time)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE classroom (
-classroom_id VARCHAR(10) PRIMARY KEY,
-building     VARCHAR(50) NOT NULL,
-room_number  VARCHAR(10) NOT NULL,
-room_type    ENUM('CLASSROOM','LAB') NOT NULL DEFAULT 'CLASSROOM',
-UNIQUE KEY ux_room_building_no (building, room_number)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE course_schedule (
     schedule_id  VARCHAR(10) PRIMARY KEY,
@@ -165,24 +125,6 @@ CREATE TABLE course_schedule (
         ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE course_target (
-    target_id   VARCHAR(10) PRIMARY KEY,
-    course_id   VARCHAR(15) NOT NULL,
-    grade_id    VARCHAR(10),
-    language_id VARCHAR(10),
-    class_id    VARCHAR(10),
-    UNIQUE KEY ux_course_target_combo (course_id, grade_id, language_id, class_id),
-    CONSTRAINT fk_ct_course FOREIGN KEY (course_id) REFERENCES course(course_id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_ct_grade  FOREIGN KEY (grade_id) REFERENCES grade(grade_id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
-    CONSTRAINT fk_ct_lang   FOREIGN KEY (language_id) REFERENCES language(language_id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
-    CONSTRAINT fk_ct_class  FOREIGN KEY (class_id) REFERENCES course_class(class_id)
-        ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-
 CREATE TABLE course_language (
                                  course_id   VARCHAR(15) NOT NULL,
                                  language_id VARCHAR(10) NOT NULL,
@@ -196,7 +138,7 @@ CREATE TABLE course_target (
                                course_id   VARCHAR(15) NOT NULL,
                                grade_id    VARCHAR(10),
                                language_id VARCHAR(10),
-                               class_id    VARCHAR(20),
+                               class_id    VARCHAR(10),
                                UNIQUE KEY ux_course_target_combo (course_id, grade_id, language_id, class_id),
                                CONSTRAINT fk_ct_course FOREIGN KEY (course_id) REFERENCES course(course_id)
                                    ON UPDATE CASCADE ON DELETE CASCADE,
@@ -212,7 +154,7 @@ CREATE TABLE course_target (
 CREATE TABLE student_entity (
                                 user_id          VARCHAR(10) PRIMARY KEY,
                                 grade_id         VARCHAR(10) NULL,
-                                class_id         VARCHAR(20) NULL,
+                                class_id         VARCHAR(10) NULL,
                                 language_id      VARCHAR(10) NULL,
                                 is_international ENUM('korean', 'international') NULL DEFAULT NULL,
                                 status           ENUM('enrolled','leave','dropped','graduated') NOT NULL DEFAULT 'enrolled',
@@ -236,7 +178,7 @@ CREATE TABLE student_entity (
 CREATE TABLE course_professor (
                                   user_id   VARCHAR(10) NOT NULL,
                                   course_id VARCHAR(15) NOT NULL,
-                                  class_id  VARCHAR(20) NOT NULL,
+                                  class_id  VARCHAR(10) NOT NULL,
                                   PRIMARY KEY (user_id, course_id, class_id),
                                   CONSTRAINT fk_cp_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
                                   CONSTRAINT fk_cp_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE,
@@ -252,38 +194,6 @@ CREATE TABLE course_student (
     CONSTRAINT fk_cs_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_cs_class  FOREIGN KEY (class_id) REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE huka_schedule (
-    schedule_id VARCHAR(10) PRIMARY KEY,
-    student_id VARCHAR(10) NOT NULL,
-    professor_id VARCHAR(10) NOT NULL,
-    sec_id VARCHAR(10) NOT NULL,
-    schedule_type ENUM('REGULAR', 'CUSTOM') NOT NULL,
-    day_of_week ENUM('MON','TUE','WED','THU','FRI') NULL,
-    date DATE NULL,
-    time_slot_id VARCHAR(10) NOT NULL,
-    location VARCHAR(50),              -- ← 교실 대신 자유입력 문자열
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_hs_student FOREIGN KEY (student_id)
-        REFERENCES user_account(user_id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_hs_professor FOREIGN KEY (professor_id)
-        REFERENCES user_account(user_id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_hs_timeslot FOREIGN KEY (time_slot_id)
-        REFERENCES time_slot(time_slot_id)
-        ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-
-
-
-
-
-
-
 
 -- =========================================================
 -- 04. Files, Notice, Events, Logs
@@ -324,7 +234,7 @@ CREATE TABLE notice_target (
                                notice_id   INT NOT NULL,
                                grade_id    VARCHAR(10),
                                language_id VARCHAR(10),
-                               class_id    VARCHAR(20),
+                               class_id    VARCHAR(10),
                                UNIQUE KEY ux_notice_target_combo (notice_id, grade_id, class_id, language_id),
                                CONSTRAINT fk_nt_notice FOREIGN KEY (notice_id)   REFERENCES notice(notice_id)     ON UPDATE CASCADE ON DELETE CASCADE,
                                CONSTRAINT fk_nt_grade  FOREIGN KEY (grade_id)    REFERENCES grade(grade_id)       ON UPDATE CASCADE ON DELETE SET NULL,
