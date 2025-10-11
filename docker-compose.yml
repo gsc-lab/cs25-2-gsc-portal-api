@@ -7,12 +7,13 @@
 services:
   backend:
     build:
-      context: .              
-      dockerfile: Dockerfile  
+      context: .
+      dockerfile: Dockerfile
     container_name: dev_backend
     volumes:
-      - .:/app   
-      - /app/node_modules 
+      - .:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
     ports:
       - "3000:3000"
     command: sh -c "npm install && npm run dev"
