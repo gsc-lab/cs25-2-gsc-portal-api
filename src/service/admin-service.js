@@ -1,16 +1,31 @@
 import * as UserModel from "../models/Admin.js"
+import { BadRequestError, NotFoundError } from "../errors/index.js"
 
 // 승인
 export const getPendingUsers = async function() {
     return await UserModel.getPendingUsers();
 }
 
-export const postPendingUsers = async function(user_id, action) {
-    return await UserModel.postPendingUsers(user_id, action);
+export const postPendingUsers = async function({user_id, action}) {
+    if (!user_id || !action) {
+        throw new BadRequestError("필수 값이 누락 되었습니다.");
+    }
+    const result = await UserModel.postPendingUsers(user_id, action);
+    if (result.affectedRows === 0) {
+        throw new NotFoundError("유저 정보가 없습니다.")
+    }
+    return result
 }
 
 export const deletePendingUsers = async function(user_id) {
-    return await UserModel.deletePendingUsers(user_id);
+    if (!user_id) {
+        throw new BadRequestError("필수 값이 누락 되었습니다.");
+    }
+    const result = await UserModel.deletePendingUsers(user_id);
+    if (result.affectedRows === 0) {
+        throw new NotFoundError("유저 정보가 없습니다.")
+    }
+    return result
 }
 
 // 예외 이메일
@@ -18,22 +33,34 @@ export const getAllowedEmail = async function() {
     return await UserModel.getAllowedEmail();
 }
 
-export const postAllowedEmail = async function(email, reason) {
+export const postAllowedEmail = async function({email, reason}) {
+    if (!email || !reason) {
+        throw new BadRequestError("필수 값이 누락 되었습니다.");
+    }
     return await UserModel.postAllowedEmail(email, reason);
 }
 
 export const deleteAllowedEmail = async function(id) {
+    if (!id) {
+        throw new BadRequestError("필수 값이 누락 되었습니다.");
+    }
     return await UserModel.deleteAllowedEmail(id);
 }
 
 // 학생 정보
-export const getStudentInfo = async function(grade_name, status) {
+export const getStudentInfo = async function({grade_name, status}) {
     return await UserModel.getStudentInfo(grade_name, status);
 }
 
-export const patchStudentInfo = async (user_id, updates) => {
+export const patchStudentInfo = async ({user_id, updates}) => {
+    if (!user_id) {
+        throw new BadRequestError("user_id 값이 누락 되었습니다.");
+    }
+    if (Object.keys(updates).length === 0) {
+        throw new BadRequestError("updates 값이 누락 되었습니다.");
+    }
     const userFields = ["name", "email", "phone"];
-    const studentFields = ["grade_id", "class_id", "language_id", "status", "level_id", "is_international"];
+    const studentFields = ["grade_id", "class_id", "language_id", "status", "is_international"];
 
     const userUpdates = {};
     const studentUpdates = {};
@@ -57,5 +84,8 @@ export const patchStudentInfo = async (user_id, updates) => {
 };
 
 export const deleteStudentInfo = async function(user_id) {
+    if (!user_id) {
+        throw new BadRequestError("user_id 값이 누락 되었습니다.");
+    }
     return await UserModel.deleteStudentInfo(user_id);
 }
