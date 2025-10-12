@@ -12,11 +12,19 @@ export async function findBySpec(spec, query) {
     course_id,
     grade_id,
     language_id,
+    author_id,
   } = query;
   const offset = (page - 1) * size;
 
+  let baseSql = `SELECT v.* FROM v_notice_list v`;
   let whereClauses = [];
   let queryParams = [];
+
+  if (user.role === "student") {
+    baseSql += ` JOIN notification_delivery_notice ndn ON v.notice_id = ndn.notice_id`;
+    whereClauses.push(`ndn.user_id = ?`);
+    queryParams.push(user.user_id);
+  }
 
   if (search) {
     whereClauses.push(`v.title LIKE ?`);
@@ -28,121 +36,45 @@ export async function findBySpec(spec, query) {
     queryParams.push(course_id);
   }
 
+  // 교수 및 관리자를 위한 필터링
+  if (grade_id) {
+    whereClauses.push(`v.grade_id = ?`);
+    queryParams.push(grade_id);
+  }
+  if (language_id) {
+    whereClauses.push(`v.language_id = ?`);
+    queryParams.push(language_id);
+  }
+
   // 모든 역할에 공통으로 적용되는 옵션 필터
   if (course_type) {
     whereClauses.push(`v.course_type = ?`);
     queryParams.push(course_type);
   }
-  if (grade_id) {
-    whereClauses.push(
-      `JSON_CONTAINS(v.targets, CAST(JSON_OBJECT('grade_id', ?) AS JSON))`,
-    );
-    queryParams.push(grade_id);
+  if (author_id) {
+    whereClauses.push(`JSON_UNQUOTE(JSON_EXTRACT(v.author, '$.user_id')) = ?`);
+    queryParams.push(author_id);
   }
 
-  if (language_id) {
-    whereClauses.push(
-      `JSON_CONTAINS(v.targets, CAST(JSON_OBJECT('language_id', ?) AS JSON))`,
-    );
-    queryParams.push(language_id);
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+  const countSql = `SELECT COUNT(*) as total FROM (${baseSql} ${whereSql}) as count_table`;
+  const [countRows] = await pool.query(countSql, queryParams);
+  const total = countRows[0].total;
+
+  const dataSql = `
+    ${baseSql}
+    ${whereSql}
+    ORDER BY v.is_pinned DESC, v.created_at DESC
+    LIMIT ? OFFSET ?`;
+
+  const finalParams = [...queryParams, parseInt(size, 10), parseInt(offset, 10)];
+  const [rows] = await pool.query(dataSql, finalParams);
+
+  return {
+    total,
+    notices: rows,
   }
-
-  // 교수 로직
-  if (user.role === "professor") {
-    const professorConditions = [];
-    // 교수 작성한 모든 공지
-    professorConditions.push(`v.author_id = ?`);
-    queryParams.push(user.user_id);
-
-    // 전체 공지
-    professorConditions.push(
-      `(v.course_id IS NULL AND JSON_LENGTH(v.targets) = 0)`,
-    );
-
-    whereClauses.push(`(${professorConditions.join(" OR ")})`);
-
-    // 학생 로직
-  } else if (user.role === "student") {
-    const studentQuery = `SELECT s.grade_id, s.class_id, s.language_id,
-                                     (SELECT GROUP_CONCAT(cs.course_id)
-                                      FROM course_student cs
-                                      WHERE cs.user_id = s.user_id) AS enrolled_courses
-                              FROM student_entity s WHERE s.user_id = ?`;
-    const [studentRows] = await pool.query(studentQuery, [user.user_id]);
-
-    if (studentRows.length === 0) return [];
-
-    const studentInfo = studentRows[0];
-
-    // 재학 상태 확인
-    if (studentInfo.role !== "enrolled") {
-      return [];
-    }
-
-    const enrolledCourses = studentInfo.enrolled_courses
-      ? studentInfo.enrolled_courses.split(",")
-      : [];
-
-    const studentConditions = [];
-
-    // 수강하는 과목의 공지
-    if (enrolledCourses.length > 0) {
-      studentConditions.push(`v.course_id IN (?)`);
-      queryParams.push(enrolledCourses);
-    }
-
-    //  아무 타겟도 없는 전체 공지
-    studentConditions.push(
-      `(v.course_id IS NULL AND (v.targets IS NULL OR JSON_LENGTH(v.targets) = 0))`,
-    );
-
-    // 일치하는 타겟이 하나라도 있는 공지
-    const studentTargetConditions = [];
-    if (studentInfo.grade_id) {
-      studentTargetConditions.push(
-        `JSON_CONTAINS(v.targets, CAST(JSON_OBJECT('grade_id', ?) AS JSON))`,
-      );
-      queryParams.push(studentInfo.grade_id);
-    }
-    if (studentInfo.class_id) {
-      studentTargetConditions.push(
-        `JSON_CONTAINS(v.targets, CAST(JSON_OBJECT('class_id', ?) AS JSON))`,
-      );
-      queryParams.push(studentInfo.class_id);
-    }
-    if (studentInfo.language_id) {
-      studentTargetConditions.push(
-        `JSON_CONTAINS(v.targets, CAST(JSON_OBJECT('language_id', ?) AS JSON))`,
-      );
-      queryParams.push(studentInfo.language_id);
-    }
-
-    if (studentTargetConditions.length > 0) {
-      studentConditions.push(
-        `(v.course_id IS NULL AND (${studentTargetConditions.join(" OR ")}))`,
-      );
-    }
-
-    whereClauses.push(`(${studentConditions.join(" OR ")})`);
-  }
-
-  const whereSql =
-    whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
-
-  const sql = `
-        SELECT * FROM v_notice_list v ${whereSql}
-        ORDER BY v.is_pinned DESC, v.created_at DESC
-            LIMIT ? OFFSET ?`;
-
-  // size와 offset 변환
-  const finalParams = [
-    ...queryParams,
-    parseInt(size, 10),
-    parseInt(offset, 10),
-  ];
-  const [rows] = await pool.query(sql, finalParams);
-
-  return rows;
 }
 
 // 공지사항 상세 조회
@@ -188,26 +120,11 @@ export async function updateNotice(noticeId, patch, connection) {
   return result.affectedRows;
 }
 
-// 공지사항 삭제
-export async function deleteNotice(noticeId) {
-  const sql = `DELETE FROM notice WHERE notice_id = ?`;
-
-  const [result] = await pool.query(sql, [noticeId]);
-  return result.affectedRows;
-}
-
 // 첨부파일 생성
 export const createFiles = async (noticeId, files, connection) => {
   const sql = `INSERT IGNORE INTO notice_file (notice_id, file_id) VALUES ?`;
   const values = files.map((id) => [noticeId, id]);
   await connection.query(sql, [values]);
-};
-
-// 첨부파일 삭제
-export const deleteFiles = async (noticeId, connection) => {
-  const sql = `DELETE FROM notice_file WHERE notice_id = ?`;
-  const [result] = await connection.query(sql, [noticeId]);
-  return result.affectedRows;
 };
 
 // 타겟층 생성
@@ -223,6 +140,24 @@ export const createTargets = async (noticeId, targets, connection) => {
   await connection.query(sql, [values]);
 };
 
+// 공지사항 삭제
+export async function deleteNotice(noticeId) {
+  const sql = `DELETE FROM notice WHERE notice_id = ?`;
+
+  const [result] = await pool.query(sql, [noticeId]);
+  return result.affectedRows;
+}
+
+
+// 첨부파일 삭제
+export const deleteFiles = async (noticeId, fileIdsToDelete,  connection) => {
+  if (!fileIdsToDelete || fileIdsToDelete.length === 0) return;
+  const sql = `DELETE FROM notice_file WHERE notice_id = ? AND file_id IN (?)`;
+  const [result] = await connection.query(sql, [noticeId, fileIdsToDelete]);
+  return result.affectedRows;
+};
+
+
 // 타겟층 삭제
 export const deleteTargets = async (noticeId, connection) => {
   const sql = `DELETE FROM notice_target WHERE notice_id = ?`;
@@ -230,6 +165,7 @@ export const deleteTargets = async (noticeId, connection) => {
   const [result] = await connection.query(sql, [noticeId]);
   return result.affectedRows;
 };
+
 
 // 공지 대상자(학생) 자동 채우기
 export const populateDeliverNotice = async (noticeId, connection) => {
@@ -295,19 +231,33 @@ export const populateDeliverNotice = async (noticeId, connection) => {
   return result.affectedRows;
 };
 
-// 발송 대상자 조회 (user_id 배열)
+// 발송 대상자 조회 (user_id 배열 및 사용자 전화번호)
 export const getDispatchTargets = async (noticeId) => {
   const sql = `
-        SELECT user_id
-        FROM notification_delivery_notice
-        WHERE notice_id = ?;
+        SELECT 
+            ndn.user_id,
+            ua.phone
+        FROM 
+            notification_delivery_notice ndn
+        INNER JOIN 
+                user_account ua ON ndn.user_id = ua.user_id
+        WHERE 
+            ndn.notice_id = ?;
        `;
 
   const [rows] = await pool.query(sql, [noticeId]);
 
-  // user_id 배열을 반환
-  return rows.map((row) => row.user_id);
+  // user_id와 phone이 담긴 객체를 반환
+  return rows;
 };
+
+export const deleteDeliveryStatusByNoticeId = async (noticeId, connection) => {
+  const sql = `DELETE FROM notification_delivery_notice WHERE notice_id = ?;`;
+
+  const [rows] = await connection.query(sql, [noticeId]);
+
+  return rows.affectedRows;
+}
 
 // TODO 카카오 메세지 발송 시 업데이트
 // 카카오 발송 성공 시 상태 업데이트
@@ -362,7 +312,7 @@ export const getNoticeReadStatus = async (noticeId) => {
 };
 
 // 교수 과목 조회 (필터링)
-export const findProfessorCourses = async (user, filters = {}) => {
+export const findCoursesForForm = async (user = null, filters = {}) => {
   let sql = `
       SELECT DISTINCT 
           c.course_id,
@@ -382,7 +332,7 @@ export const findProfessorCourses = async (user, filters = {}) => {
   const params = [];
 
   // 역할에 따라 분기
-  if (user.role === "professor") {
+  if (user) {
     whereClauses.push(`cp.user_id = ?`);
     params.push(user.user_id);
   }
@@ -414,4 +364,32 @@ export const findProfessorCourses = async (user, filters = {}) => {
 
   const [rows] = await pool.query(sql, params);
   return rows;
+};
+
+// 사용자가 공지 수신 대상인지 확인
+export const isRecipient = async (noticeId, userId, connection = pool) => {
+  const [rows] = await connection.query(
+    `SELECT COUNT(*) as count FROM notification_delivery_notice WHERE notice_id = ? AND user_id = ?`,
+    [noticeId, userId],
+  );
+  return rows[0].count > 0;
+};
+
+
+// 과목 존재 여부 확인
+export const exists = async (courseId, connection = pool) => {
+  const [rows] = await connection.query(
+      `SELECT 1 FROM course WHERE course_id = ?`,
+      [courseId],
+  );
+  return rows.length > 0;
+};
+
+// 교수가 해당 과목을 담당하는지 확인
+export const isProfessorOfCourse = async (userId, courseId, connection = pool) => {
+  const [rows] = await connection.query(
+      `SELECT COUNT(*) as count FROM course_professor WHERE user_id = ? AND course_id = ?`,
+      [userId, courseId],
+  );
+  return rows[0].count > 0;
 };
