@@ -19,7 +19,7 @@ export async function fetchNoticesId(req, res, next) {
   try {
     const { notice_id } = req.params;
 
-    const noticeId = await noticeService.detailNotices(notice_id);
+    const noticeId = await noticeService.detailNotices(notice_id, req.user);
 
     res.status(200).json(noticeId);
   } catch (error) {
@@ -31,7 +31,6 @@ export async function fetchNoticesId(req, res, next) {
 export async function createNotice(req, res, next) {
   try {
     const { user, body: noticeData, files } = req;
-    console.log("현재 로그인된사용자", user);
 
     const result = await noticeService.addNotice(user, noticeData, files);
 
