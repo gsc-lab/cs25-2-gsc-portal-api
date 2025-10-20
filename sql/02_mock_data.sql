@@ -103,7 +103,7 @@ INSERT INTO student_entity (user_id, grade_id, class_id, language_id, is_interna
 INSERT INTO course_language (course_id, language_id) VALUES
 ('C001','KR'),('C002','KR'),('C003','JP'),('C004','KR');
 
-INSERT INTO course_target (target_id, course_id, grade_id, language_id) VALUES
+INSERT INTO course_schedule (target_id, course_id, grade_id, language_id) VALUES
 ('T001','C001','2',NULL),
 ('T002','C002','2',NULL),
 ('T003','C003','1','JP'),
