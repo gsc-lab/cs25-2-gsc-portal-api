@@ -10,10 +10,8 @@ tags:
   - name: Timetable
     description: 휴‧보강 이벤트 관리 API
   - name: Classroom
-  - name: Poll
   - name: Files
   - name: Cleaning
-  - name: Modal
   - name: Admin
   - name: Dispatch
 
