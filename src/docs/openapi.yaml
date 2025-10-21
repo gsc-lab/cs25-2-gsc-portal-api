@@ -879,6 +879,7 @@ paths:
         user_id와 기준 date(주 중 아무 날짜)를 받아, 해당 주(MON~FRI) × 교시(1~12) 형태의 그리드로 반환.
         - 방학/휴일 등은 비어 있을 수 있음
         - event 값은 수업 이벤트가 있을 때만 CANCEL/MAKEUP, 없으면 null
+      tags: [Timetable]
       security:
         - bearerAuth: []
       parameters:
