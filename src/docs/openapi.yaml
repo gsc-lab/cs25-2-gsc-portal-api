@@ -7,232 +7,19 @@ tags:
   - name: Auth
   - name: Dashboard
   - name: Notices
-  - name: Files
-  - name: Dispatch
-  - name: Cleaning
   - name: Timetable
     description: 휴‧보강 이벤트 관리 API
+  - name: Classroom
+  - name: Poll
+  - name: Files
+  - name: Cleaning
+  - name: Modal
+  - name: Admin
+  - name: Dispatch
 
 paths:
-  /admin/users:
-    get:
-      summary: 관리자 사용자 승인
-      tags: [Admin]
-      responses:
-        "200":
-          description: 승인대기 계정 출력
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id: { type: integer }
-                    role_type: { type: string }
-                    name: { type: string }
-                    email: { type: string }
-                    phone: { type: string }
-                    is_international: { type: boolean }
-                    level_name: { type: string }
-              example:
-                - id: 1
-                  role_type: student
-                  name: 김성식
-                  email: abc@gmail.com
-                  phone: 010-4628-5981
-                  is_international: true
-                  language_id: JLPT3
-                - id: 2
-                  role_type: professor
-                  name: 김교수
-                  email: abcd@gmail.com
-                  phone: 010-1234-5678
-                  professor_id: P001
-    post:
-      summary: 사용자 승인/거절 처리
-      tags: [Admin]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_id: { type: string, example: "2423001" }
-                action:
-                  type: string
-                  enum: [active, inactive]
-                  example: active
-      responses:
-        "200": { description: 승인 완료 }
+  # === AUTH SECTION ===
 
-  /admin/users/{id}:
-    delete:
-      summary: 사용자 삭제
-      tags: [Admin]
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string }
-      responses:
-        "200": { description: 삭제 완료 }
-
-  /admin/email:
-    get:
-      summary: 예외 이메일 관리
-      tags: [Admin]
-      responses:
-        "200":
-          description: "이메일 조회 성공"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id: { type: integer }
-                    email: { type: string }
-                    reason: { type: string }
-              example:
-                - id: 1
-                  email: aaa@gmail.com
-                  reason: 김순애 교수님 계정
-    post:
-      summary: 예외 이메일 등록
-      tags: [Admin]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email: { type: string, example: ccc@gmail.com }
-                reason: { type: string, example: 교수 연구용 }
-      responses:
-        "200": { description: 등록 완료 }
-
-  /admin/email/{id}:
-    delete:
-      summary: 예외 이메일 삭제
-      tags: [Admin]
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: integer }
-      responses:
-        "200": { description: 삭제 완료 }
-
-  /admin/students:
-    get:
-      summary: 학생 정보 관리
-      tags: [Admin]
-      parameters:
-        - in: query
-          name: grade_id
-          schema: { type: integer, enum: [1, 2, 3] }
-          description: 학년 (1=1학년, 2=2학년, 3=3학년)
-        - in: query
-          name: status
-          schema: { type: string, enum: [재학, 휴학, 자퇴, 졸업] }
-          description: 학생 상태
-      responses:
-        "200":
-          description: 조건에 맞는 학생 목록 반환
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id: { type: integer }
-                    grade_id: { type: integer }
-                    user_id: { type: string }
-                    name: { type: string }
-                    email: { type: string }
-                    phone: { type: string }
-                    status: { type: string }
-                    language_id: { type: string }
-                    level_class: { type: string }
-              example:
-                - id: 1
-                  grade_id: 1
-                  user_id: 2423001
-                  name: 권혁일
-                  email: aaa@gmail.com
-                  phone: 010-1111-1111
-                  status: 재학
-                  language_id: JLPTN1
-                  level_class: A
-                - id: 2
-                  grade_id: 2
-                  user_id: 2423002
-                  name: 김성식
-                  email: bbb@gmail.com
-                  phone: 010-2222-2222
-                  status: 휴학
-                  language_id: JLPTN2
-                  level_class: B
-
-  /admin/students/{user_id}:
-    patch:
-      summary: 학생 정보 수정
-      tags: [Admin]
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema: { type: integer }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name: { type: string }
-                phone: { type: string }
-                status: { type: string, enum: [재학, 휴학, 자퇴, 졸업] }
-                grade_id: { type: integer, enum: [1, 2, 3] }
-                language_id: { type: string }
-                level_name: { type: string }
-                class_name: { type: string }
-      responses:
-        "200": { description: 수정 완료 }
-
-  /admin/students/{id}:
-    delete:
-      summary: 학생 삭제
-      tags: [Admin]
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string }
-      responses:
-        "200": { description: 삭제 완료 }
-
-  /dashboard:
-    get:
-      tags: [Dashboard]
-      summary: 메인 대시보드 데이터 조회
-      description: |
-        - 로그인한 사용자의 메인 화면에 필요한 모든 데이터를 조회합니다.
-        - 사용자의 역할(학생, 교수, 관리자)에 따라 반환되는 데이터가 달라집니다.
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: 대시보드 데이터 반환 성공
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DashboardResponse"
   /auth/google:
     get:
       tags: [Auth]
@@ -249,6 +36,7 @@ paths:
                   url:
                     type: string
                     example: https://accounts.google.com/o/oauth2/v2/auth?...client_id=...
+
 
   /auth/google/callback:
     get:
@@ -290,6 +78,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
   /auth/register:
     post:
       tags:
@@ -326,6 +115,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
   /auth/refresh:
     post:
       tags: [Auth]
@@ -356,6 +146,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
   /auth/logout:
     post:
       tags:
@@ -377,6 +168,7 @@ paths:
                   message:
                     type: string
                     example: 성공적으로 로그아웃되었습니다.
+
   /auth/me:
     get:
       tags: [Auth]
@@ -397,6 +189,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  # === DASHBOARD SECTION ===
+
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: 메인 대시보드 데이터 조회
+      description: |
+        - 로그인한 사용자의 메인 화면에 필요한 모든 데이터를 조회합니다.
+        - 사용자의 역할(학생, 교수, 관리자)에 따라 반환되는 데이터가 달라집니다.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 대시보드 데이터 반환 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResponse"
+
+  # === NOTICES SECTION ===
+
   /notices:
     get:
       tags: [Notices]
@@ -525,6 +339,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
   /notices/form/courses:
     get:
       tags:
@@ -572,6 +387,7 @@ paths:
                     course_type:
                       type: string
                       example: 'regular'
+
 
   /notices/{noticeId}:
     get:
@@ -701,6 +517,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
   /notices/{noticeId}/dispatch:
     post:
       tags: [Notices]
@@ -765,6 +582,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
   /notices/{noticeId}/status:
     get:
       tags: [Notices]
@@ -792,6 +610,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
   /notices/{noticeId}/read:
     patch:
       tags: [Notices]
@@ -813,34 +632,503 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /files/{file_id}/download:
+
+  # === TIMETABLE SECTION ===
+
+  /timetables/registerCourses:
+    post:
+      summary: 과목 등록 (정규 / 특강 / 한국어)
+      tags: [Timetable]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sec_id, title, professor_id, target]
+              properties:
+                sec_id:
+                  type: string
+                  example: "2025-1"
+                title:
+                  type: string
+                  example: "JLPT 특강"
+                professor_id:
+                  type: integer
+                  example: 8888001
+                target:
+                  type: string
+                  enum: ["1", "2", "3", "special", "korean"]
+                  example: "special"
+                level_id:
+                  type: string
+                  description: 특강/한국어일 경우 레벨 ID
+                  example: "2"
+            examples:
+              regular:
+                summary: 정규 과목 등록
+                value:
+                  sec_id: "2025-1"
+                  title: "데이터베이스"
+                  professor_id: 8888001
+                  target: "2"
+              special:
+                summary: 특강 과목 등록
+                value:
+                  sec_id: "2025-1"
+                  title: "JLPT 특강"
+                  professor_id: 8888001
+                  target: "special"
+                  level_id: "2"
+              korean:
+                summary: 한국어 과목 등록
+                value:
+                  sec_id: "2025-1"
+                  title: "TOPIK 6급 대비반"
+                  professor_id: 8888003
+                  target: "korean"
+                  level_id: "5"
+      responses:
+        "200":
+          description: 과목 등록 완료
+
+
+
+  /timetables/registerHoliday:
+    post:
+      summary: 휴‧보강 등록
+      tags: [Timetable]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_type:
+                  type: string
+                  enum: [CANCEL, MAKEUP]
+                  example: CANCEL
+                event_date:
+                  type: string
+                  format: date
+                  example: "2025-10-05"
+                course_id:
+                  type: string
+                  example: "C001"
+                start_period:
+                  type: integer
+                  description: 시작 교시 (휴강일 경우 필수)
+                  example: 1
+                end_period:
+                  type: integer
+                  description: 종료 교시 (휴강일 경우 필수)
+                  example: 2
+                classroom:
+                  type: string
+                  description: 강의실 (휴강/보강 공통)
+                  example: "본관-101"
+                cancel_event_ids:
+                  type: array
+                  description: 보강 대상 휴강 이벤트 ID 목록 (보강일 경우 필수)
+                  items:
+                    type: string
+                  example: ["E002", "E003"]
+            examples:
+              cancel:
+                summary: 휴강 등록
+                value:
+                  event_type: CANCEL
+                  event_date: "2025-10-05"
+                  course_id: "C001"
+                  start_period: 1
+                  end_period: 2
+                  classroom: "본관-101"
+              makeup:
+                summary: 보강 등록
+                value:
+                  event_type: MAKEUP
+                  event_date: "2025-10-15"
+                  cancel_event_ids: ["E002"]
+                  classroom: "강의동-305"
+      responses:
+        "200":
+          description: 이벤트 등록 완료
+
+
+  /timetables/events/{id}:
+    delete:
+      summary: 휴‧보강 취소
+      tags: [Timetable]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: 이벤트 삭제 완료 }
+
+
+  /timetables/registerTimetable:
+    post:
+      summary: 시간표 등록 (정규 / 특강 / 한국어)
+      tags: [Timetable]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [course_id, classroom_id, day_of_week, start_period, end_period]
+              properties:
+                course_id:
+                  type: string
+                  example: "C001"
+                classroom_id:
+                  type: string
+                  example: "202"
+                day_of_week:
+                  type: string
+                  enum: [MON, TUE, WED, THU, FRI]
+                  example: MON
+                start_period:
+                  type: integer
+                  example: 5
+                end_period:
+                  type: integer
+                  example: 7
+            examples:
+              regular:
+                summary: 정규 과목 시간표 등록
+                value:
+                  classroom_id: "202"
+                  course_id: "C001"
+                  day_of_week: "MON"
+                  start_period: 5
+                  end_period: 7
+              special:
+                summary: 특강 시간표 등록
+                value:
+                  classroom_id: "305"
+                  course_id: "C003"
+                  day_of_week: "FRI"
+                  start_period: 3
+                  end_period: 4
+                  class_name: "A"
+              korean:
+                summary: 한국어 시간표 등록
+                value:
+                  classroom_id: "201"
+                  course_id: "C004"
+                  day_of_week: "TUE"
+                  start_period: 1
+                  end_period: 2
+      responses:
+        "200":
+          description: 시간표 등록 완료
+
+
+
+  /timetables/{type}/{id}:
+    put:
+      summary: 시간표 수정
+      tags: [Timetable]
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema: { type: string, enum: [regular, special, korean] }
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                classroom_id: { type: string, example: "102" }
+                day_of_week:
+                  type: string
+                  enum: [MON, TUE, WED, THU, FRI]
+                  example: TUE
+                time_slot_id: { type: string, example: "2" }
+              additionalProperties: true
+      responses:
+        "200": { description: 수정 완료 }
+    delete:
+      summary: 시간표 삭제
+      tags: [Timetable]
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema: { type: string, enum: [regular, special, korean] }
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: 삭제 완료 }
+
+
+  /timetables/grid:
     get:
-      tags:
-        - Files
-      summary: 파일 다운로드
+      summary: 주간 시간표 그리드 조회 (요일→교시 매핑)
       description: |
-        - 지정된 file_id에 해당하는 파일을 다운로드합니다.
+        user_id와 기준 date(주 중 아무 날짜)를 받아, 해당 주(MON~FRI) × 교시(1~12) 형태의 그리드로 반환.
+        - 방학/휴일 등은 비어 있을 수 있음
+        - event 값은 수업 이벤트가 있을 때만 CANCEL/MAKEUP, 없으면 null
       security:
         - bearerAuth: []
       parameters:
-        - in: path
-          name: file_id
+        - in: query
+          name: user_id
           required: true
-          description: 다운로드할 파일의 고유 ID
-          schema:
-            type: integer
-            example: 101
+          schema: { type: string, example: "2423001" }
+          description: 학생/교수 시스템 ID (DB user_account.user_id)
+        - in: query
+          name: role
+          required: true
+          schema: { type: string, enum: [student, professor, admin] }
+          description: 조회 주체에 따른 필터링(학생=수강, 교수=담당)
+        - in: query
+          name: date
+          required: true
+          schema: { type: string, format: date, example: "2025-04-16" }
+          description: 포함 주의 임의 날짜(백엔드는 이 날짜로 week_start/week_end 계산)
       responses:
-        '200':
-          description: 성공적인 파일 다운로드. 파일의 실제 바이너리 데이터가 반환됩니다.
+        "200":
+          description: OK
           content:
-            # 파일 타입은 매우 다양하므로, 와일드카드 사용
-            '*/*':
+            application/json:
               schema:
-                type: string
-                format: binary
-        '404':
-          description: 해당 file_id를 가진 파일을 찾을 수 없는 경우
+                $ref: "#/components/schemas/TimetableGrid"
+              examples:
+                sample:
+                  value:
+                    meta:
+                      week_start: "2025-04-14"
+                      week_end: "2025-04-18"
+                      period_times:
+                        "1": { start: "09:00:00", end: "09:50:00" }
+                        "2": { start: "10:00:00", end: "10:50:00" }
+                    MON: { "1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7": null, "8": null, "9": null, "10": null, "11": null, "12": null }
+                    TUE: { "1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7": null, "8": null, "9": null, "10": null, "11": null, "12": null }
+                    WED:
+                      "1": null
+                      "2":
+                        course_id: "C001"
+                        title: "인공지능 개론"
+                        room: "본관-101"
+                        professor: "이교수"
+                        level: null
+                        event: null
+                      "3": null
+                      "4": null
+                      "5": null
+                      "6": null
+                      "7": null
+                      "8": null
+                      "9": null
+                      "10": null
+                      "11": null
+                      "12": null
+                    THU:
+                      "1": null
+                      "2": null
+                      "3": null
+                      "4": null
+                      "5": null
+                      "6": null
+                      "7": null
+                      "8": null
+                      "9": null
+                      "10": null
+                      "11":
+                        course_id: "C008"
+                        title: "TOPIK 4급 한국어 특강"
+                        room: "실습동-202"
+                        professor: "박교수"
+                        level: "TOPIK 4급"
+                        event: null
+                      "12": null
+                    FRI:
+                      "1": null
+                      "2": null
+                      "3": null
+                      "4": null
+                      "5": null
+                      "6": null
+                      "7": null
+                      "8": null
+                      "9":
+                        course_id: "C006"
+                        title: "네트워크"
+                        room: "실습동-201"
+                        professor: "이교수"
+                        level: null
+                        event: CANCEL
+                      "10": null
+                      "11": null
+                      "12": null
+        "400": { description: 잘못된 요청 (파라미터 누락/형식 오류) }
+        "401": { description: 인증 실패 }
+        "403": { description: 권한 부족 }
+
+
+  /timetables/student/{user_id}:
+    get:
+      summary: 학생 시간표 조회 (주간)
+      description: |
+        특정 학생의 주간 시간표를 조회합니다.  
+        - 정규 수업, 특강, 한국어, 상담(후카) 일정이 모두 포함됩니다.  
+        - 요청한 날짜(`date`)가 속한 주간 범위를 서버에서 계산하여 해당 주차의 모든 일정을 반환합니다.
+      tags: [Timetable]
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema: { type: string, example: "2423004" }
+          description: 학생의 사용자 ID
+        - in: query
+          name: date
+          required: true
+          schema: { type: string, format: date, example: "2025-10-20" }
+          description: 조회 기준 날짜 (서버가 자동으로 해당 주의 시작/종료일 계산)
+      responses:
+        "200":
+          description: 주간 시간표 데이터 (수업 + 상담 포함)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimetableWeeklyResponse"
+        "404":
+          description: 해당 학생의 시간표가 존재하지 않습니다.
+        "500":
+          description: 서버 내부 오류
+
+
+  /timetables/professor/{user_id}:
+    get:
+      summary: 교수 시간표 조회 (주간)
+      description: |
+        특정 교수의 주간 시간표를 조회합니다.  
+        - 담당 수업 및 교수 상담(후카) 일정이 포함됩니다.  
+        - 학기 범위(`section`) 및 주차(`week_start ~ week_end`) 기준으로 필터링됩니다.
+      tags: [Timetable]
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema: { type: string, example: "8888001" }
+          description: 교수의 사용자 ID
+        - in: query
+          name: date
+          required: true
+          schema: { type: string, format: date, example: "2025-10-20" }
+          description: 조회 기준 날짜 (서버가 해당 주차 범위를 자동 계산)
+      responses:
+        "200":
+          description: 주간 시간표 데이터 (수업 + 상담 포함)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimetableWeeklyResponse"
+        "404":
+          description: 해당 교수의 시간표가 존재하지 않습니다.
+        "500":
+          description: 서버 내부 오류
+
+
+  /timetables/admin:
+    get:
+      summary: 전체 시간표 조회 (주간)
+      description: |
+        관리자가 전체 학과의 주간 시간표를 조회합니다.  
+        - **1~3학년**, **특강**, **한국어**, **상담(후카)** 일정이 모두 포함됩니다.  
+        - 주간 범위는 `week_start`, `week_end` 파라미터로 지정합니다.  
+        - 휴강(`CANCEL`) 및 보강(`MAKEUP`) 이벤트도 반영됩니다.
+      tags: [Timetable]
+      parameters:
+        - in: query
+          name: week_start
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-10-20"
+          description: 주간 시작일 (월요일 기준)
+        - in: query
+          name: week_end
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-10-26"
+          description: 주간 종료일 (일요일 기준)
+      responses:
+        "200":
+          description: |
+            학년별 주간 시간표 데이터  
+            (정규 수업, 특강, 한국어, 상담, 휴강/보강 포함)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  "1학년":
+                    $ref: "#/components/schemas/TimetableWeeklyResponse"
+                  "2학년":
+                    $ref: "#/components/schemas/TimetableWeeklyResponse"
+                  "3학년":
+                    $ref: "#/components/schemas/TimetableWeeklyResponse"
+                  "특강":
+                    $ref: "#/components/schemas/TimetableWeeklyResponse"
+                  "한국어":
+                    $ref: "#/components/schemas/TimetableWeeklyResponse"
+        "400":
+          description: 잘못된 요청 (파라미터 누락 또는 형식 오류)
+        "500":
+          description: 서버 내부 오류
+
+
+
+
+  /timetables/classes/{class_id}/assign:
+    post:
+      summary: 특강 분반 등록 (학생 배정)
+      description: |
+        선택한 반(`class_id`)에 여러 명의 학생을 일괄 배정합니다.  
+        이미 등록된 학생이 있을 경우 덮어쓰기 방식으로 업데이트되며,  
+        모든 쿼리는 트랜잭션으로 처리되어 일부 실패 시 전체 롤백됩니다.
+      tags: ["Timetable"]
+      parameters:
+        - name: class_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: C007A
+          description: "반 고유 ID (예: C007A)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                student_ids:
+                  type: array
+                  items:
+                    type: string
+                  example: ["2423004", "2524001"]
+                  description: 배정할 학생의 user_id 배열
+      responses:
+        "200":
+          description: 분반 등록 성공
           content:
             application/json:
               schema:
@@ -848,157 +1136,459 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "파일을 찾을 수 없습니다."
-
-  /dispatch/direct:
-    post:
-      tags: [Dispatch]
-      summary: 특정 사용자들에게 직접 메시지 발송
-      description: |
-        - Request Body에 명시된 사용자 ID 목록을 대상으로 즉시 메시지를 발송합니다.
-        - 공지사항과 연동되지 않습니다.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DirectMessageRequest"
-      responses:
-        "202":
-          description: 발송 요청 접수됨(비동기)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KakaoEnqueueResponse"
+                    example: "등록 완료"
+                  result:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "2명의 학생이 C007A 반에 배정되었습니다."
         "400":
-          description: "잘못된 요청 (예: 사용자 ID 목록이 비어있음)"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          description: 잘못된 요청 (필수 파라미터 누락)
+        "401":
+          description: 인증 실패 (JWT 누락 또는 만료)
+        "500":
+          description: 서버 내부 오류 (DB 트랜잭션 실패 등)
 
-  /dispatch/jobs/{jobId}:
+
+
+  /timetables/huka/student:
     get:
-      tags: [Dispatch]
-      summary: 발송 작업 상태 조회
-      security:
-        - bearerAuth: []
+      summary: 학생 상담 시간표 조회
+      tags: ["Timetable"]
+      description: >
+        교수, 관리자, 학생 모두 상담 시간표를 조회할 수 있습니다.  
+        (정규 상담 및 일회성 상담 모두 반환합니다)
       parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema: { type: string }
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 조회할 사용자 ID (교수/학생 ID)
+        - name: targetDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-10-08"
+          description: 조회 기준 날짜 (주차 단위 계산용)
       responses:
         "200":
-          description: 상태 반환
+          description: 상담 시간표 데이터
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  job_id: { type: string }
-                  status:
-                    type: string
-                    enum: [QUEUED, SENDING, PARTIAL, SUCCESS, FAILED]
-                  total: { type: integer }
-                  sent: { type: integer }
-                  failed: { type: integer }
-
-  /cleaning-rosters:
-    get:
-      tags: [Cleaning]
-      summary: 주간 청소 당번 조회
-      description: 특정 학년 또는 특정 날짜를 기준으로 배정된 청소 당번 목록을 조회합니다.
+                  MON:
+                    type: object
+                    example:
+                      "8": { "student": "국내1-JP-A", "location": "실습동301호" }
+                      "9": { "student": "2423004", "location": "본관201호" }
+    post:
+      summary: 정규 상담 등록 (매주 고정 상담)
+      tags: ["Timetable"]
+      description: >
+        여러 학생을 대상으로 특정 요일·교시 범위의 **정규 상담 일정을 등록**합니다.  
+        `time_slot_id`는 자동 매핑됩니다.
       security:
         - bearerAuth: []
-      parameters:
-        - name: grade_id
-          in: query
-          required: true
-          schema: { type: string, example: G1 }
-        - name: date
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-          description: "조회하고 싶은 주(week)의 아무 날짜나 입력 (예: 2025-09-15)"
-      responses:
-        "200":
-          description: 청소 당번 목록 반환
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CleaningRosterResponse"
-    delete:
-      tags:
-        - Cleaning
-      summary: 특정 학년의 학기별 청소 당번 삭제
-      description: |
-        지정된 학기(section)의 특정 학년(grade_id)에 해당하는 모든 청소 당번 데이터를 삭제합니다.
-        **안정성을 위해 학년(grade_id) 지정은 필수입니다.**
-      security:
-        - bearerAuth: [ ] # 관리자만 가능
-      parameters:
-        - name: section
-          in: query
-          required: true
-          description: 삭제할 학기
-          schema:
-            type: string
-            example: "2025-2"
-        - name: grade_id
-          in: query
-          required: true
-          description: 삭제할 학년 ID
-          schema:
-            type: string
-            example: 1
-      responses:
-        "200":
-          description: 삭제 성공
-        "400":
-          description: 잘못된 요청 (필수 파라미터 누락)
-        "403":
-          description: 권한 없음 (관리자 X)
-        "404":
-          description: 삭제할 데이터를 찾을 수 없음
-  /cleaning-rosters/generate:
-    post:
-      tags:
-        - Cleaning
-      summary: 학기 전 주차/전 학년 로스터 자동 생성
-      description: 학기 시작 시 한 번 실행하여 주간 로스터를 자동 생성합니다. **이미 데이터가 존재하는 주차는 새로운 팀으로 덮어쓰므로, 여러 번 실행해도 안전합니다.**
-      security:
-        - bearerAuth: [ ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GenerateRostersRequest"
-            examples:
-              default:
-                value:
-                  section: "2025-2"
-                  weekday: "MON"
-                  team_size: 4
-                  grade_rooms:
-                    - { grade_id: "1", classroom_id: "C-304" }
-                    - { grade_id: "2", classroom_id: "C-405" }
+              type: object
+              properties:
+                student_ids:
+                  type: array
+                  items:
+                    type: string
+                  example: ["2423004", "2423005"]
+                sec_id:
+                  type: string
+                  example: "2025-1"
+                day_of_week:
+                  type: string
+                  enum: ["MON", "TUE", "WED", "THU", "FRI"]
+                start_slot:
+                  type: integer
+                  example: 8
+                end_slot:
+                  type: integer
+                  example: 9
+                location:
+                  type: string
+                  example: "실습동 301호"
       responses:
-        "201":
-          description: 생성 결과 요약
+        "200":
+          description: 등록 완료
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GenerateRostersResult"
-        "400":
-          description: 잘못된 요청(파라미터/형식 오류)
-        "409":
-          description: 충돌(잘못된 중복 또는 생성 불가 주차)
+                type: object
+                example:
+                  message: "2명의 정규 상담 일정이 등록되었습니다."
+
+
+  /timetables/huka/student/custom:
+    post:
+      summary: 일회성 상담 등록 (개별 일정 수정)
+      tags: ["Timetable"]
+      description: >
+        특정 주차의 **개별(임시) 상담 일정을 등록**합니다.  
+        같은 주차의 `REGULAR` 상담은 자동으로 덮어씌워집니다.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                student_ids:
+                  type: array
+                  items:
+                    type: string
+                  example: ["2423004"]
+                sec_id:
+                  type: string
+                  example: "2025-1"
+                date:
+                  type: string
+                  format: date
+                  example: "2025-10-15"
+                start_slot:
+                  type: integer
+                  example: 9
+                end_slot:
+                  type: integer
+                  example: 10
+                location:
+                  type: string
+                  example: "본관 201호"
+      responses:
+        "200":
+          description: 수정 상담 등록 완료
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: "1명의 상담 일정이 수정되었습니다."
+
+
+  /timetables/events:
+    get:
+      summary: 휴보강 이력 조회
+      description: 전체 휴보강 이력을 조회합니다. (프론트에서 학년/과목 필터링 처리)
+      tags:
+        - Timetable
+      responses:
+        "200":
+          description: 휴보강 이력 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        event_status:
+                          type: string
+                          example: "MAKEUP"
+                          description: "휴강/보강 상태 (CANCEL=휴강, MAKEUP=보강)"
+                        event_date:
+                          type: string
+                          format: date-time
+                          example: "2025-10-19"
+                          description: "휴보강 발생일"
+                        grade_id:
+                          type: string
+                          nullable: true
+                          example: "2"
+                          description: "학년 ID (특강의 경우 NULL)"
+                        grade_name:
+                          type: string
+                          nullable: true
+                          example: "2학년"
+                          description: "학년 이름 (특강의 경우 NULL)"
+                        course_id:
+                          type: string
+                          example: "C001"
+                          description: "과목 ID"
+                        course_title:
+                          type: string
+                          example: "인공지능 개론"
+                          description: "과목명"
+                        start_time:
+                          type: string
+                          format: time
+                          example: "09:00:00"
+                          description: "수업 시작 교시 시간"
+                        end_time:
+                          type: string
+                          format: time
+                          example: "09:50:00"
+                          description: "수업 종료 교시 시간"
+
+
+  # === CLASSROOM SECTION ===
+
+  /classrooms:
+    get:
+      summary: 강의실 목록 조회
+      tags: [Classroom]
+      responses:
+        "200":
+          description: 강의실 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    classroom_id: { type: string, example: "101" }
+                    building: { type: string, example: 본관 }
+                    room_number: { type: string, example: "101" }
+                    room_type: { type: string, example: 강의실 }
+    post:
+      summary: 강의실 등록
+      tags: [Classroom]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                building: { type: string, example: 본관 }
+                room_number: { type: string, example: "404" }
+                room_type: { type: string, example: 수업 }
+      responses:
+        "200": { description: 등록 완료 }
+
+
+  /classrooms/{id}:
+    put:
+      summary: 강의실 수정
+      tags: [Classroom]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                building: { type: string, example: 신관 }
+                room_number: { type: string, example: "302" }
+                room_type: { type: string, example: 회의 }
+      responses:
+        "200": { description: 수정 완료 }
+    delete:
+      summary: 강의실 삭제
+      tags: [Classroom]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: 삭제 완료 }
+
+
+  /classrooms/purposes:
+    get:
+      summary: 강의실 사용 목적 목록 조회
+      tags: [Classroom]
+      responses:
+        "200":
+          description: 목적 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    purpose: { type: string, example: 수업 }
+
+
+  /classrooms/{classroom_id}/reservations:
+    get:
+      summary: 특정 강의실의 주간 예약 현황 조회
+      description: |
+        선택한 날짜(`date`)를 기준으로 해당 주(월~일)에 포함되는 예약 내역을 반환합니다.  
+        날짜 범위는 백엔드에서 자동 계산되며, 사용자 이름(`user_name`)이 함께 표시됩니다.
+      tags:
+        - Classroom - Reservation
+      parameters:
+        - in: path
+          name: classroom_id
+          required: true
+          schema:
+            type: string
+          description: "강의실 ID (예: CR001)"
+        - in: query
+          name: date
+          required: true
+          schema:
+            type: string
+            format: date
+          example: "2025-10-13"
+          description: 주간 예약을 조회할 기준 날짜
+      responses:
+        "200":
+          description: 주간 예약 현황
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  MON:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClassroomReservationItem'
+                  TUE:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClassroomReservationItem'
+                  WED:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClassroomReservationItem'
+                  THU:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClassroomReservationItem'
+                  FRI:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClassroomReservationItem'
+                  SAT:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClassroomReservationItem'
+                  SUN:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClassroomReservationItem'
+    post:
+      summary: 강의실 예약 등록
+      description: |
+        로그인된 사용자(`req.user.user_id`)를 기준으로 강의실 예약을 등록합니다.  
+        중복 시간대 예약은 서버에서 방지됩니다.
+      tags:
+        - Classroom - Reservation
+      parameters:
+        - in: path
+          name: classroom_id
+          required: true
+          schema:
+            type: string
+          description: "강의실 ID (예: CR001)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reservation_date:
+                  type: string
+                  format: date
+                  example: "2025-10-20"
+                  description: 예약 날짜
+                start_time:
+                  type: string
+                  example: "09:00:00"
+                  description: 예약 시작 시간
+                end_time:
+                  type: string
+                  example: "10:00:00"
+                  description: 예약 종료 시간
+      responses:
+        "200":
+          description: 예약 완료
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "예약 완료"
+                  result:
+                    type: object
+                    properties:
+                      affectedRows:
+                        type: integer
+                        example: 1
+
+
+  /classrooms/{classroom_id}/reservations/{reservation_id}:
+    delete:
+      summary: 강의실 예약 취소
+      description: |
+        지정한 강의실(`classroom_id`)의 특정 예약(`reservation_id`)을 삭제합니다.  
+        예약이 존재하지 않으면 404 응답을 반환합니다.
+      tags:
+        - Classroom - Reservation
+      parameters:
+        - in: path
+          name: classroom_id
+          required: true
+          schema:
+            type: string
+          description: "강의실 ID (예: CR001)"
+        - in: path
+          name: reservation_id
+          required: true
+          schema:
+            type: string
+          description: 예약 고유 ID (AUTO_INCREMENT 값)
+      responses:
+        "200":
+          description: 예약 취소 완료
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "삭제 완료"
+                  result:
+                    type: object
+                    properties:
+                      affectedRows:
+                        type: integer
+                        example: 1
+        "404":
+          description: 해당 예약을 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "해당 예약을 찾을 수 없습니다."
+
+
+  # === POLL SECTION ===
 
   /classrooms/polls:
     get:
@@ -1122,6 +1712,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+
   /classrooms/polls/{poll_id}/vote:
     post:
       summary: 투표 신청 / 취소
@@ -1187,247 +1778,146 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /classrooms/{classroom_id}/reservations:
+
+  # === FILES SECTION ===
+
+  /files/{file_id}/download:
     get:
-      summary: 특정 강의실의 주간 예약 현황 조회
-      description: |
-        선택한 날짜(`date`)를 기준으로 해당 주(월~일)에 포함되는 예약 내역을 반환합니다.  
-        날짜 범위는 백엔드에서 자동 계산되며, 사용자 이름(`user_name`)이 함께 표시됩니다.
       tags:
-        - Classroom - Reservation
+        - Files
+      summary: 파일 다운로드
+      description: |
+        - 지정된 file_id에 해당하는 파일을 다운로드합니다.
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
-          name: classroom_id
+          name: file_id
           required: true
+          description: 다운로드할 파일의 고유 ID
           schema:
-            type: string
-          description: "강의실 ID (예: CR001)"
-        - in: query
-          name: date
+            type: integer
+            example: 101
+      responses:
+        '200':
+          description: 성공적인 파일 다운로드. 파일의 실제 바이너리 데이터가 반환됩니다.
+          content:
+            # 파일 타입은 매우 다양하므로, 와일드카드 사용
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 해당 file_id를 가진 파일을 찾을 수 없는 경우
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "파일을 찾을 수 없습니다."
+
+
+  # === CLEANING SECTION ===
+
+  /cleaning-rosters:
+    get:
+      tags: [Cleaning]
+      summary: 주간 청소 당번 조회
+      description: 특정 학년 또는 특정 날짜를 기준으로 배정된 청소 당번 목록을 조회합니다.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: grade_id
+          in: query
+          required: true
+          schema: { type: string, example: G1 }
+        - name: date
+          in: query
           required: true
           schema:
             type: string
             format: date
-          example: "2025-10-13"
-          description: 주간 예약을 조회할 기준 날짜
+          description: "조회하고 싶은 주(week)의 아무 날짜나 입력 (예: 2025-09-15)"
       responses:
         "200":
-          description: 주간 예약 현황
+          description: 청소 당번 목록 반환
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  MON:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ClassroomReservationItem'
-                  TUE:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ClassroomReservationItem'
-                  WED:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ClassroomReservationItem'
-                  THU:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ClassroomReservationItem'
-                  FRI:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ClassroomReservationItem'
-                  SAT:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ClassroomReservationItem'
-                  SUN:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ClassroomReservationItem'
-    post:
-      summary: 강의실 예약 등록
-      description: |
-        로그인된 사용자(`req.user.user_id`)를 기준으로 강의실 예약을 등록합니다.  
-        중복 시간대 예약은 서버에서 방지됩니다.
-      tags:
-        - Classroom - Reservation
-      parameters:
-        - in: path
-          name: classroom_id
-          required: true
-          schema:
-            type: string
-          description: "강의실 ID (예: CR001)"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reservation_date:
-                  type: string
-                  format: date
-                  example: "2025-10-20"
-                  description: 예약 날짜
-                start_time:
-                  type: string
-                  example: "09:00:00"
-                  description: 예약 시작 시간
-                end_time:
-                  type: string
-                  example: "10:00:00"
-                  description: 예약 종료 시간
-      responses:
-        "200":
-          description: 예약 완료
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "예약 완료"
-                  result:
-                    type: object
-                    properties:
-                      affectedRows:
-                        type: integer
-                        example: 1
-
-  /classrooms/{classroom_id}/reservations/{reservation_id}:
+                $ref: "#/components/schemas/CleaningRosterResponse"
     delete:
-      summary: 강의실 예약 취소
-      description: |
-        지정한 강의실(`classroom_id`)의 특정 예약(`reservation_id`)을 삭제합니다.  
-        예약이 존재하지 않으면 404 응답을 반환합니다.
       tags:
-        - Classroom - Reservation
+        - Cleaning
+      summary: 특정 학년의 학기별 청소 당번 삭제
+      description: |
+        지정된 학기(section)의 특정 학년(grade_id)에 해당하는 모든 청소 당번 데이터를 삭제합니다.
+        **안정성을 위해 학년(grade_id) 지정은 필수입니다.**
+      security:
+        - bearerAuth: [ ] # 관리자만 가능
       parameters:
-        - in: path
-          name: classroom_id
+        - name: section
+          in: query
           required: true
+          description: 삭제할 학기
           schema:
             type: string
-          description: "강의실 ID (예: CR001)"
-        - in: path
-          name: reservation_id
+            example: "2025-2"
+        - name: grade_id
+          in: query
           required: true
+          description: 삭제할 학년 ID
           schema:
             type: string
-          description: 예약 고유 ID (AUTO_INCREMENT 값)
+            example: 1
       responses:
         "200":
-          description: 예약 취소 완료
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "삭제 완료"
-                  result:
-                    type: object
-                    properties:
-                      affectedRows:
-                        type: integer
-                        example: 1
+          description: 삭제 성공
+        "400":
+          description: 잘못된 요청 (필수 파라미터 누락)
+        "403":
+          description: 권한 없음 (관리자 X)
         "404":
-          description: 해당 예약을 찾을 수 없음
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "해당 예약을 찾을 수 없습니다."
+          description: 삭제할 데이터를 찾을 수 없음
 
-  /classrooms:
-    get:
-      summary: 강의실 목록 조회
-      tags: [Classroom]
-      responses:
-        "200":
-          description: 강의실 목록
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    classroom_id: { type: string, example: "101" }
-                    building: { type: string, example: 본관 }
-                    room_number: { type: string, example: "101" }
-                    room_type: { type: string, example: 강의실 }
+  /cleaning-rosters/generate:
     post:
-      summary: 강의실 등록
-      tags: [Classroom]
+      tags:
+        - Cleaning
+      summary: 학기 전 주차/전 학년 로스터 자동 생성
+      description: 학기 시작 시 한 번 실행하여 주간 로스터를 자동 생성합니다. **이미 데이터가 존재하는 주차는 새로운 팀으로 덮어쓰므로, 여러 번 실행해도 안전합니다.**
+      security:
+        - bearerAuth: [ ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                building: { type: string, example: 본관 }
-                room_number: { type: string, example: "404" }
-                room_type: { type: string, example: 수업 }
+              $ref: "#/components/schemas/GenerateRostersRequest"
+            examples:
+              default:
+                value:
+                  section: "2025-2"
+                  weekday: "MON"
+                  team_size: 4
+                  grade_rooms:
+                    - { grade_id: "1", classroom_id: "C-304" }
+                    - { grade_id: "2", classroom_id: "C-405" }
       responses:
-        "200": { description: 등록 완료 }
-
-  /classrooms/{id}:
-    put:
-      summary: 강의실 수정
-      tags: [Classroom]
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: integer }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                building: { type: string, example: 신관 }
-                room_number: { type: string, example: "302" }
-                room_type: { type: string, example: 회의 }
-      responses:
-        "200": { description: 수정 완료 }
-    delete:
-      summary: 강의실 삭제
-      tags: [Classroom]
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: integer }
-      responses:
-        "200": { description: 삭제 완료 }
-
-  /classrooms/purposes:
-    get:
-      summary: 강의실 사용 목적 목록 조회
-      tags: [Classroom]
-      responses:
-        "200":
-          description: 목적 목록
+        "201":
+          description: 생성 결과 요약
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    purpose: { type: string, example: 수업 }
+                $ref: "#/components/schemas/GenerateRostersResult"
+        "400":
+          description: 잘못된 요청(파라미터/형식 오류)
+        "409":
+          description: 충돌(잘못된 중복 또는 생성 불가 주차)
+
+
+  # === MODAL SECTION ===
 
   /modal/sections:
     get:
@@ -1446,6 +1936,7 @@ paths:
                     sec_id: { type: string, example: 2025-1 }
                     label: { type: string, example: 2025-1 }
 
+
   /modal/professors:
     get:
       summary: 교수 목록 조회
@@ -1462,6 +1953,7 @@ paths:
                   properties:
                     user_id: { type: string, example: P001 }
                     name: { type: string, example: 이교수 }
+
 
   /modal/classrooms:
     get:
@@ -1481,6 +1973,7 @@ paths:
                     building: { type: string, example: 본관 }
                     room_number: { type: string, example: "101" }
 
+
   /modal/timeslots:
     get:
       summary: 교시 목록 조회
@@ -1499,6 +1992,7 @@ paths:
                     start_time: { type: string, example: "09:00:00" }
                     end_time: { type: string, example: "09:50:00" }
 
+
   /modal/days:
     get:
       summary: 요일 목록 조회
@@ -1514,6 +2008,7 @@ paths:
                   type: object
                   properties:
                     day_of_week: { type: string, example: 월 }
+
 
   /modal/courses/regular:
     get:
@@ -1541,6 +2036,7 @@ paths:
                     course_id: { type: string, example: "C001" }
                     title: { type: string, example: "인공지능 개론" }
 
+
   /modal/courses/special:
     get:
       summary: 특강 과목 목록 조회
@@ -1559,6 +2055,7 @@ paths:
                     title: { type: string, example: "JLPT 특강" }
                     class_id: { type: string, example: "1" }
                     class_name: { type: string, example: "A" }
+
 
   /modal/courses/special/classes:
     get:
@@ -1600,6 +2097,7 @@ paths:
         "500":
           description: "서버 내부 오류"
 
+
   /modal/courses/korean/classes:
     get:
       summary: "한국어 과목 반 조회"
@@ -1640,6 +2138,7 @@ paths:
         "500":
           description: "서버 내부 오류"
 
+
   /modal/courses/korean:
     get:
       summary: 한국어 과목 목록 조회
@@ -1658,6 +2157,7 @@ paths:
                     title: { type: string, example: "TOPIK 대비 한국어" }
                     class_id: { type: string, example: "1" }
                     class_name: { type: string, example: "A" }
+
 
   /modal/courses/{course_id}/students:
     get:
@@ -1747,6 +2247,7 @@ paths:
         "500":
           description: "서버 내부 오류"
 
+
   /modal/subjects/holidays:
     get:
       summary: 휴강 이벤트 조회 (학년별)
@@ -1803,6 +2304,7 @@ paths:
                     start_time: "10:00:00"
                     end_time: "10:50:00"
 
+
   /modal/courses/all:
     get:
       summary: 전체 과목 목록 조회 (정규 + 특강 + 한국어)
@@ -1834,6 +2336,7 @@ paths:
                       example: "2"
                       enum: ["1", "2", "3", "special", "korean"]
 
+
   /modal/schedule/{course_id}:
     get:
       summary: 특정 과목의 시간표 조회
@@ -1862,68 +2365,47 @@ paths:
                     building: { type: string, example: 본관 }
                     room_number: { type: string, example: "101" }
 
-  /timetables/registerCourses:
-    post:
-      summary: 과목 등록 (정규 / 특강 / 한국어)
-      tags: [Timetable]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [sec_id, title, professor_id, target]
-              properties:
-                sec_id:
-                  type: string
-                  example: "2025-1"
-                title:
-                  type: string
-                  example: "JLPT 특강"
-                professor_id:
-                  type: integer
-                  example: 8888001
-                target:
-                  type: string
-                  enum: ["1", "2", "3", "special", "korean"]
-                  example: "special"
-                level_id:
-                  type: string
-                  description: 특강/한국어일 경우 레벨 ID
-                  example: "2"
-            examples:
-              regular:
-                summary: 정규 과목 등록
-                value:
-                  sec_id: "2025-1"
-                  title: "데이터베이스"
-                  professor_id: 8888001
-                  target: "2"
-              special:
-                summary: 특강 과목 등록
-                value:
-                  sec_id: "2025-1"
-                  title: "JLPT 특강"
-                  professor_id: 8888001
-                  target: "special"
-                  level_id: "2"
-              korean:
-                summary: 한국어 과목 등록
-                value:
-                  sec_id: "2025-1"
-                  title: "TOPIK 6급 대비반"
-                  professor_id: 8888003
-                  target: "korean"
-                  level_id: "5"
+
+  # === ADMIN SECTION ===
+
+  /admin/users:
+    get:
+      summary: 관리자 사용자 승인
+      tags: [Admin]
       responses:
         "200":
-          description: 과목 등록 완료
-
-
-  /timetables/registerHoliday:
+          description: 승인대기 계정 출력
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    role_type: { type: string }
+                    name: { type: string }
+                    email: { type: string }
+                    phone: { type: string }
+                    is_international: { type: boolean }
+                    level_name: { type: string }
+              example:
+                - id: 1
+                  role_type: student
+                  name: 김성식
+                  email: abc@gmail.com
+                  phone: 010-4628-5981
+                  is_international: true
+                  language_id: JLPT3
+                - id: 2
+                  role_type: professor
+                  name: 김교수
+                  email: abcd@gmail.com
+                  phone: 010-1234-5678
+                  professor_id: P001
     post:
-      summary: 휴‧보강 등록
-      tags: [Timetable]
+      summary: 사용자 승인/거절 처리
+      tags: [Admin]
       requestBody:
         required: true
         content:
@@ -1931,164 +2413,20 @@ paths:
             schema:
               type: object
               properties:
-                event_type:
+                user_id: { type: string, example: "2423001" }
+                action:
                   type: string
-                  enum: [CANCEL, MAKEUP]
-                  example: CANCEL
-                event_date:
-                  type: string
-                  format: date
-                  example: "2025-10-05"
-                course_id:
-                  type: string
-                  example: "C001"
-                start_period:
-                  type: integer
-                  description: 시작 교시 (휴강일 경우 필수)
-                  example: 1
-                end_period:
-                  type: integer
-                  description: 종료 교시 (휴강일 경우 필수)
-                  example: 2
-                classroom:
-                  type: string
-                  description: 강의실 (휴강/보강 공통)
-                  example: "본관-101"
-                cancel_event_ids:
-                  type: array
-                  description: 보강 대상 휴강 이벤트 ID 목록 (보강일 경우 필수)
-                  items:
-                    type: string
-                  example: ["E002", "E003"]
-            examples:
-              cancel:
-                summary: 휴강 등록
-                value:
-                  event_type: CANCEL
-                  event_date: "2025-10-05"
-                  course_id: "C001"
-                  start_period: 1
-                  end_period: 2
-                  classroom: "본관-101"
-              makeup:
-                summary: 보강 등록
-                value:
-                  event_type: MAKEUP
-                  event_date: "2025-10-15"
-                  cancel_event_ids: ["E002"]
-                  classroom: "강의동-305"
+                  enum: [active, inactive]
+                  example: active
       responses:
-        "200":
-          description: 이벤트 등록 완료
+        "200": { description: 승인 완료 }
 
-  /timetables/events/{id}:
+
+  /admin/users/{id}:
     delete:
-      summary: 휴‧보강 취소
-      tags: [Timetable]
+      summary: 사용자 삭제
+      tags: [Admin]
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string }
-      responses:
-        "200": { description: 이벤트 삭제 완료 }
-
-  /timetables/registerTimetable:
-    post:
-      summary: 시간표 등록 (정규 / 특강 / 한국어)
-      tags: [Timetable]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [course_id, classroom_id, day_of_week, start_period, end_period]
-              properties:
-                course_id:
-                  type: string
-                  example: "C001"
-                classroom_id:
-                  type: string
-                  example: "202"
-                day_of_week:
-                  type: string
-                  enum: [MON, TUE, WED, THU, FRI]
-                  example: MON
-                start_period:
-                  type: integer
-                  example: 5
-                end_period:
-                  type: integer
-                  example: 7
-            examples:
-              regular:
-                summary: 정규 과목 시간표 등록
-                value:
-                  classroom_id: "202"
-                  course_id: "C001"
-                  day_of_week: "MON"
-                  start_period: 5
-                  end_period: 7
-              special:
-                summary: 특강 시간표 등록
-                value:
-                  classroom_id: "305"
-                  course_id: "C003"
-                  day_of_week: "FRI"
-                  start_period: 3
-                  end_period: 4
-                  class_name: "A"
-              korean:
-                summary: 한국어 시간표 등록
-                value:
-                  classroom_id: "201"
-                  course_id: "C004"
-                  day_of_week: "TUE"
-                  start_period: 1
-                  end_period: 2
-      responses:
-        "200":
-          description: 시간표 등록 완료
-
-
-  /timetables/{type}/{id}:
-    put:
-      summary: 시간표 수정
-      tags: [Timetable]
-      parameters:
-        - in: path
-          name: type
-          required: true
-          schema: { type: string, enum: [regular, special, korean] }
-        - in: path
-          name: id
-          required: true
-          schema: { type: string }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                classroom_id: { type: string, example: "102" }
-                day_of_week:
-                  type: string
-                  enum: [MON, TUE, WED, THU, FRI]
-                  example: TUE
-                time_slot_id: { type: string, example: "2" }
-              additionalProperties: true
-      responses:
-        "200": { description: 수정 완료 }
-    delete:
-      summary: 시간표 삭제
-      tags: [Timetable]
-      parameters:
-        - in: path
-          name: type
-          required: true
-          schema: { type: string, enum: [regular, special, korean] }
         - in: path
           name: id
           required: true
@@ -2096,462 +2434,210 @@ paths:
       responses:
         "200": { description: 삭제 완료 }
 
-  /timetables/grid:
+
+  /admin/email:
     get:
-      summary: 주간 시간표 그리드 조회 (요일→교시 매핑)
+      summary: 예외 이메일 관리
+      tags: [Admin]
+      responses:
+        "200":
+          description: "이메일 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    email: { type: string }
+                    reason: { type: string }
+              example:
+                - id: 1
+                  email: aaa@gmail.com
+                  reason: 김순애 교수님 계정
+    post:
+      summary: 예외 이메일 등록
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, example: ccc@gmail.com }
+                reason: { type: string, example: 교수 연구용 }
+      responses:
+        "200": { description: 등록 완료 }
+
+
+  /admin/email/{id}:
+    delete:
+      summary: 예외 이메일 삭제
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: 삭제 완료 }
+
+
+  /admin/students:
+    get:
+      summary: 학생 정보 관리
+      tags: [Admin]
+      parameters:
+        - in: query
+          name: grade_id
+          schema: { type: integer, enum: [1, 2, 3] }
+          description: 학년 (1=1학년, 2=2학년, 3=3학년)
+        - in: query
+          name: status
+          schema: { type: string, enum: [재학, 휴학, 자퇴, 졸업] }
+          description: 학생 상태
+      responses:
+        "200":
+          description: 조건에 맞는 학생 목록 반환
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    grade_id: { type: integer }
+                    user_id: { type: string }
+                    name: { type: string }
+                    email: { type: string }
+                    phone: { type: string }
+                    status: { type: string }
+                    language_id: { type: string }
+                    level_class: { type: string }
+              example:
+                - id: 1
+                  grade_id: 1
+                  user_id: 2423001
+                  name: 권혁일
+                  email: aaa@gmail.com
+                  phone: 010-1111-1111
+                  status: 재학
+                  language_id: JLPTN1
+                  level_class: A
+                - id: 2
+                  grade_id: 2
+                  user_id: 2423002
+                  name: 김성식
+                  email: bbb@gmail.com
+                  phone: 010-2222-2222
+                  status: 휴학
+                  language_id: JLPTN2
+                  level_class: B
+
+
+  /admin/students/{user_id}:
+    patch:
+      summary: 학생 정보 수정
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                phone: { type: string }
+                status: { type: string, enum: [재학, 휴학, 자퇴, 졸업] }
+                grade_id: { type: integer, enum: [1, 2, 3] }
+                language_id: { type: string }
+                level_name: { type: string }
+                class_name: { type: string }
+      responses:
+        "200": { description: 수정 완료 }
+
+
+  /admin/students/{id}:
+    delete:
+      summary: 학생 삭제
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: 삭제 완료 }
+
+
+  # === DISPATCH SECTION ===
+
+  /dispatch/direct:
+    post:
+      tags: [Dispatch]
+      summary: 특정 사용자들에게 직접 메시지 발송
       description: |
-        user_id와 기준 date(주 중 아무 날짜)를 받아, 해당 주(MON~FRI) × 교시(1~12) 형태의 그리드로 반환.
-        - 방학/휴일 등은 비어 있을 수 있음
-        - event 값은 수업 이벤트가 있을 때만 CANCEL/MAKEUP, 없으면 null
+        - Request Body에 명시된 사용자 ID 목록을 대상으로 즉시 메시지를 발송합니다.
+        - 공지사항과 연동되지 않습니다.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectMessageRequest"
+      responses:
+        "202":
+          description: 발송 요청 접수됨(비동기)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KakaoEnqueueResponse"
+        "400":
+          description: "잘못된 요청 (예: 사용자 ID 목록이 비어있음)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+
+  /dispatch/jobs/{jobId}:
+    get:
+      tags: [Dispatch]
+      summary: 발송 작업 상태 조회
       security:
         - bearerAuth: []
       parameters:
-        - in: query
-          name: user_id
-          required: true
-          schema: { type: string, example: "2423001" }
-          description: 학생/교수 시스템 ID (DB user_account.user_id)
-        - in: query
-          name: role
-          required: true
-          schema: { type: string, enum: [student, professor, admin] }
-          description: 조회 주체에 따른 필터링(학생=수강, 교수=담당)
-        - in: query
-          name: date
-          required: true
-          schema: { type: string, format: date, example: "2025-04-16" }
-          description: 포함 주의 임의 날짜(백엔드는 이 날짜로 week_start/week_end 계산)
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TimetableGrid"
-              examples:
-                sample:
-                  value:
-                    meta:
-                      week_start: "2025-04-14"
-                      week_end: "2025-04-18"
-                      period_times:
-                        "1": { start: "09:00:00", end: "09:50:00" }
-                        "2": { start: "10:00:00", end: "10:50:00" }
-                    MON: { "1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7": null, "8": null, "9": null, "10": null, "11": null, "12": null }
-                    TUE: { "1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7": null, "8": null, "9": null, "10": null, "11": null, "12": null }
-                    WED:
-                      "1": null
-                      "2":
-                        course_id: "C001"
-                        title: "인공지능 개론"
-                        room: "본관-101"
-                        professor: "이교수"
-                        level: null
-                        event: null
-                      "3": null
-                      "4": null
-                      "5": null
-                      "6": null
-                      "7": null
-                      "8": null
-                      "9": null
-                      "10": null
-                      "11": null
-                      "12": null
-                    THU:
-                      "1": null
-                      "2": null
-                      "3": null
-                      "4": null
-                      "5": null
-                      "6": null
-                      "7": null
-                      "8": null
-                      "9": null
-                      "10": null
-                      "11":
-                        course_id: "C008"
-                        title: "TOPIK 4급 한국어 특강"
-                        room: "실습동-202"
-                        professor: "박교수"
-                        level: "TOPIK 4급"
-                        event: null
-                      "12": null
-                    FRI:
-                      "1": null
-                      "2": null
-                      "3": null
-                      "4": null
-                      "5": null
-                      "6": null
-                      "7": null
-                      "8": null
-                      "9":
-                        course_id: "C006"
-                        title: "네트워크"
-                        room: "실습동-201"
-                        professor: "이교수"
-                        level: null
-                        event: CANCEL
-                      "10": null
-                      "11": null
-                      "12": null
-        "400": { description: 잘못된 요청 (파라미터 누락/형식 오류) }
-        "401": { description: 인증 실패 }
-        "403": { description: 권한 부족 }
-
-  /timetables/student/{user_id}:
-    get:
-      summary: 학생 시간표 조회 (주간)
-      description: |
-        특정 학생의 주간 시간표를 조회합니다.  
-        - 정규 수업, 특강, 한국어, 상담(후카) 일정이 모두 포함됩니다.  
-        - 요청한 날짜(`date`)가 속한 주간 범위를 서버에서 계산하여 해당 주차의 모든 일정을 반환합니다.
-      tags: [Timetable]
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema: { type: string, example: "2423004" }
-          description: 학생의 사용자 ID
-        - in: query
-          name: date
-          required: true
-          schema: { type: string, format: date, example: "2025-10-20" }
-          description: 조회 기준 날짜 (서버가 자동으로 해당 주의 시작/종료일 계산)
-      responses:
-        "200":
-          description: 주간 시간표 데이터 (수업 + 상담 포함)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TimetableWeeklyResponse"
-        "404":
-          description: 해당 학생의 시간표가 존재하지 않습니다.
-        "500":
-          description: 서버 내부 오류
-
-  /timetables/professor/{user_id}:
-    get:
-      summary: 교수 시간표 조회 (주간)
-      description: |
-        특정 교수의 주간 시간표를 조회합니다.  
-        - 담당 수업 및 교수 상담(후카) 일정이 포함됩니다.  
-        - 학기 범위(`section`) 및 주차(`week_start ~ week_end`) 기준으로 필터링됩니다.
-      tags: [Timetable]
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema: { type: string, example: "8888001" }
-          description: 교수의 사용자 ID
-        - in: query
-          name: date
-          required: true
-          schema: { type: string, format: date, example: "2025-10-20" }
-          description: 조회 기준 날짜 (서버가 해당 주차 범위를 자동 계산)
-      responses:
-        "200":
-          description: 주간 시간표 데이터 (수업 + 상담 포함)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TimetableWeeklyResponse"
-        "404":
-          description: 해당 교수의 시간표가 존재하지 않습니다.
-        "500":
-          description: 서버 내부 오류
-
-  /timetables/admin:
-    get:
-      summary: 전체 시간표 조회 (주간)
-      description: |
-        관리자가 전체 학과의 주간 시간표를 조회합니다.  
-        - **1~3학년**, **특강**, **한국어**, **상담(후카)** 일정이 모두 포함됩니다.  
-        - 주간 범위는 `week_start`, `week_end` 파라미터로 지정합니다.  
-        - 휴강(`CANCEL`) 및 보강(`MAKEUP`) 이벤트도 반영됩니다.
-      tags: [Timetable]
-      parameters:
-        - in: query
-          name: week_start
-          required: true
-          schema:
-            type: string
-            format: date
-            example: "2025-10-20"
-          description: 주간 시작일 (월요일 기준)
-        - in: query
-          name: week_end
-          required: true
-          schema:
-            type: string
-            format: date
-            example: "2025-10-26"
-          description: 주간 종료일 (일요일 기준)
-      responses:
-        "200":
-          description: |
-            학년별 주간 시간표 데이터  
-            (정규 수업, 특강, 한국어, 상담, 휴강/보강 포함)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  "1학년":
-                    $ref: "#/components/schemas/TimetableWeeklyResponse"
-                  "2학년":
-                    $ref: "#/components/schemas/TimetableWeeklyResponse"
-                  "3학년":
-                    $ref: "#/components/schemas/TimetableWeeklyResponse"
-                  "특강":
-                    $ref: "#/components/schemas/TimetableWeeklyResponse"
-                  "한국어":
-                    $ref: "#/components/schemas/TimetableWeeklyResponse"
-        "400":
-          description: 잘못된 요청 (파라미터 누락 또는 형식 오류)
-        "500":
-          description: 서버 내부 오류
-
-
-
-  /timetables/classes/{class_id}/assign:
-    post:
-      summary: 특강 분반 등록 (학생 배정)
-      description: |
-        선택한 반(`class_id`)에 여러 명의 학생을 일괄 배정합니다.  
-        이미 등록된 학생이 있을 경우 덮어쓰기 방식으로 업데이트되며,  
-        모든 쿼리는 트랜잭션으로 처리되어 일부 실패 시 전체 롤백됩니다.
-      tags: ["Timetable"]
-      parameters:
-        - name: class_id
+        - name: jobId
           in: path
           required: true
-          schema:
-            type: string
-          example: C007A
-          description: "반 고유 ID (예: C007A)"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                student_ids:
-                  type: array
-                  items:
-                    type: string
-                  example: ["2423004", "2524001"]
-                  description: 배정할 학생의 user_id 배열
+          schema: { type: string }
       responses:
         "200":
-          description: 분반 등록 성공
+          description: 상태 반환
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message:
+                  job_id: { type: string }
+                  status:
                     type: string
-                    example: "등록 완료"
-                  result:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "2명의 학생이 C007A 반에 배정되었습니다."
-        "400":
-          description: 잘못된 요청 (필수 파라미터 누락)
-        "401":
-          description: 인증 실패 (JWT 누락 또는 만료)
-        "500":
-          description: 서버 내부 오류 (DB 트랜잭션 실패 등)
+                    enum: [QUEUED, SENDING, PARTIAL, SUCCESS, FAILED]
+                  total: { type: integer }
+                  sent: { type: integer }
+                  failed: { type: integer }
 
 
-  /timetables/huka/student:
-    get:
-      summary: 학생 상담 시간표 조회
-      tags: ["Timetable"]
-      description: >
-        교수, 관리자, 학생 모두 상담 시간표를 조회할 수 있습니다.  
-        (정규 상담 및 일회성 상담 모두 반환합니다)
-      parameters:
-        - name: user_id
-          in: query
-          required: false
-          schema:
-            type: string
-          description: 조회할 사용자 ID (교수/학생 ID)
-        - name: targetDate
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
-            example: "2025-10-08"
-          description: 조회 기준 날짜 (주차 단위 계산용)
-      responses:
-        "200":
-          description: 상담 시간표 데이터
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  MON:
-                    type: object
-                    example:
-                      "8": { "student": "국내1-JP-A", "location": "실습동301호" }
-                      "9": { "student": "2423004", "location": "본관201호" }
-    post:
-      summary: 정규 상담 등록 (매주 고정 상담)
-      tags: ["Timetable"]
-      description: >
-        여러 학생을 대상으로 특정 요일·교시 범위의 **정규 상담 일정을 등록**합니다.  
-        `time_slot_id`는 자동 매핑됩니다.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                student_ids:
-                  type: array
-                  items:
-                    type: string
-                  example: ["2423004", "2423005"]
-                sec_id:
-                  type: string
-                  example: "2025-1"
-                day_of_week:
-                  type: string
-                  enum: ["MON", "TUE", "WED", "THU", "FRI"]
-                start_slot:
-                  type: integer
-                  example: 8
-                end_slot:
-                  type: integer
-                  example: 9
-                location:
-                  type: string
-                  example: "실습동 301호"
-      responses:
-        "200":
-          description: 등록 완료
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: "2명의 정규 상담 일정이 등록되었습니다."
-
-  /timetables/huka/student/custom:
-    post:
-      summary: 일회성 상담 등록 (개별 일정 수정)
-      tags: ["Timetable"]
-      description: >
-        특정 주차의 **개별(임시) 상담 일정을 등록**합니다.  
-        같은 주차의 `REGULAR` 상담은 자동으로 덮어씌워집니다.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                student_ids:
-                  type: array
-                  items:
-                    type: string
-                  example: ["2423004"]
-                sec_id:
-                  type: string
-                  example: "2025-1"
-                date:
-                  type: string
-                  format: date
-                  example: "2025-10-15"
-                start_slot:
-                  type: integer
-                  example: 9
-                end_slot:
-                  type: integer
-                  example: 10
-                location:
-                  type: string
-                  example: "본관 201호"
-      responses:
-        "200":
-          description: 수정 상담 등록 완료
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: "1명의 상담 일정이 수정되었습니다."
-
-  /timetables/events:
-    get:
-      summary: 휴보강 이력 조회
-      description: 전체 휴보강 이력을 조회합니다. (프론트에서 학년/과목 필터링 처리)
-      tags:
-        - Timetable
-      responses:
-        "200":
-          description: 휴보강 이력 목록
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  result:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        event_status:
-                          type: string
-                          example: "MAKEUP"
-                          description: "휴강/보강 상태 (CANCEL=휴강, MAKEUP=보강)"
-                        event_date:
-                          type: string
-                          format: date-time
-                          example: "2025-10-19"
-                          description: "휴보강 발생일"
-                        grade_id:
-                          type: string
-                          nullable: true
-                          example: "2"
-                          description: "학년 ID (특강의 경우 NULL)"
-                        grade_name:
-                          type: string
-                          nullable: true
-                          example: "2학년"
-                          description: "학년 이름 (특강의 경우 NULL)"
-                        course_id:
-                          type: string
-                          example: "C001"
-                          description: "과목 ID"
-                        course_title:
-                          type: string
-                          example: "인공지능 개론"
-                          description: "과목명"
-                        start_time:
-                          type: string
-                          format: time
-                          example: "09:00:00"
-                          description: "수업 시작 교시 시간"
-                        end_time:
-                          type: string
-                          format: time
-                          example: "09:50:00"
-                          description: "수업 종료 교시 시간"
 
 components:
   securitySchemes:
