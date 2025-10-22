@@ -1,5 +1,5 @@
 import * as noticeService from "../service/notice-service.js";
-import * as cleaningService from "../service/cleaning_service.js";
+import * as cleaningService from "./cleaning-service.js";
 import * as timetableService from "../service/timetable-service.js";
 import * as classroomService from "../service/classroom-service.js";
 import { BadRequestError } from "../errors/index.js";
@@ -37,6 +37,7 @@ export const getDashboardData = async (user, targetDate) => {
       cleaningService.findRosterWeek(targetDate), // 청소 당번
       classroomService.getClassroomPolls({ date: targetDate, user_id: user }), // 주말 개방 여부
     ]);
+  console.log(cleaningData);
 
   // 3. 각 데이터를 올바른 키에 매핑하여 반환
   return {
