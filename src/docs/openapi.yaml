@@ -3261,7 +3261,17 @@ components:
         schedule:
           type: array
           items:
-            $ref: "#/components/schemas/DashboardSchedule"
+            $ref: "#/components/schemas/TimetableWeeklyResponse"
+        huka_schedule:
+          type: array
+          items:
+            type: object
+            properties:
+              MON:
+                type: object
+                example:
+                  "8": { "student": "국내1-JP-A", "location": "실습동301호" }
+                  "9": { "student": "2423004", "location": "본관201호" }
         notices:
           type: array
           items:
@@ -3269,31 +3279,28 @@ components:
         cleaning_duty:
           type: array
           items:
-            $ref: "#/components/schemas/DashboardCleaning"
+            $ref: "#/components/schemas/CleaningRosterResponse"
         weekend_poll:
-          $ref: "#/components/schemas/WeekendPollStatus"
-          nullable: true
-      example:
-        schedule:
-          - course_title: 기초 공학
-            classroom_name: 청문관-405
-            start_time: "10:00:00"
-            end_time: "11:50:00"
-        notices:
-          - notice_id: 124
-            title: "[G1] 2차 과제 안내"
-            created_at: "2025-09-15T10:30:00Z"
-        cleaning_duty:
-          - grade_id: G1
-            classroom_name: 청문관-405
-            members: [학생1, 학생2]
-        weekend_poll:
-          poll_id: POLL_CM405_20250920
-          poll_date: "2025-09-20"
-          classroom_name: 청문관-405
-          required_count: 5
-          is_opened: false
-          yes_votes: 3
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekendPollItem'
+            example:
+              - poll_id: "P001"
+                grade_name: "1학년"
+                poll_date: "2025-10-17"
+                day_of_week: "토요일"
+                required_count: 8
+                vote_count: 4
+                is_opened: false
+                user_voted: true
+              - poll_id: "P002"
+                grade_name: "2학년"
+                poll_date: "2025-10-18"
+                day_of_week: "일요일"
+                required_count: 10
+                vote_count: 0
+                is_opened: false
+                user_voted: false
 
     UserRegistrationRequest:
       type: object

@@ -2,9 +2,13 @@ import * as dashboardService from "../service/dashboard-service.js";
 
 export async function getDashboardData(req, res, next) {
   try {
-    console.log(req.user);
+    const user = req.user.user_id;
+    const targetDate = req.query.date;
 
-    const dashboardData = await dashboardService.getDashboardData(req.user);
+    const dashboardData = await dashboardService.getDashboardData(
+      user,
+      targetDate,
+    );
     res.status(200).json(dashboardData);
   } catch (error) {
     next(error);
