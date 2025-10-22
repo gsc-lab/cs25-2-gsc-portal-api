@@ -59,8 +59,8 @@ export const generateRosters = async (rosterInfo) => {
 
       // 공정한 배정을 위해 학생 목록을 무작위로 섞음
       const studentIds = students
-        .map((s) => s.user_id)
-        .sort(() => 0.5 - Math.random());
+          .map((s) => s.user_id)
+          .sort(() => 0.5 - Math.random());
       let studentIdx = 0; // 순환 배정을 위한 인덱스
 
       // 결과 객체에 현재 학년에 대한 생성 정보 초기화
@@ -110,7 +110,7 @@ export const generateRosters = async (rosterInfo) => {
 };
 
 // 특정 날짜가 포함된 주의 청소 당번 목록 조회
-export const findRosterWeek = async (date, gradeId) => {
+export const findRosterWeek = async (date, gradeId = null) => {
   const targetDate = new Date(date);
 
   // 입력된 날짜를 기준으로, 해당 주가 시작되는 날짜(일요일)과 끝나는 날짜(토요일) 계산
@@ -125,9 +125,9 @@ export const findRosterWeek = async (date, gradeId) => {
 
   // 계산된 시작일/종료일과 학년을 이용해 데이터 조회
   const flatRosters = await CleaningModel.getCleaningRosterView(
-    startDate,
-    endDate,
-    gradeId,
+      startDate,
+      endDate,
+      gradeId,
   );
   if (flatRosters.length === 0) {
     return { section: null, rosters: [] };
@@ -182,7 +182,7 @@ export const removeRosters = async (section, gradeId) => {
   const deletedCount = await CleaningModel.deleteRosters(section, gradeId);
   if (deletedCount === 0) {
     console.warn(
-      `삭제할 청소 당번이 없습니다. 학기${section}, 학년:${gradeId}`,
+        `삭제할 청소 당번이 없습니다. 학기${section}, 학년:${gradeId}`,
     );
   }
   return { deletedCount };
