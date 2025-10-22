@@ -8,8 +8,6 @@ const isVeryRefresh = async (req, res) => {
     // const bearer = req.headers['authorization'].split('Bearer ')[1];
     const accessToken = req.cookies?.accessToken;
     const refreshToken = req.cookies?.refreshToken;
-    console.log("accessToken", accessToken);
-    console.log("refreshToken", refreshToken);
 
     if (!accessToken || !refreshToken) {
       throw new UnauthenticatedError(

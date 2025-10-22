@@ -12,10 +12,14 @@ const redisClient = createClient({
   },
 });
 
-redisClient.on("connect", () => {
-  console.log("Redis Connected");
-});
+redisClient.on('connect', () => console.log('Redis is connecting...'));
+redisClient.on('ready', () => console.log('Redis client ready to use.'));
+redisClient.on('error', (err) => console.error('Redis Client Error:', err));
+redisClient.on('end', () => console.log('Redis connection closed.'));
 
-await redisClient.connect();
+// Nodemon 환경에서 서버가 재시작될 때 충돌 방지
+if (!redisClient.isOpen) {
+  redisClient.connect().catch(console.error);
+}
 
 export default redisClient;

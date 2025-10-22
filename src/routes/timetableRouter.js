@@ -1,0 +1,27 @@
+import express from "express";
+import * as timetableController from '../controllers/timetableController.js';
+import { authWithRole } from "../middleware/authWithRole.js";
+
+const router = express.Router();
+
+// 시간표 조회 (학생, 교수, 관리자)
+router.get("/student/:user_id", authWithRole("student"), timetableController.getStudentTimetable);
+router.get("/professor/:user_id", authWithRole("professor"), timetableController.getProfessorTimetable);
+router.get("/admin", authWithRole("admin"), timetableController.getAdminTimetable);
+
+// 강의 등록
+router.post("/registerCourses", authWithRole("professor"), timetableController.postRegisterCourse);
+// 시간표 등록
+router.post("/registerTimetable", authWithRole("admin"), timetableController.postRegisterTimetable);
+// 휴보강 등록
+router.post("/registerHoliday", authWithRole("professor"), timetableController.postRegisterHoliday);
+// 분반 등록
+router.post("/classes/:classId/assign", authWithRole("professor"), timetableController.postAssignStudents);
+// 휴보강 이력
+router.get("/events", authWithRole("professor"), timetableController.getEvents)
+// 후까 교수님
+router.get("/huka/student", authWithRole("professor"), timetableController.getHukaStudentTimetable);
+router.post("/huka/student", authWithRole("professor"), timetableController.postHukaStudentTimetable);
+router.post("/huka/student/custom", authWithRole("professor"), timetableController.postHukaCustomSchedule)
+
+export default router;
