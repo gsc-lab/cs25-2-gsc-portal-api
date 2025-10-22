@@ -55,6 +55,7 @@ export async function getAllCourses() {
         SELECT
             c.course_id,
             c.title,
+            ua.name AS professor_name,
             CASE
                 WHEN ct.language_id = 'KR' THEN '한국어'
                 WHEN c.is_special = TRUE THEN '특강'
