@@ -40,7 +40,6 @@ export async function createCleaningRoaster(assignments, connection) {
         `;
     const params = [classroom_id, grade_id, sec_id, work_date, team_size];
 
-    console.log("DB에 전달하려는 최종 값:", params);
     const [r1] = await connection.execute(sql, params);
     const rosterId = r1.insertId;
 

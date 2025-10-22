@@ -1,4 +1,4 @@
-import * as cleaningService from "../service/cleaning_service.js";
+import * as cleaningService from "../service/cleaning-service.js";
 
 export const generateCleaningRosters = async (req, res, next) => {
   try {

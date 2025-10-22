@@ -1,5 +1,6 @@
 import * as CleaningModel from "../models/Cleaning.js";
 import pool from "../db/connection.js";
+import { InternalServerError, BadRequestError } from "../errors/index.js";
 
 export const generateRosters = async (rosterInfo) => {
   // 요청 Body에서 필요한 정보들을 구조 분해 할당으로 추출
@@ -8,7 +9,7 @@ export const generateRosters = async (rosterInfo) => {
   // 해당 학기의 시작일과 종료일을 조회
   const sectionInfo = await CleaningModel.findBySection(section);
   if (!sectionInfo || !sectionInfo.start_date || !sectionInfo.end_date) {
-    throw new Error(`유효하지 않은 학기 ID입니다: ${section}`);
+    throw new BadRequestError(`유효하지 않은 학기 ID입니다: ${section}`);
   }
 
   const week_start = sectionInfo.start_date;
@@ -58,8 +59,8 @@ export const generateRosters = async (rosterInfo) => {
 
       // 공정한 배정을 위해 학생 목록을 무작위로 섞음
       const studentIds = students
-        .map((s) => s.user_id)
-        .sort(() => 0.5 - Math.random());
+          .map((s) => s.user_id)
+          .sort(() => 0.5 - Math.random());
       let studentIdx = 0; // 순환 배정을 위한 인덱스
 
       // 결과 객체에 현재 학년에 대한 생성 정보 초기화
@@ -104,12 +105,12 @@ export const generateRosters = async (rosterInfo) => {
     await connection.rollback();
 
     console.log("당번 생성 중 오류", error);
-    throw error;
+    throw new InternalServerError('서버 오류가 발생했습니다.');
   }
 };
 
 // 특정 날짜가 포함된 주의 청소 당번 목록 조회
-export const findRosterWeek = async (date, gradeId) => {
+export const findRosterWeek = async (date, gradeId = null) => {
   const targetDate = new Date(date);
 
   // 입력된 날짜를 기준으로, 해당 주가 시작되는 날짜(일요일)과 끝나는 날짜(토요일) 계산
@@ -124,9 +125,9 @@ export const findRosterWeek = async (date, gradeId) => {
 
   // 계산된 시작일/종료일과 학년을 이용해 데이터 조회
   const flatRosters = await CleaningModel.getCleaningRosterView(
-    startDate,
-    endDate,
-    gradeId,
+      startDate,
+      endDate,
+      gradeId,
   );
   if (flatRosters.length === 0) {
     return { section: null, rosters: [] };
@@ -145,16 +146,20 @@ export const findRosterWeek = async (date, gradeId) => {
     }
 
     // 청소날짜를 기준으로 2차 그룹화
-    if (!acc[key].weekly_duties[current.work_date]) {
-      acc[key].weekly_duties[current.work_date] = {
-        work_date: current.work_date.toISOString().split("T")[0],
+    const date = new Date(current.work_date);
+    const workDateString = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+    ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    if (!acc[key].weekly_duties[workDateString]) {
+      acc[key].weekly_duties[workDateString] = {
+        work_date: workDateString,
         members: [],
       };
     }
     // 멤버 이름 목록에 현재 멤버를 추가
-    acc[key].weekly_duties[current.work_date].members.push(current.member_name);
+    acc[key].weekly_duties[workDateString].members.push(current.member_name);
 
-    return acc; // 누적된 결과 (acc)를 다음 순회롤 넘김
+    return acc;
   }, {});
 
   // 그룹화된 객체(groupedByClassroom)를 명세에 맞는 최종 배열 형태로 반환
@@ -172,12 +177,12 @@ export const findRosterWeek = async (date, gradeId) => {
 
 export const removeRosters = async (section, gradeId) => {
   if (!gradeId) {
-    throw new Error(`삭제할 학년(grade_id) 반드시 지정해야 합니다.`);
+    throw new BadRequestError(`삭제할 학년(grade_id) 반드시 지정해야 합니다.`);
   }
   const deletedCount = await CleaningModel.deleteRosters(section, gradeId);
   if (deletedCount === 0) {
     console.warn(
-      `삭제할 청소 당번이 없습니다. 학기${section}, 학년:${gradeId}`,
+        `삭제할 청소 당번이 없습니다. 학기${section}, 학년:${gradeId}`,
     );
   }
   return { deletedCount };

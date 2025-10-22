@@ -7,14 +7,15 @@ import { fileURLToPath } from "url";
 
 //Router
 import adminRouter from "./routes/adminRouter.js";
-import timetableRouter from './routes/timetableRouter.js';
+import timetableRouter from "./routes/timetableRouter.js";
 import authRouter from "./routes/authRouter.js";
 import noticeRouter from "./routes/noticeRouter.js";
 import fileRouter from "./routes/fileRouter.js";
 import cleaningRouter from "./routes/cleaningRouter.js";
 import classroomRouter from "./routes/classroomRouter.js";
-import subjectRouter from "./routes/modal/subjectRouter.js"
-import commonRouter from "./routes/modal/commonRouter.js" 
+import subjectRouter from "./routes/modal/subjectRouter.js";
+import commonRouter from "./routes/modal/commonRouter.js";
+import dashboardRouter from "./routes/dashboardRouter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,9 +25,9 @@ import { centralErrorHandler } from "./middleware/errorHandler.js";
 const app = express();
 
 const corsOptions = {
-    origin: process.env.FE_BASE_URL,
-    credentials: true,
-}
+  origin: process.env.FE_BASE_URL,
+  credentials: true,
+};
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
@@ -38,14 +39,15 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // api
 app.use("/admin", adminRouter);
-app.use('/timetables', timetableRouter);
+app.use("/timetables", timetableRouter);
 app.use("/auth", authRouter);
 app.use("/notices", noticeRouter);
 app.use("/files", fileRouter);
 app.use("/cleaning-rosters", cleaningRouter);
-app.use("/classrooms", classroomRouter)
-app.use("/modal/subjects", subjectRouter)
-app.use("/modal/common", commonRouter)
+app.use("/classrooms", classroomRouter);
+app.use("/modal/subjects", subjectRouter);
+app.use("/modal/common", commonRouter);
+app.use("/dashboard", dashboardRouter);
 
 app.use(centralErrorHandler);
 export default app;
