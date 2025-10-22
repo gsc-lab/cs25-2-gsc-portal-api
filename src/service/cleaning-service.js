@@ -146,16 +146,20 @@ export const findRosterWeek = async (date, gradeId) => {
     }
 
     // 청소날짜를 기준으로 2차 그룹화
-    if (!acc[key].weekly_duties[current.work_date]) {
-      acc[key].weekly_duties[current.work_date] = {
-        work_date: current.work_date.toISOString().split("T")[0],
+    const date = new Date(current.work_date);
+    const workDateString = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+    ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    if (!acc[key].weekly_duties[workDateString]) {
+      acc[key].weekly_duties[workDateString] = {
+        work_date: workDateString,
         members: [],
       };
     }
     // 멤버 이름 목록에 현재 멤버를 추가
-    acc[key].weekly_duties[current.work_date].members.push(current.member_name);
+    acc[key].weekly_duties[workDateString].members.push(current.member_name);
 
-    return acc; // 누적된 결과 (acc)를 다음 순회롤 넘김
+    return acc;
   }, {});
 
   // 그룹화된 객체(groupedByClassroom)를 명세에 맞는 최종 배열 형태로 반환
