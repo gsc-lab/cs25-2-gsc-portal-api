@@ -8,21 +8,28 @@ export const getDashboardData = async (user, targetDate) => {
   if (!targetDate || !user) {
     throw new BadRequestError("필수 값이 누락");
   }
+  const userId = user.user_id;
 
   // 1. 사용자 역할에 따라 적절한 시간표 조회
   let timetablePromise;
+
   if (user.role === "student") {
     timetablePromise = timetableService.getStudentTimetable({
-      user,
+      userId,
       targetDate,
     });
   } else if (user.role === "professor") {
     timetablePromise = timetableService.getProfessorTimetable({
-      user,
+      userId,
       targetDate,
     });
   } else {
     timetablePromise = timetableService.getAdminTimetable(targetDate);
+  }
+
+  let hukaPromise;
+  if (user.role === "professor" || user.role === "admin") {
+    hukaPromise = timetableService.getHukaStudentTimetable(); // 상담 시간표
   }
 
   const spec = { user };
@@ -32,10 +39,10 @@ export const getDashboardData = async (user, targetDate) => {
   const [scheduleData, hukaData, noticeData, cleaningData, reservationData] =
     await Promise.all([
       timetablePromise, // 정규 시간표
-      timetableService.getHukaStudentTimetable(user, targetDate), // 상담 시간표
+      hukaPromise,
       noticeService.getNotices(spec, noticeQuery), // 공지사항
       cleaningService.findRosterWeek(targetDate), // 청소 당번
-      classroomService.getClassroomPolls({ date: targetDate, user_id: user }), // 주말 개방 여부
+      classroomService.getClassroomPolls({ date: targetDate, user_id: userId }), // 주말 개방 여부
     ]);
   console.log(cleaningData);
 

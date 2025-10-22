@@ -2,7 +2,7 @@ import * as dashboardService from "../service/dashboard-service.js";
 
 export async function getDashboardData(req, res, next) {
   try {
-    const user = req.user.user_id;
+    const user = req.user;
     const targetDate = req.query.date;
 
     const dashboardData = await dashboardService.getDashboardData(
