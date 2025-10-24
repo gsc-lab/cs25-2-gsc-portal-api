@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
+    "build": "parcel build server.js",
     "dev": "nodemon --legacy-watch server.js",
     "prepare": "husky install",
     "lint:fix": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\" && eslint --fix \"src/**/*.{js,jsx,ts,tsx}\""
