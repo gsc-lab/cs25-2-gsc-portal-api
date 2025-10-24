@@ -1,10 +1,11 @@
 import * as subjectService from '../../service/modal/subject-service.js';
+import {getCoursesAll, getCoursesRegular} from "../../service/modal/subject-service.js";
 
 // 정규 과목 조회
 export const getcoursesRegular = async function (req, res, next) {
     try {
         const grade = req.query.grade;
-        const result = await subjectService.getcoursesRegular(grade);
+        const result = await subjectService.getCoursesRegular(grade);
         res.status(200).json(result);
     } catch (err) {
         next(err)
@@ -14,7 +15,7 @@ export const getcoursesRegular = async function (req, res, next) {
 // 특강 과목 조회
 export const getcoursesSpecial = async function (req, res, next) {
     try {
-        const result = await subjectService.getcoursesSpecial();
+        const result = await subjectService.getCoursesSpecial();
         res.status(200).json(result);
     } catch (err) {
         next(err)
@@ -24,7 +25,7 @@ export const getcoursesSpecial = async function (req, res, next) {
 // 한국어 과목 조회
 export const getcoursesKorean = async function (req, res, next) {
     try {
-        const result = await subjectService.getcoursesKorean();
+        const result = await subjectService.getCoursesKorean();
         res.status(200).json(result);
     } catch (err) {
         next(err)
@@ -34,7 +35,7 @@ export const getcoursesKorean = async function (req, res, next) {
 // 전체 과목 조회
 export const getcoursesAll = async function (req, res, next) {
     try {
-        const result = await subjectService.getcoursesAll();
+        const result = await subjectService.getCoursesAll();
         res.status(200).json(result);
     } catch (err) {
         next(err)
