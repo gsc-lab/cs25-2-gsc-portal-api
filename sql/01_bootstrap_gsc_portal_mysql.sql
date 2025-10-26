@@ -178,11 +178,11 @@ CREATE TABLE student_entity (
 CREATE TABLE course_professor (
                                   user_id   VARCHAR(10) NOT NULL,
                                   course_id VARCHAR(15) NOT NULL,
-                                  class_id  VARCHAR(10) NOT NULL,
-                                  PRIMARY KEY (user_id, course_id, class_id),
+                                   class_id  VARCHAR(10) NULL,
+                                  PRIMARY KEY (user_id, course_id),
                                   CONSTRAINT fk_cp_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
                                   CONSTRAINT fk_cp_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE,
-                                  CONSTRAINT fk_cp_cc     FOREIGN KEY (class_id)  REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE CASCADE
+                                   CONSTRAINT fk_cp_cc     FOREIGN KEY (class_id)  REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE course_student (
