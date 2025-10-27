@@ -6,7 +6,7 @@ export const findByEmail = async (email) => {
     `SELECT ua.*, ur.role_type as role
      FROM user_account ua
      LEFT JOIN user_role ur ON ua.user_id = ur.user_id
-     WHERE ua.email = ?`
+     WHERE ua.email = ?`,
      [email],
   );
   return rows[0];

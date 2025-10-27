@@ -71,6 +71,7 @@ async function authCallback(req, res) {
     try {
       // Google로부터 토큰 받기
       const { tokens } = await oauth2Client.getToken(q.code);
+      console.log("tokens:", tokens);
       const { data: userInfo } = await axios.get(
         "https://www.googleapis.com/oauth2/v2/userinfo",
         { headers: { Authorization: `Bearer ${tokens.access_token}` } },
@@ -84,7 +85,6 @@ async function authCallback(req, res) {
           return res.redirect("/?error=invalid_email");
         }
       }
-
       // 1) 사용자 조회/가입
       let user = await findByEmail(userInfo.email);
 
