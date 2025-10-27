@@ -1,5 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
+import session from "express-session";
 import cors from "cors";
 import { swaggerUi, specs } from "./docs/swagger.js";
 import path from "path";
@@ -28,7 +29,15 @@ const corsOptions = {
   origin: process.env.FE_BASE_URL,
   credentials: true,
 };
+app.use(
+    session({
+      secret: process.env.GOOGLE_SECRET, // Replace with a strong secret
+      resave: false,
+      saveUninitialized: false,
+    }),
+);
 app.use(cors(corsOptions));
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // 클라이언트에서 application/x-www-form-urlencoded 데이터를 보냈을때 파싱해서 body 객체에 넣어줌
