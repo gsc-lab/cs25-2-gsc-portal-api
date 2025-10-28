@@ -111,6 +111,10 @@ export const generateRosters = async (rosterInfo) => {
 
 // 특정 날짜가 포함된 주의 청소 당번 목록 조회
 export const findRosterWeek = async (date, gradeId = null) => {
+  if (!date) {
+    throw new BadRequestError("유효하지 않은 값입니다.");
+  }
+
   const targetDate = new Date(date);
 
   // 입력된 날짜를 기준으로, 해당 주가 시작되는 날짜(일요일)과 끝나는 날짜(토요일) 계산
@@ -129,7 +133,7 @@ export const findRosterWeek = async (date, gradeId = null) => {
       endDate,
       gradeId,
   );
-  if (flatRosters.length === 0) {
+  if (!flatRosters.length) {
     return { section: null, rosters: [], work_date: null };
   }
 
@@ -160,8 +164,57 @@ export const findRosterWeek = async (date, gradeId = null) => {
   };
 };
 
+// 월간 당번 조회 API
+export const findRosterMonth = async (gradeId = null) => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0 ~ 11
+
+  // 이번 달의 1일과 마지막 날짜 계산
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDate = firstDay.toISOString().split("T")[0];
+  const endDate = lastDay.toISOString().split("T")[0];
+
+  // DB 조회
+  const flatRosters = await CleaningModel.getCleaningRosterView(startDate, endDate, gradeId);
+  if (!flatRosters.length) {
+    return { section: null, rosters: [], month: `${year}-${month + 1}` };
+  }
+  const dates = [...new Set(flatRosters.map(r => r.work_date))];
+
+  const days = dates.map(date => {
+    const dailyList = flatRosters.filter(r => r.work_date === date);
+
+    // 교실 기준으로 묶기
+    const classMap = {};
+    for (const row of dailyList) {
+      const key = `${row.grade_id}|${row.classroom_name}`;
+      if (!classMap[key]) {
+        classMap[key] = {
+          grade_id: row.grade_id,
+          classroom_name: row.classroom_name,
+          members: []
+        };
+      }
+      if (!classMap[key].members.includes(row.member_name)) {
+        classMap[key].members.push(row.member_name);
+      }
+    }
+
+    return {work_date: date, rosters: Object.values(classMap)};
+  });
+
+  return {
+    section: flatRosters[0].section,
+    month: `${year}-${String(month + 1).padStart(2, '0')}`,
+    days
+  }
+};
+
 export const removeRosters = async (section, gradeId) => {
-  if (!gradeId) {
+
+  if (!gradeId && !section) {
     throw new BadRequestError(`삭제할 학년(grade_id) 반드시 지정해야 합니다.`);
   }
   const deletedCount = await CleaningModel.deleteRosters(section, gradeId);

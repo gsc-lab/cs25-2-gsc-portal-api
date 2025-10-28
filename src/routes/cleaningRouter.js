@@ -14,6 +14,11 @@ router.get("/",
     cleaningController.getCleaningRosters
 );
 
+router.get('/monthly',
+    authWithRole("student"),
+    cleaningController.getMonthlyRoster
+);
+
 router.delete(
   "/",
   authWithRole("admin"),
