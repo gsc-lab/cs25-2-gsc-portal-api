@@ -18,7 +18,7 @@ tags:
 paths:
   # === AUTH SECTION ===
 
-  /auth/google:
+  /auth:
     get:
       tags: [Auth]
       summary: Google OAuth 인증 URL 요청
@@ -36,7 +36,7 @@ paths:
                     example: https://accounts.google.com/o/oauth2/v2/auth?...client_id=...
 
 
-  /auth/google/callback:
+  /auth/callback:
     get:
       tags: [Auth]
       summary: Google OAuth 인증 완료 후 콜백 처리
@@ -1830,7 +1830,7 @@ paths:
       parameters:
         - name: grade_id
           in: query
-          required: true
+          required: false
           schema: { type: string, example: G1 }
         - name: date
           in: query
