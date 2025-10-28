@@ -135,7 +135,11 @@ async function authCallback(req, res) {
           httpOnly: true,
           maxAge: 7 * 24 * 60 * 60,
         });
-        res.redirect("/api/dashboard"); // spa frontend route
+        // 오늘의 날짜 계산
+        const date = new Date();
+        date.setDate(date.getDate());
+        const startDate = date.toISOString().split("T")[0];
+        res.redirect(`/dashboard${startDate}`); // spa frontend route
       }
 
       if (
