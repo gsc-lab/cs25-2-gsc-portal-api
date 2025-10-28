@@ -130,47 +130,32 @@ export const findRosterWeek = async (date, gradeId = null) => {
       gradeId,
   );
   if (flatRosters.length === 0) {
-    return { section: null, rosters: [] };
+    return { section: null, rosters: [], work_date: null };
   }
 
-  // 데이터 목록을 reduce 함수 이용해 계층적인 구조로 그룹화
-  const groupedByClassroom = flatRosters.reduce((acc, current) => {
-    // 학년|교실이름 을 기준으로 1차 그룹화
-    const key = `${current.grade_id}|${current.classroom_name}`;
-    if (!acc[key]) {
-      acc[key] = {
-        grade_id: current.grade_id,
-        classroom_name: current.classroom_name,
-        weekly_duties: {},
-      };
+  // 데이터 목록을 Map 함수 이용해 계층적인 구조로 그룹화
+  const groupByClassroom = (list) => {
+    const map = new Map();
+    for (const { grade_id, classroom_name, member_name } of list) {
+      const key = `${grade_id}|${classroom_name}`;
+      if (!map.has(key)) {
+        map.set(key, { grade_id, classroom_name, members: new Set() });
+      }
+      map.get(key).members.add(member_name);
     }
+    return Array.from(map.values()).map((g) => ({
+      ...g,
+      members: [...g.members],
+    }));
+  };
 
-    // 청소날짜를 기준으로 2차 그룹화
-    const date = new Date(current.work_date);
-    const workDateString = `${date.getFullYear()}-${String(
-        date.getMonth() + 1
-    ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-    if (!acc[key].weekly_duties[workDateString]) {
-      acc[key].weekly_duties[workDateString] = {
-        work_date: workDateString,
-        members: [],
-      };
-    }
-    // 멤버 이름 목록에 현재 멤버를 추가
-    acc[key].weekly_duties[workDateString].members.push(current.member_name);
-
-    return acc;
-  }, {});
-
-  // 그룹화된 객체(groupedByClassroom)를 명세에 맞는 최종 배열 형태로 반환
-  const rosters = Object.values(groupedByClassroom).map((group) => ({
-    ...group,
-    weekly_duties: Object.values(group.weekly_duties),
-  }));
+  // 그룹화된 객체(groupedByClassroom)를 명세에 맞는 형태로 반환
+  const rosters = groupByClassroom(flatRosters);
 
   // 최종 결과 객체를 컨트롤러에 반환
   return {
     section: flatRosters[0].section,
+    work_date: flatRosters[0].work_date,
     rosters: rosters,
   };
 };
