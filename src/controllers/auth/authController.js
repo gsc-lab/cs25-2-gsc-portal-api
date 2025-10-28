@@ -139,7 +139,7 @@ async function authCallback(req, res) {
         const date = new Date();
         date.setDate(date.getDate());
         const startDate = date.toISOString().split("T")[0];
-        res.redirect(`/dashboard?${startDate}`); // spa frontend route
+        res.redirect(`/dashboard?date=${startDate}`); // spa frontend route
       }
 
       if (
