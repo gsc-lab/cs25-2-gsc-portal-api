@@ -2808,6 +2808,9 @@ components:
         section:
           type: string
           example: "2025-2"
+        work_date:
+          type: string
+          example: "2025-10-20"
         rosters:
           type: array
           items:
@@ -2822,10 +2825,11 @@ components:
           classroom_name:
             type: string
             example: "창조관-304"
-          weekly_duties:
+          members:
             type: array
             items:
-              $ref: "#/components/schemas/CleaningWeeklyDuty"
+              type: string
+            example: ['김성식', '권혁일', '정영쳘', '김민정']
 
     CleaningWeeklyDuty:
         type: object
