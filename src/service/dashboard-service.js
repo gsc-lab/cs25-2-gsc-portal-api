@@ -15,12 +15,12 @@ export const getDashboardData = async (user, targetDate) => {
 
   if (user.role === "student") {
     timetablePromise = timetableService.getStudentTimetable({
-      userId,
+      user_id: userId,
       targetDate,
     });
   } else if (user.role === "professor") {
     timetablePromise = timetableService.getProfessorTimetable({
-      userId,
+      user_id: userId,
       targetDate,
     });
   } else {
