@@ -171,7 +171,11 @@ paths:
     get:
       tags: [Auth]
       summary: 현재 로그인된 사용자 정보
-      description: JWT를 통해 로그인된 사용자의 정보를 반환합니다.
+      description: >
+        JWT를 통해 로그인된 사용자의 정보를 반환합니다.
+        사용자 역할(`role_type`)에 따라 반환 필드가 달라집니다.  
+        - **학생(student)**: 학년, 언어, 유학생 여부 포함  
+        - **교수/관리자(professor/admin)**: 학년, 언어, 유학생 여부 미포함
       security:
         - bearerAuth: []
       responses:
@@ -180,13 +184,60 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                type: object
+                title: StudentUser
+                properties:
+                  user_id:
+                    type: string
+                    example: "2423006"
+                  name:
+                    type: string
+                    example: "김김김"
+                  email:
+                    type: string
+                    example: "이메일@g.yju.ac.kr"
+                  phone:
+                    type: string
+                    example: "010-1234-5678"
+                  role_type:
+                    type: string
+                    example: "student"
+                  grade_id:
+                    type: string
+                    example: "1"
+                  language_id:
+                    type: string
+                    example: "KR"
+                  is_international:
+                    type: string
+                    example: "international"
+
         "401":
           description: 인증 실패
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 접근 권한 없음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "접근 권한이 없습니다."
+        "404":
+          description: 사용자 정보를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "사용자 정보를 찾을 수 없습니다."
 
   # === DASHBOARD SECTION ===
 
@@ -2943,8 +2994,6 @@ components:
           type: integer
           description: 사용자 고유 ID
           example: 1
-        name: { type: string, example: 홍길동 }
-        email: { type: string, example: test@yju.ac.kr }
         role_type:
           type: string
           enum: [student, professor, admin]
