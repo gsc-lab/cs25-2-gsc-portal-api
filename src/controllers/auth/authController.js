@@ -139,7 +139,7 @@ async function authCallback(req, res) {
         const date = new Date();
         date.setDate(date.getDate());
         const startDate = date.toISOString().split("T")[0];
-        res.redirect(`/dashboard?date=${startDate}`); // spa frontend route
+        res.redirect(`/${process.env.FE_BASE_URL}/dashboard?date=${startDate}`); // spa frontend route
       }
 
       if (
@@ -153,6 +153,7 @@ async function authCallback(req, res) {
       }
     } catch (error) {
       console.error("OAuth Callback Error", error);
+      return res.redirect(`${process.env.FE_BASE_URL}/error?msg=oauth_failed`);
       throw new InternalServerError(
         "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
       );
