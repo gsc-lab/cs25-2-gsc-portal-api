@@ -3,13 +3,13 @@ import url from "url";
 import { google } from "googleapis";
 import dotenv from "dotenv";
 import redisClient from "../../db/redis.js";
-import { findAuthEmail, findByEmail } from "../../models/Auth.js";
+import {findAdminAccount, findAuthEmail, findByEmail, findById, findStudentAccount} from "../../models/Auth.js";
 import { sign, signRefresh } from "../../utils/auth.utils.js";
 import { checkUserStatus, registerUser } from "../../service/auth-service.js";
 import {
   BadRequestError,
   ForbiddenError,
-  InternalServerError,
+  InternalServerError, NotFoundError,
 } from "../../errors/index.js";
 import axios from "axios";
 import { v4 } from "uuid";
@@ -208,9 +208,57 @@ async function registerAfterOAuth(req, res) {
   }
 }
 
+// 현재 로그인된 사용자 정보 반환
+async function authMe(req, res, next) {
+  try {
+    if (!req.user?.user_id) {
+      throw new ForbiddenError("접근 권한이 없습니다!");
+    }
+
+    const { user_id, role } = req.user;
+
+    let user;
+
+    switch (role) {
+      case "student":
+        user = await findStudentAccount(user_id);
+        break;
+      case "professor":
+      case "admin":
+        user = await findAdminAccount(user_id);
+        break;
+      default:
+          throw new ForbiddenError("접근 권한이 없습니다!");
+    }
+
+    if (!user) {
+      throw new NotFoundError("사용자 정보를 찾을 수 없습니다.");
+    }
+
+    const userPayload = {
+      user_id: user.user_id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role_type: user.role || user.role_type,
+      ...(user.role === "student" && {
+        grade_id: user.grade_id,
+        language_id: user.language_id,
+        is_international: user.is_international,
+      }),
+    }
+
+    res.status(200).json(userPayload);
+  } catch (err) {
+    console.log("authMe Error", err);
+    next(err);
+  }
+}
+
 export default {
   googleAuthRedirect,
   authCallback,
   authLogout,
   registerAfterOAuth,
+  authMe,
 };

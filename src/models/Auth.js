@@ -131,3 +131,34 @@ export const createProfessor = async ({
     conn.release();
   }
 };
+
+export const findStudentAccount = async (userId) => {
+  const [rows] = await pool.query(
+      `SELECT 
+            ua.*,
+            ur.role_type as role,
+            se.grade_id,
+            se.language_id,
+            se.is_international,
+            se.status
+     FROM user_account ua
+     LEFT JOIN user_role ur ON ua.user_id = ur.user_id
+     LEFT JOIN student_entity se ON ua.user_id = se.user_id
+     WHERE ua.user_id = ?`,
+      [userId],
+  );
+  return rows[0];
+}
+
+export const findAdminAccount = async (userId) => {
+  const [rows] = await pool.query(
+      `SELECT
+            ua.*,
+            ur.role_type as role
+      FROM user_account ua
+      LEFT JOIN user_role ur ON ua.user_id = ur.user_id
+      WHERE ua.user_id = ?`,
+      [userId],
+  );
+  return rows[0];
+}

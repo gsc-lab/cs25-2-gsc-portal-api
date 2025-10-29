@@ -1,6 +1,7 @@
 import express from "express";
 import authController from "../controllers/auth/authController.js";
 import refreshController from "../controllers/auth/refreshController.js";
+import { authWithRole } from "../middleware/authWithRole.js";
 
 const router = express.Router();
 
@@ -12,8 +13,10 @@ router.get("/callback", authController.authCallback);
 
 router.post("/register", authController.registerAfterOAuth);
 
-router.post("/logout", authController.authLogout);
+router.post("/logout", authWithRole("student"), authController.authLogout);
 
-router.post("/refresh", refreshController.isVeryRefresh);
+router.post("/refresh", authWithRole("student"), refreshController.isVeryRefresh);
+
+router.get("/me", authWithRole("student"), authController.authMe);
 
 export default router;
