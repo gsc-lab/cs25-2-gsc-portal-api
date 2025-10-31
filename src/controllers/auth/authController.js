@@ -47,7 +47,8 @@ async function googleAuthRedirect(req, res) {
       include_granted_scopes: true,
       // CSRF 공격 위험 감소를 위한 state 파라미터 포함
       state,
-      // prompt: 'consent',
+      prompt: 'consent',
+      redirect_uri: process.env.GOOGLE_REDIRECT_URL,
     });
 
     res.redirect(authorizationUrl);
