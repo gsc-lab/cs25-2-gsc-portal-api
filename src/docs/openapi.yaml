@@ -3109,6 +3109,18 @@ components:
           type: string
           description: "과목 공지일 경우 해당하는 과목 ID. 전체 공지일 경우 생략 가능."
           example: "COURSE-G1-01"
+        specific_users:
+          type: array
+          items:
+            type: integer
+            example: 2423004
+          description: |
+            "공지 대상 학생을 지정하는 객체 배열. multipart/form-data 전송 시에는 이 배열을 JSON 문자열로 변환하여 보내야 합니다."
+            - `application/json` 요청 시: `[2423004, 2423005]` 형태로 전송
+            - `multipart/form-data` 요청 시: 문자열로 직렬화하여 `"["2423004","2423005"]"` 형태로 전송해야 합니다.
+            - 비워둘 경우 전체 타겟(학년/레벨 기준)으로 발송됩니다.
+          example: [2423004, 2423005, 2423006]
+
         targets:
           type: array
           description: "공지 대상을 지정하는 객체 배열. multipart/form-data 전송 시에는 이 배열을 JSON 문자열로 변환하여 보내야 합니다."
