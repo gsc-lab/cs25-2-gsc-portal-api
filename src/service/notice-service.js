@@ -46,7 +46,7 @@ export const detailNotices = async (noticeId, user) => {
 
 // 생성
 export const addNotice = async (user, noticeData, files) => {
-  const { course_id, targets, ...noticeInfo } = noticeData;
+  const { course_id, targets, specific_users, ...noticeInfo } = noticeData;
   const { title, content } = noticeInfo;
 
   if (!title|| title.trim() === "") {
@@ -65,6 +65,28 @@ export const addNotice = async (user, noticeData, files) => {
     }
   } else if (Array.isArray(targets)) {
     parsedTargets = targets;
+  }
+
+  console.log(typeof specific_users === "string");
+  let specificUsers = specific_users;
+
+  if (specific_users && typeof specific_users === "string") {
+    try {
+      specificUsers = JSON.parse(specific_users);
+
+      // 한 번 파싱했는데 여전히 문자열이면 → 다시 한 번 파싱
+      if (typeof specificUsers === "string") {
+        specificUsers = JSON.parse(specificUsers);
+      }
+
+      // 문자열 숫자일 경우 숫자로 변환
+      if (Array.isArray(specificUsers)) {
+        specificUsers = specificUsers.map(Number);
+      }
+    } catch (err) {
+      console.error("specific_users 파싱 실패:", err.message);
+      specificUsers = [];
+    }
   }
 
   if (course_id) {
@@ -105,7 +127,11 @@ export const addNotice = async (user, noticeData, files) => {
       await noticeModel.createTargets(noticeId, parsedTargets, connection);
     }
 
-    await noticeModel.populateDeliverNotice(noticeId, connection);
+    if (Array.isArray(specificUsers) && specificUsers.length > 0) {
+      await noticeModel.populateDeliverNoticeForSpecificUsers(noticeId, specificUsers, connection);
+    } else {
+      await noticeModel.populateDeliverNotice(noticeId, connection);
+    }
 
     await connection.commit();
     return { noticeId };
@@ -169,7 +195,7 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
   const hasExistingFileChanges = !_.isEqual(_.sortBy(currentFileIds), _.sortBy(existing_file_ids.map(String)));
   const hasFileChanges = hasNewFileUploads || hasExistingFileChanges;
 
-  const { targets: targetsJSON } = data;
+  const { targets: targetsJSON, specific_users } = data;
   // Targets 파싱
   let parsedTargets = null;
   if (targetsJSON) {
@@ -201,6 +227,27 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
     // 정렬 후 비교 (순서에 상관없이 내용물만 비교)
     const sortKey = ['grade_id', 'class_id', 'language_id'];
     hasTargetChanges = !_.isEqual(_.sortBy(currentTargets, sortKey), _.sortBy(newTargets, sortKey));
+  }
+
+  let specificUsers = specific_users;
+
+  if (specific_users && typeof specific_users === "string") {
+    try {
+      specificUsers = JSON.parse(specific_users);
+
+      // 한 번 파싱했는데 여전히 문자열이면 → 다시 한 번 파싱
+      if (typeof specificUsers === "string") {
+        specificUsers = JSON.parse(specificUsers);
+      }
+
+      // 문자열 숫자일 경우 숫자로 변환
+      if (Array.isArray(specificUsers)) {
+        specificUsers = specificUsers.map(Number);
+      }
+    } catch (err) {
+      console.error("specific_users 파싱 실패:", err.message);
+      specificUsers = [];
+    }
   }
 
   // 최종적으로 변경분이 있는지 확인
@@ -249,6 +296,19 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
       }
       // 새로운 수신자 목록 재설정
       await noticeModel.populateDeliverNotice(noticeId, connection);
+    }
+
+    // 특정 유저 지정 수정 처리
+    if (specificUsers && Array.isArray(specificUsers) && specificUsers.length > 0) {
+      // 기존 delivery 삭제 (중복 방지)
+      await noticeModel.deleteDeliveryStatusByNoticeId(noticeId, connection);
+
+      // 지정된 유저만 다시 채움
+      await noticeModel.populateDeliverNoticeForSpecificUsers(
+          noticeId,
+          specificUsers,
+          connection
+      );
     }
 
     await connection.commit();
@@ -394,20 +454,20 @@ export const getNoticeReadStatusById = async (noticeId, user) => {
     throw new NotFoundError("해당 공지사항을 찾을 수 없습니다.");
   }
 
-  // 교수는 자신이 담당하는 과목의 공지 또는 본인이 작성한 공지만 조회 가능
-  if (user.role === 'professor') {
-    const isAuthor = notice.author.user_id === user.user_id;
-    let isCourseProfessor = false;
-
-    if (notice.course_id) {
-      isCourseProfessor = await noticeModel.isProfessorOfCourse(user.user_id, notice.course_id);
-    }
-
-    // 작성자도 아니고, 담당 과목의 공지도 아니라면 권한 없음
-    if (!isAuthor && !isCourseProfessor) {
-      throw new ForbiddenError("읽음 현황을 조회할 권한이 없습니다.");
-    }
-  }
+  // 교수는 자신이 담당하는 과목의 공지 또는 본인이 작성한 공지만 조회 가능 -> 주석 처리
+  // if (user.role === 'professor') {
+  //   const isAuthor = notice.author.user_id === user.user_id;
+  //   let isCourseProfessor = false;
+  //
+  //   if (notice.course_id) {
+  //     isCourseProfessor = await noticeModel.isProfessorOfCourse(user.user_id, notice.course_id);
+  //   }
+  //
+  //   // 작성자도 아니고, 담당 과목의 공지도 아니라면 권한 없음
+  //   if (!isAuthor && !isCourseProfessor) {
+  //     throw new ForbiddenError("읽음 현황을 조회할 권한이 없습니다.");
+  //   }
+  // }
 
   // 관리자는 모든 공지 조회 가능
   const readStatusList = await noticeModel.getNoticeReadStatus(noticeId);

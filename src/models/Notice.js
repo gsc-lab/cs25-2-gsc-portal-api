@@ -167,6 +167,19 @@ export const deleteTargets = async (noticeId, connection) => {
 };
 
 
+// 공지 대상자(학생) 직접 채우기
+export const populateDeliverNoticeForSpecificUsers = async (noticeId, userIds, connection) => {
+  const sql = `
+    INSERT IGNORE INTO notification_delivery_notice (notice_id, user_id, status)
+    SELECT ?, ua.user_id, 'QUEUED'
+    FROM user_account ua
+    LEFT JOIN user_role ur ON ur.user_id = ua.user_id
+    WHERE ua.user_id IN (?) AND ur.role_type = 'student'
+  `;
+  const [result] = await connection.query(sql, [noticeId, userIds]);
+  return result.affectedRows;
+}
+
 // 공지 대상자(학생) 자동 채우기
 export const populateDeliverNotice = async (noticeId, connection) => {
   const sql = `
