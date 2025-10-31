@@ -331,11 +331,11 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
   const whereClauses = [];
   const params = [];
 
-  // 역할에 따라 분기
-  if (user) {
-    whereClauses.push(`cp.user_id = ?`);
-    params.push(user.user_id);
-  }
+  // 역할에 따라 분기 주석 처리
+  // if (user) {
+  //   whereClauses.push(`cp.user_id = ?`);
+  //   params.push(user.user_id);
+  // }
 
   // 관리자는 모두 확인 가능
 
