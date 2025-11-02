@@ -8,10 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // 목록 조회
 export const getNotices = async (spec, query) => {
-
-  const notices = await noticeModel.findBySpec(spec, query);
-
-  return notices;
+  return await noticeModel.findBySpec(spec, query);
 };
 
 // 상세 공지
@@ -67,14 +64,13 @@ export const addNotice = async (user, noticeData, files) => {
     parsedTargets = targets;
   }
 
-  console.log(typeof specific_users === "string");
   let specificUsers = specific_users;
 
   if (specific_users && typeof specific_users === "string") {
     try {
       specificUsers = JSON.parse(specific_users);
 
-      // 한 번 파싱했는데 여전히 문자열이면 → 다시 한 번 파싱
+      // 한 번 파싱했는데 여전히 문자열이면 -> 다시 한 번 파싱
       if (typeof specificUsers === "string") {
         specificUsers = JSON.parse(specificUsers);
       }
@@ -189,7 +185,16 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
   );
 
   // 2. 파일 변경 확인
-  const { existing_file_ids = [] } = data;
+  let { existing_file_ids = [] } = data;
+  if (existing_file_ids) {
+    if (typeof existing_file_ids === "string") {
+      try {
+      existing_file_ids = JSON.parse(existing_file_ids);
+      } catch {
+        throw new BadRequestError("요청 타겟의 형식이 올바른 JSON이 아닙니다.");
+      }
+    }
+  }
   const hasNewFileUploads = !_.isEmpty(newFiles);
   const currentFileIds = notice.attachments.map(file => String(file.file_id));
   const hasExistingFileChanges = !_.isEqual(_.sortBy(currentFileIds), _.sortBy(existing_file_ids.map(String)));
@@ -203,7 +208,7 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
       try {
         parsedTargets = JSON.parse(targetsJSON);
       } catch {
-        throw new BadRequestError("요청 타겟의 형식이 올바른 JSON이 아닙니다.")
+        throw new BadRequestError("요청 타겟의 형식이 올바른 JSON이 아닙니다.");
       }
     } else if (Array.isArray(targetsJSON)) {
       parsedTargets = targetsJSON;
@@ -479,13 +484,9 @@ export const getNoticeReadStatusById = async (noticeId, user) => {
 export const filterCourses = async (user, filters) => {
   const VALID_COURSE_TYPES = new Set(['regular', 'special', 'korean']);
 
-  if (user.role === "student") {
-    throw new ForbiddenError("과목 목록을 조회할 권한이 없습니다.");
-  }
   if (filters.course_type && !VALID_COURSE_TYPES.has(filters.course_type)) {
     throw new BadRequestError(`잘못된 과목 타입입니다: ${filters.course_type}`);
   }
-
 
   let searchUserId = null;
   if (user.role === "professor") {

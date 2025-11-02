@@ -20,6 +20,7 @@ export async function findBySpec(spec, query) {
   let whereClauses = [];
   let queryParams = [];
 
+  // TODO 새로운 가입자는 볼 수가 없음.
   if (user.role === "student") {
     baseSql += ` JOIN notification_delivery_notice ndn ON v.notice_id = ndn.notice_id`;
     whereClauses.push(`ndn.user_id = ?`);
