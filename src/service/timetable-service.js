@@ -55,6 +55,50 @@ export const postRegisterCourse = async ({sec_id, title, professor_id, target, l
     return result
 };
 
+// 강의 수정
+export const putRegisterCourse = async ({course_id, sec_id, title, professor_id, target, level_id}) => {
+    
+    if (!course_id) {
+        throw new BadRequestError("강의 값이 누락 되었습니다.")
+    }
+    
+    if (!sec_id || !title || !professor_id || !target) {
+        throw new BadRequestError("필수 값이 누락 되었습니다.");
+    }
+    let targetInfo = {};
+    if (["1", "2", "3"].includes(target)) {
+        targetInfo = { category: "regular", grade_id: parseInt(target) };
+    } 
+    else if (target === "special") {
+        if (!level_id) throw new BadRequestError("특강은 level_id가 필요합니다.");
+        targetInfo = { category: "special", level_id };
+    } 
+    else if (target === "korean") {
+        if (!level_id) throw new BadRequestError("한국어 수업은 level_id가 필요합니다.");
+        targetInfo = { category: "korean", level_id };
+    } 
+    else {
+        throw new BadRequestError("유효하지 않은 target 값입니다.");
+    }
+    const result =  await timetableModel.putRegisterCourse(course_id, sec_id, title, professor_id, targetInfo);
+
+    return result
+};
+
+// 강의 삭제
+export const deleteRegisterCourse = async ({course_id}) => {
+    
+    if (!course_id) {
+        throw new BadRequestError("강의 값이 누락 되었습니다.")
+    }
+
+    const result =  await timetableModel.deleteRegisterCourse(course_id);
+
+    return result
+};
+
+
+
 // 시간표 등록
 export const postRegisterTimetable = async function ({classroom_id, course_id, day_of_week, start_period, end_period, class_name}) {
     if (!classroom_id || !start_period || !end_period || !course_id || !day_of_week) {
@@ -63,7 +107,7 @@ export const postRegisterTimetable = async function ({classroom_id, course_id, d
 
     let class_id = null;
 
-    // 1️특강인 경우 class_id 생성 및 등록
+    // 특강인 경우 class_id 생성 및 등록
     if (class_name) {
         class_id = course_id + class_name;
         const exists = await timetableModel.findClassById(class_id);
@@ -72,6 +116,33 @@ export const postRegisterTimetable = async function ({classroom_id, course_id, d
 
     // 시간표 등록
     return await timetableModel.registerTimetable(classroom_id, course_id, day_of_week, start_period, end_period, class_id);
+}
+
+// 시간표 수정 (기존 시간표 삭제 후 다시 만들기)
+export const putRegisterTimetable = async function({schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_name}) {
+    if (!schedule_id || !classroom_id || !start_period || !end_period || !course_id || !day_of_week) {
+        throw new BadRequestError("필수 값이 누락 되었습니다.");
+    }
+
+    let class_id = null;
+
+    // 특강일 경우
+        if (class_name) {
+        class_id = course_id + class_name;
+        const exists = await timetableModel.findClassById(class_id);
+        if (!exists) await timetableModel.insertCourseClass(class_id, course_id, class_name);
+    }
+
+    return await timetableModel.putRegisterTimetable(schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_id);
+}
+
+// 시간표 삭제
+export const deleteRegisterTimetable = async function({course_id, day_of_week}) {
+    if (!course_id || !day_of_week) {
+        throw new BadRequestError("course_id 또는 day_of_week가 누락되었습니다.");
+    }
+
+    return await timetableModel.deleteRegisterTimetable(course_id, day_of_week); 
 }
 
 // 휴보강 등록 Service

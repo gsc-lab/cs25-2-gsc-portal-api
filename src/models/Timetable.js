@@ -288,6 +288,103 @@ export async function postRegisterCourse(sec_id, title, professor_id, target) {
     }
 }
 
+// 강의 수정
+export async function putRegisterCourse(course_id, sec_id, title, professor_id, target) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // is_special 매핑
+        let is_special = 0;
+        if (target.category === "special") is_special = 1;
+        else if (target.category === "korean") is_special = 2;
+
+        // 강의 찾기
+        const [course_rows] = await conn.query("SELECT course_id FROM course WHERE course_id = ?", [course_id])
+        if (course_rows.length === 0) {
+            throw new BadRequestError("해당하는 강의를 찾을 수 없습니다");
+        }
+        
+        // 강의 값 수정
+        await conn.query("UPDATE course SET sec_id = ?, title = ?, is_special= ? WHERE course_id = ?", [sec_id, title, is_special, course_id])
+        
+        // 교수 값 수정
+        await conn.query(`UPDATE course_professor SET user_id = ? WHERE course_id = ?`, [professor_id, course_id]);
+
+        // target_id 찾기
+        const [target_rows] = await conn.query(`SELECT target_id FROM course_target WHERE course_id = ?`, [course_id])
+        const target_id = target_rows[0].target_id
+
+        // 대상 수정
+        if (target.category === "regular") {
+        await conn.query(
+            `UPDATE course_target SET grade_id = ?, language_id = ?
+            WHERE target_id = ?`,
+            [target.grade_id, "KR", target_id]
+        );
+        } else if (target.category === "korean") {
+        await conn.query(
+            `UPDATE course_target SET level_id = ?, language_id = ?
+            WHERE target_id = ?`,
+            [target.level_id || null, "KR", target_id]
+        );
+        } else if (target.category === "special") {
+        await conn.query(
+            `UPDATE course_target SET level_id = ?, language_id = ?
+            WHERE target_id = ?`,
+            [target.level_id || null, "JP", target_id]
+            );
+        }
+
+        await conn.commit()
+        return { course_id, target_id };
+
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+}
+
+// 강의 삭제
+export async function deleteRegisterCourse(course_id) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // 강의 찾기
+        const [course_rows] = await conn.query("SELECT course_id FROM course WHERE course_id = ?", [course_id])
+        if (course_rows.length === 0) {
+            throw new BadRequestError("해당하는 강의를 찾을 수 없습니다");
+        }
+        
+        // 대상 삭제
+        await conn.query(`DELETE FROM course_target WHERE course_id = ?`, [course_id])
+
+        // 교수 값 삭제
+        await conn.query(`DELETE FROM course_professor WHERE course_id = ?`, [course_id]);
+
+        // 강의 삭제
+        const [result] = await conn.query(`DELETE FROM course WHERE course_id = ?`, [course_id]);
+
+        if (result.affectedRows === 0) {
+            throw new BadRequestError("삭제할 강의가 존재하지 않습니다.");
+        }
+
+        await conn.commit()
+        return { course_id };
+
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+}
+
+
+
 // 시간표 id 찾기
 export async function findClassById(class_id) {
     const [rows] = await pool.query("SELECT 1 FROM course_class WHERE class_id = ?", [class_id]);
@@ -306,30 +403,48 @@ export async function insertCourseClass(class_id, course_id, class_name) {
 export async function registerTimetable(classroom_id, course_id, day_of_week, start_period, end_period, class_id) {
     const conn = await pool.getConnection();
     try {
-        // schedule_id 조회 (숫자 기준 정렬)
+        await conn.beginTransaction();
+
+        // 학기(sec_id) 조회
+        const [secData] = await conn.query(
+            `SELECT sec_id FROM course WHERE course_id = ?`,
+            [course_id]
+        );
+        if (secData.length === 0) throw new Error("해당 과목을 찾을 수 없습니다.");
+        const sec_id = secData[0].sec_id;
+
+        // 마지막 schedule_id 조회
         const [lastRow] = await conn.query(`
-            SELECT schedule_id 
-            FROM course_schedule 
-            ORDER BY CAST(SUBSTRING(schedule_id, 4) AS UNSIGNED) DESC 
+            SELECT schedule_id
+            FROM course_schedule
+            ORDER BY CAST(SUBSTRING(schedule_id, 4) AS UNSIGNED) DESC
             LIMIT 1
         `);
         const lastId = lastRow.length > 0 ? lastRow[0].schedule_id : null;
 
-        // 교시 범위만큼 반복
+        // 교시 범위 등록
         for (let i = 0; i <= end_period - start_period; i++) {
             const period = start_period + i;
-            const schedule_id = generateScheduleId(lastId, i);
+            const newScheduleId = generateScheduleId(lastId, i);
 
-            const sql = `
-                INSERT INTO course_schedule 
+            await conn.query(
+                `
+                INSERT INTO course_schedule
                 (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week, class_id)
-                SELECT ?, ?, ?, c.course_id, c.sec_id, ?, ?
-                FROM course c
-                WHERE c.course_id = ?`;
-
-            await conn.query(sql, [schedule_id, classroom_id, period, day_of_week, class_id, course_id]);
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                `,
+                [
+                    newScheduleId,
+                    classroom_id,
+                    period,
+                    course_id,
+                    sec_id,
+                    day_of_week,
+                    class_id || null, // 정규 과목이면 null
+                ]
+            );
         }
-        
+
         await conn.commit();
         return { message: "시간표 등록 완료" };
     } catch (err) {
@@ -338,7 +453,89 @@ export async function registerTimetable(classroom_id, course_id, day_of_week, st
     } finally {
         conn.release();
     }
-} 
+}
+
+
+// 시간표 수정
+export async function putRegisterTimetable(schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_id) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // 기존 스케줄 삭제 (같은 과목 + 같은 요일 전부 삭제)
+        await conn.query(
+            `DELETE FROM course_schedule WHERE course_id = ? AND day_of_week = ?`,
+            [course_id, day_of_week]
+        );
+
+        // 학기(sec_id) 조회
+        const [secData] = await conn.query(
+            `SELECT sec_id FROM course WHERE course_id = ?`,
+            [course_id]
+        );
+        if (secData.length === 0) throw new Error("해당 과목을 찾을 수 없습니다.");
+        const sec_id = secData[0].sec_id;
+
+        // 마지막 schedule_id 조회
+        const [lastRow] = await conn.query(`
+            SELECT schedule_id
+            FROM course_schedule
+            ORDER BY CAST(SUBSTRING(schedule_id, 4) AS UNSIGNED) DESC
+            LIMIT 1
+        `);
+        const lastId = lastRow.length > 0 ? lastRow[0].schedule_id : null;
+
+        // 교시 범위 재등록
+        for (let i = 0; i <= end_period - start_period; i++) {
+            const period = start_period + i;
+            const newScheduleId = generateScheduleId(lastId, i);
+
+            await conn.query(
+                `
+                INSERT INTO course_schedule
+                (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week, class_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                `,
+                [
+                    newScheduleId,
+                    classroom_id,
+                    period,
+                    course_id,
+                    sec_id,
+                    day_of_week,
+                    class_id || null,
+                ]
+            );
+        }
+
+        await conn.commit();
+        return { message: "시간표 수정 완료" };
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+}
+
+// 시간표 삭제
+export async function deleteRegisterTimetable(course_id, day_of_week) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        await conn.query(
+            `DELETE FROM course_schedule WHERE course_id = ? AND day_of_week = ?`, [course_id, day_of_week]
+        );
+
+        await conn.commit();
+        return { message: "시간표 삭제 완료" };
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    }
+}
+
 
 // 휴보강 등록
 export async function postRegisterHoliday(event_type, event_date, start_period, end_period, course_id = null, cancel_event_ids = [], classroom) {

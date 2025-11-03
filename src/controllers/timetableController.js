@@ -6,7 +6,7 @@ export const getStudentTimetable = async function (req, res, next) {
     try {
         const user_id = req.params.user_id;
         const targetDate = req.query.date;
-        const params = [user_id, targetDate];
+        const params = {user_id, targetDate};
         const result = await timetableService.getStudentTimetable(params);
         res.status(200).json(result);
     } catch (err) {
@@ -19,7 +19,7 @@ export const getProfessorTimetable = async function (req, res, next) {
     try {
         const user_id = req.params.user_id;
         const targetDate = req.query.date;
-        const params = [user_id, targetDate];
+        const params = {user_id, targetDate};
         const result = await timetableService.getProfessorTimetable(params);
         res.status(200).json(result);
     } catch(err) {
@@ -50,6 +50,31 @@ export const postRegisterCourse = async (req, res, next) => {
     }
 };
 
+// 강의 수정
+export const putRegisterCourse = async (req, res, next) => {
+    try {
+        const { course_id } = req.params;
+        const { sec_id, title, professor_id, target, level_id } = req.body;
+        const params = { course_id, sec_id, title, professor_id, target, level_id};
+        const result = await timetableService.putRegisterCourse(params);
+        res.status(200).json({ message: "수정 완료", course: result });
+    } catch (err) {
+        next(err)
+    }
+}
+
+// 강의 삭제
+export const deleteRegisterCourse = async (req, res, next) => {
+    try {
+        const { course_id } = req.params;
+        const params = { course_id }
+        const result = await timetableService.deleteRegisterCourse(params);
+        res.status(200).json({ message: "삭제 완료", course: result });
+    } catch (err) {
+        next(err)
+    }
+}
+
 // 시간표 등록
 export const postRegisterTimetable = async function (req, res, next) {
     try {
@@ -62,18 +87,57 @@ export const postRegisterTimetable = async function (req, res, next) {
     }
 }
 
+// 시간표 수정
+export const putRegisterTimetable = async (req, res, next) => {
+    try {
+        const { schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_name } = req.body;
+        const params = { schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_name }
+        const result = await timetableService.putRegisterTimetable(params);
+        res.status(200).json({ message: "수정 완료", course: result})
+    } catch (err) {
+        next(err)
+    }
+}
+
+// 시간표 삭제
+export const deleteRegisterTimetable = async (req, res, next) => {
+    try {
+        const { course_id, day_of_week } = req.body;
+        const params = { course_id, day_of_week}
+        const result = await timetableService.deleteRegisterTimetable(params);
+        res.status(200).json({ message: "삭제 완료", result });
+    } catch (err) {
+        next(err);
+    }
+};
+
 
 // 휴보강 등록
 export const postRegisterHoliday = async function (req, res, next) {
     try {
-        const {event_type, event_date, start_period, end_period, course_id, cancel_event_ids, classroom,} = req.body;
-        const params = { event_type, event_date, start_period, end_period, course_id, cancel_event_ids, classroom}
-        const result = await timetableService.postRegisterHoliday(params);
-        return res.status(201).json({ message: "휴보강 등록 완료", result });
+
     } catch (err) {
         next(err)
     }
-};
+}
+
+// 휴보강 수정
+export const putRegisterHoliday = async function (req, res, next) {
+    try {
+
+    } catch (err) {
+        next(err)
+    }
+}
+
+// 휴보강 삭제
+export const deleteRegisterHoliday = async function (req, res, next) {
+    try {
+
+    } catch (err) {
+        next(err)
+    }
+}
 
 // 분반 등록
 export const postAssignStudents = async function (req, res, next) {
@@ -86,6 +150,25 @@ export const postAssignStudents = async function (req, res, next) {
         next(err)
     }
 }
+
+// 분반 수정
+export const putAssignStudents = async function (req, res, next) {
+    try {
+
+    } catch (err) {
+        next(err)
+    }
+}
+
+// 분반 삭제
+export const deleteAssignStudents = async function (req, res, next) {
+    try {
+
+    } catch (err) {
+        next(err)
+    }
+}
+
 
 // 휴보강 이력
 export const getEvents = async function (req, res, next) {

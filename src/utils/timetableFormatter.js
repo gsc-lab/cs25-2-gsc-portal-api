@@ -14,152 +14,127 @@ const periodMap = {
 };
 
 export function formatTimetable(rows) {
-    const days = ["MON", "TUE", "WED", "THU", "FRI"];
+    if (!rows || rows.length === 0) return {};
+
     const timetable = {};
-
-    // 기본 구조 세팅
-    for (const d of days) {
-        timetable[d] = {};
-        for (let p = 1; p <= 12; p++) timetable[d][p] = [];
-    }
-
-    if (!rows || rows.length === 0) return timetable;
 
     for (const row of rows) {
         const period = periodMap[row.start_time];
         if (!period) continue;
 
-        // 휴보강이면 event_date로 요일 재계산
+        // 요일 계산 (휴보강 포함)
         let day = row.day_of_week;
         if (row.event_status && row.event_date) {
-            const eventDay = new Date(row.event_date).getDay(); // 0=Sun, 1=Mon...
-            const map = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-            day = map[eventDay];
+        const eventDay = new Date(row.event_date).getDay(); // 0=Sun
+        const map = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+        day = map[eventDay];
         }
 
-        if (!day || !timetable[day]) continue;
+        // course_id or huka_schedule_id 기반 키 생성
+        const courseKey = row.course_id || row.huka_schedule_id;
+        if (!courseKey) continue;
 
-        // 휴강
+        // 그룹 초기화
+        if (!timetable[courseKey]) {
+        timetable[courseKey] = {
+            title:
+            row.course_title ||
+            (row.source_type === "COUNSELING"
+                ? `상담(${row.professor_name})`
+                : "미지정 과목"),
+            professor: row.professor_name || "-",
+            schedule: []
+        };
+        }
+
+        // 스케줄 정보 구성
+        const scheduleItem = {
+        day,
+        room:
+            row.location ||
+            (row.building && row.room_number
+            ? `${row.building}-${row.room_number}`
+            : "-"),
+        period
+        };
+
+        // 휴강/보강 상태 추가
         if (row.event_status === "CANCEL") {
-            timetable[day][period].push({
-                title: "휴강",
-                course_id: row.course_id,
-                professor: row.professor_name || "-",
-                room: row.location || `${row.building}-${row.room_number}` || "-",
-                source: "EVENT",
-                event: { status: "CANCEL", date: row.event_date }
-            });
-            continue;
+        scheduleItem.status = "CANCEL";
+        scheduleItem.note = "휴강";
+        } else if (row.event_status === "MAKEUP") {
+        scheduleItem.status = "MAKEUP";
+        scheduleItem.note = "보강";
         }
 
-        // 보강
-        if (row.event_status === "MAKEUP") {
-            timetable[day][period].push({
-                title: `${row.course_title || "보강"} (보강)`,
-                course_id: row.course_id,
-                professor: row.professor_name || "-",
-                room: row.location || `${row.building}-${row.room_number}` || "-",
-                source: row.source_type || "CLASS",
-                event: { status: "MAKEUP", date: row.event_date }
-            });
-            continue;
-        }
-
-        // 일반 수업 / 상담
-        timetable[day][period].push({
-            title: row.course_title || "상담",
-            course_id: row.course_id,
-            professor: row.professor_name || null,
-            room: row.location || `${row.building}-${row.room_number}` || "-",
-            source: row.source_type || "CLASS",
-            event: row.event_status
-                ? { status: row.event_status, date: row.event_date }
-                : null
-        });
+        timetable[courseKey].schedule.push(scheduleItem);
     }
 
     return timetable;
 }
+
 
 
 export function formatTimetableForAdmin(rows) {
-    const grades = ["1", "2", "3", "special", "korean"];
-    const days = ["MON", "TUE", "WED", "THU", "FRI"];
+    if (!rows || rows.length === 0) return {};
 
-    // 기본 구조
     const timetable = {};
-    for (const g of grades) {
-        timetable[g] = {};
-        for (const d of days) {
-            timetable[g][d] = {};
-            for (let p = 1; p <= 12; p++) timetable[g][d][p] = [];
-        }
-    }
-
-    if (!rows || rows.length === 0) return timetable;
 
     for (const row of rows) {
         const period = periodMap[row.start_time];
         if (!period) continue;
 
-        // event_date 기준 요일 재계산 (휴보강용)
+        // 요일 계산 (휴보강 포함)
         let day = row.day_of_week;
         if (row.event_status && row.event_date) {
-            const eventDay = new Date(row.event_date).getDay(); // 0=Sun
-            const map = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-            day = map[eventDay];
+        const eventDay = new Date(row.event_date).getDay(); // 0=Sun
+        const map = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+        day = map[eventDay];
         }
 
-        // 학년 구분
-        let group = "special";
-        if (row.language_id === "KR") group = "korean";
-        else if (row.is_special === 0) {
-            if (row.grade_name === "1학년") group = "1";
-            else if (row.grade_name === "2학년") group = "2";
-            else if (row.grade_name === "3학년") group = "3";
+        // 과목 / 상담 식별 키 설정
+        const courseKey = row.course_id || row.huka_schedule_id;
+        if (!courseKey) continue;
+
+        // 그룹 초기화
+        if (!timetable[courseKey]) {
+        timetable[courseKey] = {
+            title:
+            row.course_title ||
+            (row.source_type === "COUNSELING"
+                ? `상담(${row.professor_name})`
+                : "미지정 과목"),
+            professor: row.professor_name || "-",
+            target:
+            row.grade_name && row.grade_name.includes("학년")
+                ? row.grade_name.replace("학년", "")
+                : null,
+            schedule: []
+        };
         }
 
-        // 휴강
+        // 스케줄 항목 구성
+        const scheduleItem = {
+        day,
+        room: row.location || "-",
+        period
+        };
+
+        // 상태(휴강/보강)
         if (row.event_status === "CANCEL") {
-            timetable[group][day][period].push({
-                title: "휴강",
-                course_id: row.course_id,
-                professor: row.professor_name || "-",
-                room: row.location || "-",
-                source: "EVENT",
-                event: { status: "CANCEL", date: row.event_date }
-            });
-            continue;
+        scheduleItem.status = "CANCEL";
+        scheduleItem.note = "휴강";
+        } else if (row.event_status === "MAKEUP") {
+        scheduleItem.status = "MAKEUP";
+        scheduleItem.note = "보강";
         }
 
-        // 보강
-        if (row.event_status === "MAKEUP") {
-            timetable[group][day][period].push({
-                title: `${row.course_title || "보강"} (보강)`,
-                course_id: row.course_id,
-                professor: row.professor_name || "-",
-                room: row.location || "-",
-                source: "CLASS",
-                event: { status: "MAKEUP", date: row.event_date }
-            });
-            continue;
-        }
-
-        // 일반 수업 / 상담
-        timetable[group][day][period].push({
-            title: row.course_title || "상담",
-            course_id: row.course_id,
-            professor: row.professor_name || null,
-            room: row.location || "-",
-            source: row.source_type || "CLASS",
-            event: row.event_status
-                ? { status: row.event_status, date: row.event_date }
-                : null
-        });
+        timetable[courseKey].schedule.push(scheduleItem);
     }
 
     return timetable;
 }
+
 
 // 강의실 예약
 export function formatReservation(rows) {
