@@ -20,14 +20,14 @@ router.put("/registerTimetable/:id", authWithRole("admin"), timetableController.
 router.delete("/registerTimetable/:id", authWithRole("admin"), timetableController.deleteRegisterTimetable);
 
 // 휴보강 등록
-router.post("/registerHoliday", authWithRole("professor"), timetableController.postRegisterHoliday);
-router.put("/registerHoliday/:id", authWithRole("professor"), timetableController.putRegisterHoliday);
-router.delete("/registerHoliday/:id", authWithRole("professor"), timetableController.deleteRegisterHoliday);
+router.post("/registerHoliday", timetableController.postRegisterHoliday);
+router.put("/registerHoliday/:event_id", timetableController.putRegisterHoliday);
+router.delete("/registerHoliday/:event_id", timetableController.deleteRegisterHoliday);
 
 // 분반 등록
-router.post("/classes/:classId/assign", authWithRole("professor"), timetableController.postAssignStudents);
-router.put("/classes/:classId/assign/:course_id", authWithRole("professor"), timetableController.postAssignStudents);
-router.delete("/classes/:classId/assign/:course_id", authWithRole("professor"), timetableController.postAssignStudents);
+router.post("/classes/:class_id/assign/:course_id",  timetableController.postAssignStudents);
+router.put("/classes/:class_id/assign/:course_id", timetableController.putAssignStudents);
+router.delete("/classes/:class_id/assign/:course_id", timetableController.deleteAssignStudents);
 
 // 휴보강 이력
 router.get("/events", authWithRole("professor"), timetableController.getEvents)

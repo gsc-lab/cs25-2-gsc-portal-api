@@ -114,17 +114,31 @@ export const deleteRegisterTimetable = async (req, res, next) => {
 
 // 휴보강 등록
 export const postRegisterHoliday = async function (req, res, next) {
-    try {
+  try {
+    const { event_type, event_date, start_period, end_period, course_id, cancel_event_ids, classroom } = req.body;
 
-    } catch (err) {
-        next(err)
-    }
-}
+    const params = {event_type, event_date, start_period, end_period, course_id, cancel_event_ids, classroom };
+
+    const result = await timetableService.postRegisterHoliday(params);
+
+    res.status(201).json({ message: "휴보강 등록이 완료되었습니다.", result });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 // 휴보강 수정
 export const putRegisterHoliday = async function (req, res, next) {
     try {
+        const { event_id } = req.params;
+        const { event_type, event_date, start_period, end_period, course_id, cancel_event_ids, classroom } = req.body;
 
+        const params = { event_id, event_type, event_date, start_period, end_period, course_id, cancel_event_ids, classroom }
+
+        const result = await timetableService.putRegisterHoliday(params);
+        
+        res.status(200).json({ message: "휴보강 수정이 완료되었습니다.", result });
     } catch (err) {
         next(err)
     }
@@ -133,7 +147,10 @@ export const putRegisterHoliday = async function (req, res, next) {
 // 휴보강 삭제
 export const deleteRegisterHoliday = async function (req, res, next) {
     try {
+        const { event_id } = req.params;
+        const result = await timetableService.deleteRegisterHoliday(event_id);
 
+        res.status(200).json({ message: "휴보강 삭제가 완료되었습니다.", result });
     } catch (err) {
         next(err)
     }
@@ -142,7 +159,9 @@ export const deleteRegisterHoliday = async function (req, res, next) {
 // 분반 등록
 export const postAssignStudents = async function (req, res, next) {
     try {
-        const params = { classId, student_ids };
+        const { class_id, course_id } = req.params
+        const { student_ids } = req.body 
+        const params = { class_id, course_id, student_ids };
         const result = await timetableService.postAssignStudents(params)
 
         return res.status(201).json({ message: "등록 완료", result});
@@ -154,7 +173,13 @@ export const postAssignStudents = async function (req, res, next) {
 // 분반 수정
 export const putAssignStudents = async function (req, res, next) {
     try {
+        const { class_id, course_id } = req.params
+        const { student_ids } = req.body
 
+        const params = { class_id, course_id, student_ids }
+        const result = await timetableService.putAssignStudents(params)
+
+        return res.status(200).json({ message: "분반 수정 완료", result })
     } catch (err) {
         next(err)
     }
@@ -163,7 +188,10 @@ export const putAssignStudents = async function (req, res, next) {
 // 분반 삭제
 export const deleteAssignStudents = async function (req, res, next) {
     try {
+        const { class_id, course_id } = req.params
+        const result = await timetableService.deleteAssignStudents(class_id, course_id)
 
+        return res.status(200).json({ message: "분반 삭제 완료", result})
     } catch (err) {
         next(err)
     }

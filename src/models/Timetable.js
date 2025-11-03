@@ -631,8 +631,151 @@ async function handleMakeupEvent(conn, { cancel_event_ids, event_date, classroom
     }
 }
 
+// 휴보강 수정
+export async function putRegisterHoliday(event_id, event_type, event_date, start_period, end_period, course_id, cancel_event_ids, classroom) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const [existingEvent] = await conn.query(
+            "SELECT event_id FROM course_event WHERE event_id = ?",
+            [event_id]
+        );
+
+        if (existingEvent.length === 0) {
+            throw new BadRequestError("수정할 이벤트를 찾을 수 없습니다.");
+        }
+
+        if (event_type === "CANCEL") {
+            const [scheduleRows] = await conn.query(
+                `
+                SELECT cs.schedule_id
+                FROM course_schedule cs
+                WHERE cs.course_id = ? AND cs.time_slot_id = ?
+                `,
+                [course_id, start_period]
+            );
+
+            if (scheduleRows.length === 0) {
+                throw new BadRequestError("수업 슬롯(schedule_id)을 찾을 수 없습니다.");
+            }
+            const schedule_id = scheduleRows[0].schedule_id;
+
+            await conn.query(
+                `
+                UPDATE course_event
+                SET 
+                    event_type = 'CANCEL',
+                    event_date = ?,
+                    classroom = ?,
+                    schedule_id = ?,
+                    parent_event_id = NULL
+                WHERE event_id = ?
+                `,
+                [event_date, classroom, schedule_id, event_id]
+            );
+
+        } else if (event_type === "MAKEUP") {
+            const parent_event_id = cancel_event_ids[0];
+
+            const [parentRows] = await conn.query(
+                `
+                SELECT schedule_id 
+                FROM course_event 
+                WHERE event_id = ? AND event_type = 'CANCEL'
+                `,
+                [parent_event_id]
+            );
+
+            if (parentRows.length === 0) {
+                throw new BadRequestError("휴강 이벤트를 찾을 수 없습니다.");
+            }
+            const schedule_id = parentRows[0].schedule_id;
+
+            await conn.query(
+                `
+                UPDATE course_event
+                SET 
+                    event_type = 'MAKEUP',
+                    event_date = ?,
+                    classroom = ?,
+                    schedule_id = ?,
+                    parent_event_id = ?
+                WHERE event_id = ?
+                `,
+                [event_date, classroom, schedule_id, parent_event_id, event_id]
+            );
+        } else {
+            throw new BadRequestError("지원하지 않는 event_type 입니다.");
+        }
+
+        return { message: "휴보강 수정 완료"};
+
+        await conn.commit();
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+}
+
+// 휴보강 삭제
+// 휴보강 삭제
+export async function deleteRegisterHoliday(event_id) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // 1. 삭제할 이벤트의 타입을 먼저 확인합니다.
+        const [existingEventRows] = await conn.query(
+            "SELECT event_id, event_type FROM course_event WHERE event_id = ?",
+            [event_id]
+        );
+
+        if (existingEventRows.length === 0) {
+            throw new BadRequestError("삭제할 이벤트를 찾을 수 없습니다.");
+        }
+
+        const event_type = existingEventRows[0].event_type;
+
+
+        if (event_type === "CANCEL") {
+            const [childEventRows] = await conn.query(
+                // 자식 이벤트가 있는지 확인
+                "SELECT 1 FROM course_event WHERE parent_event_id = ? LIMIT 1",
+                [event_id]
+            );
+
+            if (childEventRows.length > 0) {
+                throw new BadRequestError("이 휴강에 연결된 보강 이벤트가 있습니다. 보강 이벤트를 먼저 삭제해 주세요.");
+            }
+        }
+
+        const [deleteResult] = await conn.query(
+            "DELETE FROM course_event WHERE event_id = ?",
+            [event_id]
+        );
+
+        if (deleteResult.affectedRows === 0) {
+             throw new BadRequestError("이벤트 삭제에 실패했습니다.");
+        }
+
+        await conn.commit();
+        
+        return { message: "휴보강 삭제 완료" };
+
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+}
+
+
 // 분반 등록
-export async function postAssignStudents(classId, student_ids) {
+export async function postAssignStudents(class_id, course_id, student_ids) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -641,18 +784,53 @@ export async function postAssignStudents(classId, student_ids) {
         await conn.query(
             `UPDATE course_student
             SET class_id = ?
-            WHERE user_id = ?;`,
-            [classId, userId]
+            WHERE user_id = ? AND course_id = ?;`,
+            [class_id, userId, course_id]
         );
         }
 
         await conn.commit();
-        return { message: `${student_ids.length}명의 학생이 ${classId} 반에 배정되었습니다.` };
+        return { message: `${student_ids.length}명의 학생이 ${class_id} 반에 배정되었습니다.` };
     } catch (err) {
         await conn.rollback();
         throw err;
     } finally {
         conn.release();
+    }
+}
+
+// 분반 수정
+export async function putAssignStudents(class_id, course_id, student_ids) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        await conn.query(`UPDATE course_student SET class_id = NULL WHERE class_id = ? AND course_id = ?`, [class_id, course_id]);
+
+        for (const user_id of student_ids) {
+            await conn.query(`UPDATE course_student SET class_id = ? WHERE user_id = ? AND course_id = ?`, [class_id, user_id, course_id])
+        }
+
+        await conn.commit();
+        return { message: `${student_ids.length}명의 학생이 ${class_id} 반에 새로 배정되었습니다.` };
+    } catch (err) {
+        throw err;
+    }
+}
+
+// 분반 삭제
+export async function deleteAssignStudents(class_id, course_id) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const [updateResult] = await conn.query(`UPDATE course_student SET class_id = NULL WHERE class_id = ? AND course_id = ?`, [class_id, course_id])
+        
+        await conn.commit();
+        return { message: `${class_id} 반에 배정된 ${updateResult.affectedRows}명의 학생이 미배정 처리되었습니다.` };
+    } catch (err) {
+        await conn.rollback();
+        throw err;
     }
 }
 
