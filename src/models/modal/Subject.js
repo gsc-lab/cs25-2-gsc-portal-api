@@ -52,27 +52,38 @@ export async function getCoursesKorean() {
 // 전체 과목 조회
 export async function getAllCourses() {
     const [rows] = await pool.query(`
-        SELECT
-            c.course_id,
-            c.title,
-            ua.name AS professor_name,
-            CASE
-                WHEN ct.language_id = 'KR' THEN '한국어'
-                WHEN c.is_special = TRUE THEN '특강'
-                ELSE '정규'
-            END AS type,
-            CASE
-                WHEN ct.language_id = 'KR' THEN 'korean'
-                WHEN c.is_special = TRUE THEN 'special'
-                WHEN ct.grade_id = '1' THEN '1'
-                WHEN ct.grade_id = '2' THEN '2'
-                WHEN ct.grade_id = '3' THEN '3'
-                ELSE NULL
-            END AS target
+        SELECT c.course_id, c.title, ua.name AS professor,
+                ct.grade_id AS target,
+                cs.day_of_week AS day, CONCAT(cr.building, '-', cr.room_number) AS room,
+                ts.time_slot_id AS period
         FROM course c
-        JOIN course_target ct ON c.course_id = ct.course_id;
+        JOIN course_target ct ON c.course_id = ct.course_id
+        JOIN course_professor cp ON c.course_id = cp.course_id
+        JOIN user_account ua ON cp.user_id = ua.user_id
+        JOIN course_schedule cs ON cs.course_id = c.course_id
+        JOIN classroom cr ON cs.classroom_id = cr.classroom_id
+        JOIN time_slot ts ON cs.time_slot_id = ts.time_slot_id
     `);
-    return rows;
+
+    const result = {};
+
+    for (const row of rows) {
+    if (!result[row.course_id]) {
+        result[row.course_id] = {
+        title: row.title,
+        professor: row.professor,
+        target: row.target,
+        schedule: []
+        };
+    }
+    result[row.course_id].schedule.push({
+        day: row.day,
+        room: row.room,
+        period: row.period
+    });
+    }
+
+    return result;
 }
 
 // 특강 분반 조회 (level_id 없이 전체)
