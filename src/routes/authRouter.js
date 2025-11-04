@@ -2,6 +2,7 @@ import express from "express";
 import authController from "../controllers/auth/authController.js";
 import refreshController from "../controllers/auth/refreshController.js";
 import { authWithRole } from "../middleware/authWithRole.js";
+import {uploadForJLPT} from "../middleware/fileMiddleware.js";
 
 const router = express.Router();
 
@@ -18,5 +19,7 @@ router.post("/logout", authWithRole("student"), authController.authLogout);
 router.post("/refresh", authWithRole("student"), refreshController.isVeryRefresh);
 
 router.get("/me", authWithRole("student"), authController.authMe);
+
+router.post("/me", authWithRole("student"), uploadForJLPT.array("files", 1), authController.saveMyProfile);
 
 export default router;

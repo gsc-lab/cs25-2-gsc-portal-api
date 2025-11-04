@@ -162,3 +162,32 @@ export const findAdminAccount = async (userId) => {
   );
   return rows[0];
 }
+
+
+export const saveStudentExams = async (userId, data, fileId, connection) => {
+
+  const db = connection || pool;
+
+  const [lastRows] = await pool.query(`
+        SELECT exam_id 
+        FROM student_exams 
+        ORDER BY exam_id DESC 
+        LIMIT 1
+    `);
+
+  const { exam_type, score, level } = data;
+
+  const lastId = lastRows[0]?.exam_id ?? null;
+
+  const newId = lastId
+    ? `EX${String(parseInt(lastId.replace("EX", ""), 10) + 1).padStart(3, "0")}`
+    : "EX001";
+
+  const [result] = await db.query(
+    `INSERT INTO student_exams (exam_id, user_id, exam_type, file_id, score, level_code)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [newId, userId, exam_type, fileId, score, level],
+  );
+  return result;
+
+};

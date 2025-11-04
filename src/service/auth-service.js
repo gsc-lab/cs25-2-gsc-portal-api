@@ -4,11 +4,14 @@ import {
   createProfessor,
   createStudent,
   findById,
-  findByEmail,
+  findByEmail, saveStudentExams,
 } from "../models/Auth.js";
 import { v4 } from "uuid";
 import jwt from "jsonwebtoken";
 import { BadRequestError, UnauthenticatedError, ConflictError } from "../errors/index.js";
+import * as fileService from "./file-service.js";
+import * as noticeModel from "../models/Notice.js";
+import pool from "../db/connection.js";
 
 const secret = process.env.JWT_SECRET;
 
@@ -92,7 +95,6 @@ export async function refreshTokens(accessToken, refreshToken, req) {
       );
     }
 
-    // To do -> 회원 조회 (view) 적용
     let user = await findById(userId);
 
     const payload = {
@@ -122,3 +124,34 @@ export async function refreshTokens(accessToken, refreshToken, req) {
     );
   }
 }
+
+// 사용자 JLPT 점수 저장
+export const saveStudentExam = async (user, file, examData) => {
+  const userId = user.user_id;
+  const { exam_type, score, level } = examData;
+
+  if (!file) {
+    throw new BadRequestError("저장할 파일을 입력해주세요");
+  }
+
+  if (!exam_type || !score || !level) {
+    throw new BadRequestError("누락된 값이 존재합니다.");
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const insertedFileIds = await fileService.addFiles([file], connection);
+    const fileId = insertedFileIds[0];
+
+    await saveStudentExams(userId, examData, fileId, connection);
+
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};

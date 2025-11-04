@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import redisClient from "../../db/redis.js";
 import {findAdminAccount, findAuthEmail, findByEmail, findById, findStudentAccount} from "../../models/Auth.js";
 import { sign, signRefresh } from "../../utils/auth.utils.js";
-import { checkUserStatus, registerUser } from "../../service/auth-service.js";
+import {checkUserStatus, registerUser, saveStudentExam} from "../../service/auth-service.js";
 import {
   BadRequestError,
   ForbiddenError,
@@ -256,10 +256,26 @@ async function authMe(req, res, next) {
   }
 }
 
+async function saveMyProfile(req, res, next) {
+  try {
+    const { user, files, body } = req;
+
+    if (!files || files.length === 0) {
+      throw new BadRequestError("파일을 업로드해주세요.");
+    }
+
+    await saveStudentExam(user, files[0], body);
+    res.status(201).json({ message: "성공적으로 저장되었습니다." });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export default {
   googleAuthRedirect,
   authCallback,
   authLogout,
   registerAfterOAuth,
   authMe,
+  saveMyProfile,
 };
