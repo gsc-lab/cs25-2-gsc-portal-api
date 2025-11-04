@@ -38,7 +38,7 @@ const storage = multer.diskStorage({
 //   }),
 //   limits: { fileSize: 5 * 1024 * 1024 },
 // })
-//
+
 // // 허용되는 파일 타입과 사이즈
 const createUploadMiddleware = (fileSizeLimitMB) => {
   return multer({
