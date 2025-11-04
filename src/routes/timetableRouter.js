@@ -30,7 +30,7 @@ router.put("/classes/:class_id/assign/:course_id", timetableController.putAssign
 router.delete("/classes/:class_id/assign/:course_id", timetableController.deleteAssignStudents);
 
 // 휴보강 이력
-router.get("/events", authWithRole("professor"), timetableController.getEvents)
+router.get("/events", timetableController.getEvents)
 
 // 후까 교수님
 router.get("/huka/student", authWithRole("professor"), timetableController.getHukaStudentTimetable);

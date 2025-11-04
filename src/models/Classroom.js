@@ -133,7 +133,8 @@ export async function getClassroomPolls(date, user_id) {
     return rows.map(row => ({
         poll_id: row.poll_id,
         grade_name: row.grade_name,
-        poll_date: row.poll_date.toISOString().split("T")[0],
+        poll_date: row.poll_date
+        ? new Date(row.poll_date).toISOString().split("T")[0]: null,
         day_of_week: dayMap[row.target_weekend] || row.target_weekend,
         required_count: row.required_count,
         vote_count: row.vote_count,

@@ -158,11 +158,14 @@ VALUES
 ('HK005', '2725001', '8888001', '2025-1', 'REGULAR', 'FRI', NULL, '9', '국제관 101호', NOW(), NOW()),
 ('HK006', '2725001', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-20', '8', '국제관 202호', NOW(), NOW());
 
-INSERT INTO course_event (event_id, schedule_id, event_type, event_date) VALUES
-('E001','SCH1','CANCEL','2025-04-15'),
-('E002','SCH3','MAKEUP','2025-05-10'),
-('E003','SCH6','CANCEL','2025-04-21'),
-('E004','SCH9','MAKEUP','2025-04-25');
+INSERT INTO course_event (event_id, schedule_id, event_type, event_date, parent_event_id) VALUES
+-- 세트 1: 인공지능 개론 (SCH1)
+('E001','SCH1','CANCEL','2025-04-15',NULL),
+('E002','SCH1','MAKEUP','2025-05-10','E001'),
+
+-- 세트 2: 운영체제 (SCH6)
+('E003','SCH6','CANCEL','2025-04-21',NULL),
+('E004','SCH6','MAKEUP','2025-04-25','E003');
 
 -- ===== Reservations & Polls & Cleaning =====
 INSERT INTO reservation (user_id, classroom_id, reserve_date, start_time, end_time) VALUES

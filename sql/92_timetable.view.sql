@@ -20,7 +20,9 @@ SELECT
     lang.name          AS language_name,
     c.is_special       AS is_special,
     ce.event_type      AS event_status,
-    ce.event_date      AS event_date
+    ce.event_date      AS event_date,
+    ce.parent_event_id,
+    ce.event_id
 FROM course_schedule cs
 JOIN course c ON cs.course_id = c.course_id
 JOIN time_slot ts ON cs.time_slot_id = ts.time_slot_id

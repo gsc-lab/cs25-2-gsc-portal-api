@@ -38,10 +38,10 @@ export async function postAllowedEmail(email, reason) {
     return rows;
 }
 
-export async function deleteAllowedEmail(id) {
+export async function deleteAllowedEmail(user_id) {
     const [rows] = await pool.query(
         "DELETE FROM allowed_email WHERE id = ?",
-        [id]
+        [user_id]
     );
     return rows;
 }

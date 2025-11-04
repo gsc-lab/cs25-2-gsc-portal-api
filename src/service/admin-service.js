@@ -40,11 +40,11 @@ export const postAllowedEmail = async function({email, reason}) {
     return await UserModel.postAllowedEmail(email, reason);
 }
 
-export const deleteAllowedEmail = async function(id) {
-    if (!id) {
+export const deleteAllowedEmail = async function(user_id) {
+    if (!user_id) {
         throw new BadRequestError("필수 값이 누락 되었습니다.");
     }
-    return await UserModel.deleteAllowedEmail(id);
+    return await UserModel.deleteAllowedEmail(user_id);
 }
 
 // 학생 정보

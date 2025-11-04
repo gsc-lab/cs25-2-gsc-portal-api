@@ -721,7 +721,6 @@ export async function putRegisterHoliday(event_id, event_type, event_date, start
 }
 
 // 휴보강 삭제
-// 휴보강 삭제
 export async function deleteRegisterHoliday(event_id) {
     const conn = await pool.getConnection();
     try {
@@ -758,7 +757,7 @@ export async function deleteRegisterHoliday(event_id) {
         );
 
         if (deleteResult.affectedRows === 0) {
-             throw new BadRequestError("이벤트 삭제에 실패했습니다.");
+            throw new BadRequestError("이벤트 삭제에 실패했습니다.");
         }
 
         await conn.commit();
@@ -836,17 +835,45 @@ export async function deleteAssignStudents(class_id, course_id) {
 
 // 휴보강 이력
 export async function getEvents() {
-    let sql = `
-    SELECT vt.event_status, vt.event_date,
-            vt.grade_id, vt.grade_name,
-            vt.course_id, vt.course_title,
-            vt.start_time, vt.end_time
-    FROM v_timetable vt
-    WHERE vt.event_status IS NOT NULL
-    `;
+    const [rows] = await pool.query(`
+        SELECT
+            cancel.event_status AS cancel_status,
+            cancel.event_date AS cancel_date,
+            cancel.grade_id, cancel.grade_name,
+            cancel.course_id, cancel.course_title,
+            cancel.start_time, cancel.end_time,
+            makeup.event_status AS makeup_status,
+            makeup.event_date AS makeup_date
+        FROM v_timetable cancel
+        JOIN v_timetable makeup
+            ON makeup.parent_event_id = cancel.event_id
+        WHERE cancel.event_status = 'CANCEL'
+    `);
 
-    const [rows] = await pool.query(sql);
-    return rows
+    const result = rows.map(r => ({
+    cancel: {
+        event_status: r.cancel_status,
+        event_date: r.cancel_date,
+        grade_id: r.grade_id,
+        grade_name: r.grade_name,
+        course_id: r.course_id,
+        course_title: r.course_title,
+        start_time: r.start_time,
+        end_time: r.end_time,
+    },
+    makeup: {
+        event_status: r.makeup_status,
+        event_date: r.makeup_date,
+        grade_id: r.grade_id,
+        grade_name: r.grade_name,
+        course_id: r.course_id,
+        course_title: r.course_title,
+        start_time: r.start_time,
+        end_time: r.end_time,
+    }
+    }));
+
+    return result
 }
 
 // 후까 교수님
