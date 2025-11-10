@@ -4,6 +4,7 @@ import session from "express-session";
 import cors from "cors";
 import { swaggerUi, specs } from "./docs/swagger.js";
 import path from "path";
+import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 
 //Router
@@ -20,6 +21,7 @@ import dashboardRouter from "./routes/dashboardRouter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+dotenv.config();
 
 import { centralErrorHandler } from "./middleware/errorHandler.js";
 
@@ -31,7 +33,7 @@ const corsOptions = {
 };
 app.use(
     session({
-      secret: process.env.GOOGLE_SECRET, // Replace with a strong secret
+      secret: process.env.SESSION_SECRET, // Replace with a strong secret
       resave: false,
       saveUninitialized: false,
     }),
