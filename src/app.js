@@ -1,10 +1,13 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import session from "express-session";
+import RedisStore from "connect-redis";
+import redisClient from './db/redis.js';
 import cors from "cors";
 import { swaggerUi, specs } from "./docs/swagger.js";
 import path from "path";
 import dotenv from "dotenv";
+
 import { fileURLToPath } from "url";
 
 //Router
@@ -31,12 +34,25 @@ const corsOptions = {
   origin: process.env.FE_BASE_URL,
   credentials: true,
 };
+
+const redisSessionStore = new RedisStore({
+  client: redisClient,
+  prefix: 'session'
+});
+
 app.use(
-    session({
-      secret: process.env.SESSION_SECRET, // Replace with a strong secret
-      resave: false,
-      saveUninitialized: false,
-    }),
+  session({
+    // 4. store를 MemoryStore(기본값) 대신 RedisStore로 변경
+    store: redisSessionStore,
+    secret: process.env.SESSION_SECRET, // .env의 SESSION_SECRET
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // https에서만 쿠키 전송
+      maxAge: 1000 * 60 * 60 * 24, // 1일
+    },
+  }),
 );
 app.use(cors(corsOptions));
 
