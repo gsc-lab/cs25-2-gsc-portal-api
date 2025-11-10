@@ -47,16 +47,16 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // api
-app.use("/admin", adminRouter);
-app.use("/timetables", timetableRouter);
-app.use("/auth", authRouter);
-app.use("/notices", noticeRouter);
-app.use("/files", fileRouter);
-app.use("/cleaning-rosters", cleaningRouter);
-app.use("/classrooms", classroomRouter);
-app.use("/modal/subjects", subjectRouter);
-app.use("/modal/common", commonRouter);
-app.use("/dashboard", dashboardRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/timetables", timetableRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/notices", noticeRouter);
+app.use("/api/files", fileRouter);
+app.use("/api/cleaning-rosters", cleaningRouter);
+app.use("/api/classrooms", classroomRouter);
+app.use("/api/modal/subjects", subjectRouter);
+app.use("/api/modal/common", commonRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 app.use(centralErrorHandler);
 export default app;
