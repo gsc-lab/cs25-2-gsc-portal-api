@@ -1,7 +1,7 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import RedisStore from "connect-redis";
+import { RedisStore } from "connect-redis";
 import redisClient from './db/redis.js';
 import cors from "cors";
 import { swaggerUi, specs } from "./docs/swagger.js";
@@ -35,21 +35,15 @@ const corsOptions = {
   credentials: true,
 };
 
-const redisSessionStore = new RedisStore({
-  client: redisClient,
-  prefix: 'session'
-});
-
 app.use(
   session({
-    // 4. store를 MemoryStore(기본값) 대신 RedisStore로 변경
-    store: redisSessionStore,
+    store: new RedisStore({ client: redisClient }),
     secret: process.env.SESSION_SECRET, // .env의 SESSION_SECRET
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // https에서만 쿠키 전송
+      // secure: process.env.NODE_ENV === 'production', // https에서만 쿠키 전송
       maxAge: 1000 * 60 * 60 * 24, // 1일
     },
   }),
