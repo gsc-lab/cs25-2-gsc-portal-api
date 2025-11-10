@@ -9,7 +9,7 @@ COPY . .
 FROM node:lts-alpine AS production
 WORKDIR /app
 COPY --from=build /app ./
-RUN npm install --only=production
+RUN npm install --only=production --ignore-scripts
 EXPOSE 3000
 CMD ["npm", "run", "start"]
 
