@@ -16,14 +16,15 @@ export async function getStudentTimetable(user_id, targetDate, weekStart, weekEn
             CONCAT(vt.building, '-', vt.room_number) AS location,
             vt.is_special,
             vt.language_id,
-            vt.event_status,
+            COALESCE(vt.event_status, 'NORMAL') AS event_status,
             vt.event_date,
             'CLASS' AS source_type
         FROM v_timetable vt
         JOIN student_entity se 
             ON se.user_id = ?
             AND se.status = 'enrolled'
-        JOIN time_slot ts ON vt.start_time = ts.start_time
+        LEFT JOIN time_slot ts 
+            ON COALESCE(vt.event_time_slot_id, vt.time_slot_id) = ts.time_slot_id
         WHERE
             (
                 (vt.is_special = 0 AND vt.grade_id = se.grade_id)
@@ -34,6 +35,8 @@ export async function getStudentTimetable(user_id, targetDate, weekStart, weekEn
                 (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
                 OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
             )
+            AND vt.parent_event_id IS NULL
+
 
         UNION ALL
 
@@ -97,12 +100,13 @@ export async function getProfessorTimetable(user_id, targetDate, weekStart, week
             vt.event_date,
             'CLASS' AS source_type
         FROM v_timetable vt
-        LEFT JOIN time_slot ts ON vt.start_time = ts.start_time
+        LEFT JOIN time_slot ts ON vt.time_slot_id = ts.time_slot_id
         WHERE vt.professor_id = ?
         AND (
-            (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
-            OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
+        vt.event_date IS NULL
+        OR (vt.event_date BETWEEN ? AND ?)
         )
+        AND ? BETWEEN vt.start_date AND vt.end_date
 
         UNION ALL
 
@@ -154,70 +158,108 @@ export async function getProfessorTimetable(user_id, targetDate, weekStart, week
 // 관리자
 export async function getAdminTimetable(targetDate, weekStart, weekEnd) {
     const sql = `
-        -- 🔹 전체 수업 + 휴보강 포함
+        -- =========================================================
+        -- 1. 수업 (CLASS)
+        -- =========================================================
         SELECT 
-            vt.grade_name,
-            vt.day AS day_of_week,
+            g.name AS grade_name,
+            cs.day_of_week AS day_of_week,
             ts.start_time,
             ts.end_time,
-            vt.course_id,
-            vt.course_title,
-            vt.professor_name,
-            CONCAT(vt.building, '-', vt.room_number) AS location,
-            vt.is_special,
-            vt.language_id,
-            vt.event_status,
-            vt.event_date,
-            'CLASS' AS source_type
-        FROM v_timetable vt
-        LEFT JOIN time_slot ts ON vt.start_time = ts.start_time
-        WHERE (
-            (vt.event_date IS NULL AND ? BETWEEN vt.start_date AND vt.end_date)
-            OR (vt.event_date IS NOT NULL AND vt.event_date BETWEEN ? AND ?)
-        )
+            ts.time_slot_id AS period,
+            c.course_id,
+            c.title AS course_title,
+            ua.name AS professor_name,
+            CONCAT(cr.building, '-', cr.room_number) AS location,
+            c.is_special,
+            ct.language_id,
+            ce.event_type AS event_status,
+            ce.event_date,
+            'CLASS' AS source_type,
+
+            -- ▼▼▼ 2. (추가) 상담 부분과 컬럼 맞추기 위한 NULL ▼▼▼
+            NULL AS student_list,
+            NULL AS student_count
+            -- ▲▲▲▲▲
+
+        FROM course_schedule cs
+        JOIN course c           ON cs.course_id   = c.course_id
+        JOIN section sec        ON cs.sec_id      = sec.sec_id
+        JOIN course_professor cp ON c.course_id    = cp.course_id
+        JOIN user_account ua     ON cp.user_id     = ua.user_id
+        JOIN time_slot ts       ON cs.time_slot_id= ts.time_slot_id
+        JOIN classroom cr       ON cs.classroom_id= cr.classroom_id
+        LEFT JOIN course_target ct ON c.course_id    = ct.course_id
+        LEFT JOIN grade g          ON ct.grade_id    = g.grade_id
+        LEFT JOIN course_event ce 
+            ON cs.schedule_id = ce.schedule_id 
+            AND (ce.event_date BETWEEN ? AND ?)
+            AND ce.parent_event_id IS NULL
+        WHERE ? BETWEEN sec.start_date AND sec.end_date
 
         UNION ALL
 
-        -- 🔹 전체 상담 일정 (REGULAR + CUSTOM)
+        -- =========================================================
+        -- 2. 상담 (COUNSELING)
+        -- =========================================================
         SELECT 
             NULL AS grade_name,
             vhk.day AS day_of_week,
             ts.start_time,
             ts.end_time,
+            ts.time_slot_id AS period,
             NULL AS course_id,
-            CONCAT('상담(', ua.name, ')') AS course_title,
+
+            -- ▼▼▼ 1. (수정) title은 '상담'으로 고정 ▼▼▼
+            '상담' AS course_title,
+            -- ▲▲▲▲▲
+
             up.name AS professor_name,
             vhk.location AS location,
             NULL AS is_special,
             NULL AS language_id,
             NULL AS event_status,
-            NULL AS event_date,
-            'COUNSELING' AS source_type
+            vhk.event_date,
+            'COUNSELING' AS source_type,
+
+            -- ▼▼▼ 2. (추가) 학생 목록과 인원수를 별도 변수로 분리 ▼▼▼
+            GROUP_CONCAT(ua.name SEPARATOR ', ') AS student_list,
+            COUNT(ua.user_id) AS student_count
+            -- ▲▲▲▲▲
+
         FROM v_huka_timetable vhk
-        JOIN time_slot ts ON vhk.time_slot_id = ts.time_slot_id
+        JOIN time_slot ts
+            ON vhk.time_slot_id = ts.time_slot_id
         JOIN user_account ua ON ua.user_id = vhk.student_id
         JOIN user_account up ON up.user_id = vhk.professor_id
         JOIN section sec ON vhk.sec_id = sec.sec_id
         WHERE (
-            (vhk.schedule_type = 'REGULAR'
-                AND ? BETWEEN sec.start_date AND sec.end_date)
+            (vhk.schedule_type = 'REGULAR' AND ? BETWEEN sec.start_date AND sec.end_date)
             OR
-            (vhk.schedule_type = 'CUSTOM'
-                AND vhk.event_date BETWEEN ? AND ?)
+            (vhk.schedule_type = 'CUSTOM' AND vhk.event_date BETWEEN ? AND ?)
         )
+        GROUP BY
+            vhk.day,
+            ts.time_slot_id,
+            ts.start_time,
+            ts.end_time,
+            up.name,
+            vhk.location,
+            vhk.event_date
 
         ORDER BY FIELD(day_of_week,'MON','TUE','WED','THU','FRI'), start_time;
     `;
 
     const params = [
-        targetDate, weekStart, weekEnd,    // 수업
-        targetDate, weekStart, weekEnd     // 상담
+        weekStart, weekEnd, targetDate,   // 수업
+        targetDate, weekStart, weekEnd    // 상담
     ];
 
     const [rows] = await pool.query(sql, params);
+
+    // 3. 수정된 formatTimetableForAdmin 함수를 호출합니다.
     return formatTimetableForAdmin(rows);
 }
-
 
 
 
@@ -364,6 +406,9 @@ export async function deleteRegisterCourse(course_id) {
 
         // 교수 값 삭제
         await conn.query(`DELETE FROM course_professor WHERE course_id = ?`, [course_id]);
+
+        // 스케줄 삭제
+        await conn.query(`DELETE FROM course_schedule WHERE course_id = ?`, [course_id])
 
         // 강의 삭제
         const [result] = await conn.query(`DELETE FROM course WHERE course_id = ?`, [course_id]);
@@ -550,15 +595,16 @@ export async function postRegisterHoliday(event_type, event_date, start_period, 
 
         if (event_type === "CANCEL") {
         await handleCancelEvent(conn, { course_id, start_period, end_period, event_date, classroom, lastId });
+        await conn.commit();
         return { message: "휴강 등록 완료" };
         }
 
         if (event_type === "MAKEUP") {
-        await handleMakeupEvent(conn, { cancel_event_ids, event_date, classroom, lastId });
+        await handleMakeupEvent(conn, { cancel_event_ids, event_date, start_period, end_period, classroom, lastId });
+        await conn.commit();
         return { message: "보강 등록 완료" };
         }
 
-        await conn.commit();
         throw new BadRequestError("지원하지 않는 event_type 입니다");
     } catch (err) {
         await conn.rollback();
@@ -596,11 +642,12 @@ async function handleCancelEvent(conn, { course_id, start_period, end_period, ev
 }
 
 // 보강 처리
-async function handleMakeupEvent(conn, { cancel_event_ids, event_date, classroom, lastId }) {
+async function handleMakeupEvent(conn, { cancel_event_ids, event_date, start_period, end_period, classroom, lastId }) {
     if (!Array.isArray(cancel_event_ids) || cancel_event_ids.length === 0) {
         throw new BadRequestError("보강 등록 시 최소 1개 이상의 휴강 event_id가 필요합니다.");
     }
 
+    // 휴강 event 찾기
     const placeholders = cancel_event_ids.map(() => "?").join(",");
     const [rows] = await conn.query(
         `
@@ -611,22 +658,40 @@ async function handleMakeupEvent(conn, { cancel_event_ids, event_date, classroom
         cancel_event_ids
     );
 
+    // 없을 경우
     if (rows.length === 0) throw new BadRequestError("대상 휴강 이벤트를 찾을 수 없습니다.");
 
     const eventMap = new Map(rows.map((r) => [r.event_id, r.schedule_id]));
 
-    for (const cancelId of cancel_event_ids) {
-        const scheduleId = eventMap.get(cancelId);
-        if (!scheduleId) throw new BadRequestError(`휴강(${cancelId})의 schedule_id를 찾을 수 없습니다.`);
+    // 보강 교시용 time_slot
+    const [timeRows] = await conn.query(
+        `
+        SELECT time_slot_id
+        FROM time_slot
+        WHERE CAST(time_slot_id AS UNSIGNED) BETWEEN ? AND ?
+        `,
+        [start_period, end_period]
+    );
+
+    if (timeRows.length === 0) {
+        throw new BadRequestError("보강 교시(time_slot)를 찾을 수 없습니다.");
+    }
+
+    const timeslot_id = timeRows[0].time_slot_id;
+
+    // 보강 이벤트 생성
+    for (const cancel_id of cancel_event_ids) {
+        const schedule_id = eventMap.get(cancel_id);
+        if (!schedule_id) throw new BadRequestError(`휴강(${cancel_id})의 schedule_id를 찾을 수 없습니다.`);
 
         lastId = generateEventId(lastId);
         await conn.query(
         `
         INSERT INTO course_event 
-            (event_id, schedule_id, event_type, event_date, classroom, parent_event_id)
-        VALUES (?, ?, 'MAKEUP', ?, ?, ?)
+            (event_id, schedule_id, event_type, event_date, classroom, parent_event_id, time_slot_id)
+        VALUES (?, ?, 'MAKEUP', ?, ?, ?, ?)
         `,
-        [lastId, scheduleId, event_date, classroom, cancelId]
+        [lastId, schedule_id, event_date, classroom, cancel_id, timeslot_id]
         );
     }
 }
@@ -709,9 +774,9 @@ export async function putRegisterHoliday(event_id, event_type, event_date, start
             throw new BadRequestError("지원하지 않는 event_type 입니다.");
         }
 
+        await conn.commit();      
         return { message: "휴보강 수정 완료"};
 
-        await conn.commit();
     } catch (err) {
         await conn.rollback();
         throw err;
@@ -837,42 +902,112 @@ export async function deleteAssignStudents(class_id, course_id) {
 export async function getEvents() {
     const [rows] = await pool.query(`
         SELECT
+            cancel.event_id AS cancel_event_id,
             cancel.event_status AS cancel_status,
             cancel.event_date AS cancel_date,
             cancel.grade_id, cancel.grade_name,
             cancel.course_id, cancel.course_title,
-            cancel.start_time, cancel.end_time,
+            cancel.class_id,
+            cancel.class_name,
+            cancel.time_slot_id AS cancel_period,
+            makeup.event_id AS makeup_event_id,
             makeup.event_status AS makeup_status,
-            makeup.event_date AS makeup_date
+            makeup.event_date AS makeup_date,
+            makeup.time_slot_id AS makeup_period
         FROM v_timetable cancel
-        JOIN v_timetable makeup
+        LEFT JOIN v_timetable makeup
             ON makeup.parent_event_id = cancel.event_id
         WHERE cancel.event_status = 'CANCEL'
     `);
+    
+    const groups = new Map();
+    
+    for (const r of rows) {
+        const key = `${r.cancel_status}-${r.course_id}-${r.cancel_date}`;
 
-    const result = rows.map(r => ({
-    cancel: {
-        event_status: r.cancel_status,
-        event_date: r.cancel_date,
-        grade_id: r.grade_id,
-        grade_name: r.grade_name,
-        course_id: r.course_id,
-        course_title: r.course_title,
-        start_time: r.start_time,
-        end_time: r.end_time,
-    },
-    makeup: {
-        event_status: r.makeup_status,
-        event_date: r.makeup_date,
-        grade_id: r.grade_id,
-        grade_name: r.grade_name,
-        course_id: r.course_id,
-        course_title: r.course_title,
-        start_time: r.start_time,
-        end_time: r.end_time,
+        if (!groups.has(key)) {
+            groups.set(key, {
+                cancel: {
+                    event_id: [],
+                    event_status: r.cancel_status,
+                    event_date: r.cancel_date,
+                    grade_id: r.grade_id,
+                    grade_name: r.grade_name,
+                    course_id: r.course_id,
+                    course_title: r.course_title,
+                    class_id: r.class_id,
+                    class_name: r.class_name,
+                    periods: [],
+                },
+                makeups: new Map(), 
+            });
+        }
+        
+        const group = groups.get(key);
+
+        const cancelPeriodNum = Number(r.cancel_period);
+        group.cancel.event_id.push(r.cancel_event_id);
+        group.cancel.periods.push(cancelPeriodNum);
+
+        if (r.makeup_status) {
+            const makeupDate = r.makeup_date;
+            
+            if (!group.makeups.has(makeupDate)) {
+                group.makeups.set(makeupDate, {
+                    event_id: [],
+                    event_status: r.makeup_status,
+                    event_date: makeupDate,
+                    grade_id: r.grade_id,
+                    grade_name: r.grade_name,
+                    course_id: r.course_id,
+                    course_title: r.course_title,
+                    class_id: r.class_id, 
+                    class_name: r.class_name,
+                    periods: [],
+                });
+            }
+            
+            const makeup_group_for_date = group.makeups.get(makeupDate);
+            const makeupPeriodNum = Number(r.makeup_period);
+            
+            makeup_group_for_date.event_id.push(r.makeup_event_id);
+            makeup_group_for_date.periods.push(makeupPeriodNum);
+        }
     }
-    }));
+    
+    const compress = (periods) => {
+        const validPeriods = periods.filter(p => !isNaN(p) && p !== null);
+        if (validPeriods.length === 0) {
+            return { start_period: null, end_period: null };
+        }
+        validPeriods.sort((a, b) => a - b);
+        const start = validPeriods[0];
+        const end = validPeriods[validPeriods.length - 1];
+        return { start_period: start, end_period: end };
+    };
+    
+    const result = [];
 
+    for (const [k, evt] of groups.entries()) {
+        const cancelRange = compress(evt.cancel.periods);
+        
+        const makeup_array = [];
+        for (const [makeupDate, makeup_evt] of evt.makeups.entries()) {
+            const makeupRange = compress(makeup_evt.periods);
+            makeup_array.push({
+                ...makeup_evt,
+                ...makeupRange
+            });
+        }
+
+        result.push({
+            cancel: {
+                ...evt.cancel,
+                ...cancelRange,
+            },
+            makeup: makeup_array.length > 0 ? makeup_array : null, 
+        });
+    }
     return result
 }
 

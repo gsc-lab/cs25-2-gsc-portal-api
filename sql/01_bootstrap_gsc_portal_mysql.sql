@@ -20,13 +20,15 @@ CREATE TABLE language (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE section (
-                         sec_id     VARCHAR(10) PRIMARY KEY,
-                         semester   TINYINT NOT NULL,
-                         year       YEAR NOT NULL,
-                         start_date DATE,
-                         end_date   DATE,
-                         CONSTRAINT chk_section_dates CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
-                         UNIQUE KEY ux_section_year_sem (year, semester)
+    sec_id     VARCHAR(10) PRIMARY KEY,
+    semester   VARCHAR(2) NOT NULL,
+    year       YEAR NOT NULL,
+    start_date DATE,
+    end_date   DATE,
+    CONSTRAINT chk_section_dates CHECK (
+        end_date IS NULL OR start_date IS NULL OR end_date >= start_date
+    ),
+    UNIQUE KEY ux_section_year_sem (year, semester)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE time_slot (
@@ -262,11 +264,13 @@ CREATE TABLE course_event (
     event_type      ENUM('CANCEL','MAKEUP') NOT NULL,
     event_date      DATE NOT NULL,
     classroom       VARCHAR(100),
-    parent_event_id VARCHAR(10) NULL, -- 보강일 경우 연결된 휴강 이벤트 ID
+    parent_event_id VARCHAR(10) NULL,  -- 보강일 경우 연결된 휴강 이벤트 ID
+    time_slot_id    VARCHAR(10) NULL,          -- ✅ 보강 교시(시간표 교시) 정보 추가
 
     UNIQUE KEY ux_event_sched_date_type (schedule_id, event_date, event_type),
     KEY ix_event_date (event_date),
     KEY ix_event_parent (parent_event_id),
+    KEY ix_event_timeslot (time_slot_id), -- ✅ 조회 성능 향상용 인덱스
 
     CONSTRAINT fk_event_sched FOREIGN KEY (schedule_id)
         REFERENCES course_schedule(schedule_id)
@@ -274,8 +278,13 @@ CREATE TABLE course_event (
 
     CONSTRAINT fk_event_parent FOREIGN KEY (parent_event_id)
         REFERENCES course_event(event_id)
+        ON UPDATE CASCADE ON DELETE SET NULL,
+
+    CONSTRAINT fk_event_timeslot FOREIGN KEY (time_slot_id)
+        REFERENCES time_slot(time_slot_id)
         ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 
 

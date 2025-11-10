@@ -82,6 +82,8 @@ INSERT INTO course_class (class_id, course_id, name) VALUES
 ('C003A','C003','A'),
 ('C003B','C003','B'),
 ('C004A','C004','A'),
+('C005A','C005','A'),
+('C006A','C006','A'),
 ('C007A','C007','A'),
 ('C008A','C008','A');
 
@@ -113,17 +115,17 @@ INSERT INTO course_target (target_id, course_id, grade_id, language_id) VALUES
 ('T007','C007',NULL,'JP'),
 ('T008','C008',NULL,'KR');
 
-INSERT INTO course_schedule (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week) VALUES
-('SCH1','CR001','1','C001','2025-1','MON'),
-('SCH2','CR001','2','C001','2025-1','WED'),
-('SCH3','CR002','3','C002','2025-1','TUE'),
-('SCH4','CR003','4','C003','2025-1','FRI'),
-('SCH5','CR004','5','C004','2025-1','THU'),
-('SCH6','CR001','6','C005','2025-1','MON'),
-('SCH7','CR002','7','C005','2025-1','WED'),
-('SCH8','CR003','8','C006','2025-1','FRI'),
-('SCH9','CR004','9','C007','2025-1','TUE'),
-('SCH10','CR004','10','C008','2025-1','THU');
+INSERT INTO course_schedule (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week, class_id) VALUES
+('SCH1', 'CR001', '1', 'C001', '2025-1', 'MON', NULL),
+('SCH2', 'CR001', '2', 'C001', '2025-1', 'WED', NULL),
+('SCH3', 'CR002', '3', 'C002', '2025-1', 'TUE', NULL),
+('SCH4', 'CR003', '4', 'C003', '2025-1', 'FRI', 'C003A'),
+('SCH5', 'CR004', '5', 'C004', '2025-1', 'THU', 'C004A'),
+('SCH6', 'CR001', '6', 'C005', '2025-1', 'MON', NULL),
+('SCH7', 'CR002', '7', 'C005', '2025-1', 'WED', NULL),
+('SCH8', 'CR003', '8', 'C006', '2025-1', 'FRI', NULL),
+('SCH9', 'CR004', '9', 'C007', '2025-1', 'TUE', 'C007A'),
+('SCH10', 'CR004', '10', 'C008', '2025-1', 'THU', 'C008A');
 
 INSERT INTO course_professor (user_id, course_id, class_id) VALUES
 ('8888001','C001','C003A'),
@@ -159,13 +161,26 @@ VALUES
 ('HK006', '2725001', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-20', '8', '국제관 202호', NOW(), NOW());
 
 INSERT INTO course_event (event_id, schedule_id, event_type, event_date, parent_event_id) VALUES
--- 세트 1: 인공지능 개론 (SCH1)
-('E001','SCH1','CANCEL','2025-04-15',NULL),
-('E002','SCH1','MAKEUP','2025-05-10','E001'),
+/* 세트 1: 인공지능 개론 (SCH1) 
+  - 정규 과목 (is_special=0)
+  - class_id: NULL
+*/
+('E001','SCH1','CANCEL','2025-04-15', NULL),
+('E002','SCH1','MAKEUP','2025-05-09','E001'),
 
--- 세트 2: 운영체제 (SCH6)
-('E003','SCH6','CANCEL','2025-04-21',NULL),
-('E004','SCH6','MAKEUP','2025-04-25','E003');
+/* 세트 2: 운영체제 (SCH6) 
+  - 정규 과목 (is_special=0)
+  - class_id: NULL
+*/
+('E003','SCH6','CANCEL','2025-04-21', NULL),
+('E004','SCH6','MAKEUP','2025-04-25','E003'),
+
+/* 세트 3: 일본어 특강 (SCH4)
+  - 특강 (is_special=1)
+  - class_id: C003A
+*/
+('E005','SCH4','CANCEL','2025-04-18', NULL),
+('E006','SCH4','MAKEUP','2025-04-22','E005');
 
 -- ===== Reservations & Polls & Cleaning =====
 INSERT INTO reservation (user_id, classroom_id, reserve_date, start_time, end_time) VALUES

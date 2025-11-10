@@ -52,39 +52,91 @@ export async function getCoursesKorean() {
 // 전체 과목 조회
 export async function getAllCourses() {
     const [rows] = await pool.query(`
-        SELECT c.course_id, c.title, ua.name AS professor,
-                ct.grade_id AS target,
-                cs.day_of_week AS day, CONCAT(cr.building, '-', cr.room_number) AS room,
-                ts.time_slot_id AS period
+        SELECT 
+            c.course_id, 
+            c.sec_id, 
+            c.title, 
+            ua.name AS professor,
+            ct.grade_id AS grade_id, 
+            ct.language_id AS language_id,
+            cs.schedule_id,
+            cs.day_of_week AS day,
+            CONCAT(cr.building, '-', cr.room_number) AS room,
+            ts.time_slot_id AS period,
+
+            -- ▼▼▼▼▼ 여기가 수정되었습니다 ▼▼▼▼▼
+            cs.class_id,        -- 1. 'C003A' (이게 진짜 class_id)
+            cc.name AS class_name -- 2. 'A' (분반 이름)
+            -- ▲▲▲▲▲ 여기까지 ▲▲▲▲▲
+
         FROM course c
-        JOIN course_target ct ON c.course_id = ct.course_id
-        JOIN course_professor cp ON c.course_id = cp.course_id
-        JOIN user_account ua ON cp.user_id = ua.user_id
-        JOIN course_schedule cs ON cs.course_id = c.course_id
-        JOIN classroom cr ON cs.classroom_id = cr.classroom_id
-        JOIN time_slot ts ON cs.time_slot_id = ts.time_slot_id
+        LEFT JOIN course_target ct ON c.course_id = ct.course_id
+        LEFT JOIN course_professor cp ON c.course_id = cp.course_id
+        LEFT JOIN user_account ua ON cp.user_id = ua.user_id
+        LEFT JOIN course_schedule cs ON cs.course_id = c.course_id
+        LEFT JOIN classroom cr ON cs.classroom_id = cr.classroom_id
+        LEFT JOIN time_slot ts ON cs.time_slot_id = ts.time_slot_id
+        
+        -- ▼▼▼▼▼ 이 JOIN이 추가되었습니다 ▼▼▼▼▼
+        LEFT JOIN course_class cc ON cs.class_id = cc.class_id
+        -- ▲▲▲▲▲ 여기까지 ▲▲▲▲▲
+
+        ORDER BY c.course_id, cs.day_of_week, ts.time_slot_id
     `);
 
     const result = {};
 
     for (const row of rows) {
-    if (!result[row.course_id]) {
-        result[row.course_id] = {
-        title: row.title,
-        professor: row.professor,
-        target: row.target,
-        schedule: []
-        };
-    }
-    result[row.course_id].schedule.push({
-        day: row.day,
-        room: row.room,
-        period: row.period
-    });
+        const period = row.period ? parseInt(row.period, 10) : null;
+
+        let target = null;
+        if (row.language_id === "JP") target = "special";
+        else if (row.language_id === "KR") target = "korean";
+        else if (row.grade_id) target = row.grade_id;
+
+        if (!result[row.course_id]) {
+            result[row.course_id] = {
+                title: row.title,
+                section: row.sec_id,
+                professor: row.professor,
+                target,
+                schedule: []
+            };
+        }
+
+        const scheduleArr = result[row.course_id].schedule;
+        const last = scheduleArr[scheduleArr.length - 1];
+
+        // 3. [로직 수정]
+        // 이제 'last.class_id'는 'C003A' 같은 분반 ID를 올바르게 비교합니다.
+        if (
+            last &&
+            last.day === row.day &&
+            last.room === row.room &&
+            last.class_id === row.class_id && // 이 비교가 이제 올바르게 동작
+            last.end_period + 1 === period
+        ) {
+            last.end_period = period;
+            last.schedule_ids.push(row.schedule_id);
+        } else {
+            scheduleArr.push({
+                section: row.sec_id,
+                day: row.day,
+                room: row.room,
+                class_id: row.class_id, // 4. [수정] 진짜 class_id
+                class_name: row.class_name, // 5. [추가] class_name
+                start_period: period,
+                end_period: period,
+                schedule_ids: [row.schedule_id]
+            });
+        }
     }
 
     return result;
 }
+
+
+
 
 // 특강 분반 조회 (level_id 없이 전체)
 export async function getSpecialClasses() {
@@ -177,8 +229,12 @@ export async function getHolidays(grade_id) {
         JOIN course c ON cs.course_id = c.course_id
         JOIN time_slot ts ON cs.time_slot_id = ts.time_slot_id
         LEFT JOIN course_target ct ON c.course_id = ct.course_id
+        LEFT JOIN course_event me
+            ON me.parent_event_id = ce.event_id
+            AND me.event_type = 'MAKEUP'
         WHERE ce.event_type = 'CANCEL'
-        AND ct.grade_id = ?
+            AND ct.grade_id = ?
+            AND me.event_id IS NULL
         ORDER BY ce.event_date;
         `,
         [grade_id]

@@ -15,7 +15,7 @@ router.post('/email', authWithRole("admin"), adminController.postAllowedEmail);
 router.delete('/email/:user_id', authWithRole("admin"), adminController.deleteAllowedEmail);
 
 // 학생 정보
-router.get('/students', authWithRole("admin"), adminController.getStudentInfo);
+router.get('/students', authWithRole("professor"), adminController.getStudentInfo);
 router.patch('/students/:user_id', authWithRole("admin"), adminController.patchStudentInfo);
 router.delete('/students/:user_id', authWithRole("admin"), adminController.deleteStudentInfo);
 

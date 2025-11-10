@@ -8,6 +8,19 @@ export async function getSections() {
     return rows
 }
 
+// 학기 등록
+export async function postSections(year, semester, start_date, end_date) {
+    // ID 만들기
+    const sec_id = `${year}-${semester}`;
+    const [rows] = await pool.query(
+        `INSERT INTO section (sec_id, semester, year, start_date, end_date) VALUES (?, ?, ?, ?, ?)`, [sec_id, semester, year, start_date, end_date]
+    )
+    return {
+        success: true,
+        sec_id,
+        affectedRows: rows.affectedRows
+    };
+}
 
 // 교수 목록
 export async function getProfessors() {

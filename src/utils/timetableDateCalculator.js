@@ -2,6 +2,15 @@
 export function getWeekRange(dateStr) {
   // Asia/Seoul 기준으로 월요일~일요일
     const d = new Date(`${dateStr}T00:00:00+09:00`);
+
+    const jsDay = d.getDay();
+    if (jsDay === 0) {
+      // 일요일 -> 다음주 월요일
+      d.setDate(d.getDate() + 1)
+    } else if (jsDay === 6) {
+      // 토요일 -> 다음주 월요일
+      d.setDate(d.getDate() + 2)
+    }
     const day = (d.getDay() + 6) % 7; // Mon=0 ... Sun=6
     const ws = new Date(d); ws.setDate(d.getDate() - day);
     const we = new Date(ws); we.setDate(ws.getDate() + 6);

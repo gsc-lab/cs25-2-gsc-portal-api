@@ -114,17 +114,17 @@ export const deleteRegisterTimetable = async (req, res, next) => {
 
 // 휴보강 등록
 export const postRegisterHoliday = async function (req, res, next) {
-  try {
-    const { event_type, event_date, start_period, end_period, course_id, cancel_event_ids, classroom } = req.body;
+    try {
+        const { event_type, event_date, start_period, end_period, course_id, cancel_event_ids, classroom } = req.body;
 
-    const params = {event_type, event_date, start_period, end_period, course_id, cancel_event_ids, classroom };
+        const params = {event_type, event_date, start_period, end_period, course_id, cancel_event_ids, classroom };
 
-    const result = await timetableService.postRegisterHoliday(params);
+        const result = await timetableService.postRegisterHoliday(params);
 
-    res.status(201).json({ message: "휴보강 등록이 완료되었습니다.", result });
-  } catch (err) {
-    next(err);
-  }
+        res.status(201).json({ message: "휴보강 등록이 완료되었습니다.", result });
+    } catch (err) {
+        next(err);
+    }
 };
 
 
