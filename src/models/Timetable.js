@@ -261,62 +261,39 @@ export async function getAdminTimetable(targetDate, weekStart, weekEnd) {
 }
 
 
-
 // 강의 등록
-export async function postRegisterCourse(sec_id, title, professor_id, target) {
+export async function postRegisterCourse(sec_id, title, professor_id, is_special, grade_id, language_id) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
-        // is_special 매핑
-        let is_special = 0;
-        if (target.category === "special") is_special = 1;
-        else if (target.category === "korean") is_special = 2;
+        // (is_special 매핑 로직 삭제 - Service가 이미 번역함)
 
-        // 마지막 course_id 조회 후 새 ID 생성
+        // ... (course_id 생성은 동일) ...
         const [rows] = await conn.query("SELECT course_id FROM course ORDER BY course_id DESC LIMIT 1");
         const lastId = rows.length > 0 ? rows[0].course_id : null;
         const course_id = generateCourseId(lastId);
 
-        // course 등록
+        // course 등록 (Service가 번역한 is_special 사용)
         await conn.query(
         `INSERT INTO course (course_id, sec_id, title, is_special)
         VALUES (?, ?, ?, ?)`,
         [course_id, sec_id, title, is_special]
         );
 
-        // 교수 매핑
-        await conn.query(
-        `INSERT INTO course_professor (user_id, course_id)
-        VALUES (?, ?)`,
-        [professor_id, course_id]
-        );
-
-        // 마지막 target_id 조회 후 새 ID 생성
+        // ... (교수 매핑, target_id 생성은 동일) ...
+        await conn.query(`INSERT INTO course_professor (user_id, course_id) VALUES (?, ?)`, [professor_id, course_id]);
         const [rows2] = await conn.query("SELECT target_id FROM course_target ORDER BY target_id DESC LIMIT 1");
         const lastTargetId = rows2.length > 0 ? rows2[0].target_id : null;
         const target_id = generateTargetId(lastTargetId);
 
-        // 대상 등록
-        if (target.category === "regular") {
+        // 대상 등록 (Service가 번역한 grade_id, language_id 사용)
         await conn.query(
             `INSERT INTO course_target (target_id, course_id, grade_id, language_id)
             VALUES (?, ?, ?, ?)`,
-            [target_id, course_id, target.grade_id, null]
+            [target_id, course_id, grade_id, language_id]
         );
-}       else if (target.category === "korean") {
-            await conn.query(
-                `INSERT INTO course_target (target_id, course_id, grade_id, language_id)
-                VALUES (?, ?, ?, ?)`,
-                [target_id, course_id, null, "KR"]
-            );
-        } else if (target.category === "special") {
-            await conn.query(
-                `INSERT INTO course_target (target_id, course_id, grade_id, language_id)
-                VALUES (?, ?, ?, ?)`,
-                [target_id, course_id, null, "JP"]
-            );
-        }
+
         await conn.commit();
         return { course_id, target_id };
 
@@ -329,52 +306,31 @@ export async function postRegisterCourse(sec_id, title, professor_id, target) {
 }
 
 // 강의 수정
-export async function putRegisterCourse(course_id, sec_id, title, professor_id, target) {
+export async function putRegisterCourse(course_id, sec_id, title, professor_id, is_special, grade_id, language_id) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
-        // is_special 매핑
-        let is_special = 0;
-        if (target.category === "special") is_special = 1;
-        else if (target.category === "korean") is_special = 2;
-
-        // 강의 찾기
+        // ... (강의 찾기 동일) ...
         const [course_rows] = await conn.query("SELECT course_id FROM course WHERE course_id = ?", [course_id])
         if (course_rows.length === 0) {
             throw new BadRequestError("해당하는 강의를 찾을 수 없습니다");
         }
         
-        // 강의 값 수정
+        // 강의 값 수정 (Service가 번역한 is_special 사용)
         await conn.query("UPDATE course SET sec_id = ?, title = ?, is_special= ? WHERE course_id = ?", [sec_id, title, is_special, course_id])
-
-        // 교수 값 수정
+        
+        // ... (교수 값 수정, target_id 찾기 동일) ...
         await conn.query(`UPDATE course_professor SET user_id = ? WHERE course_id = ?`, [professor_id, course_id]);
-
-        // target_id 찾기
         const [target_rows] = await conn.query(`SELECT target_id FROM course_target WHERE course_id = ?`, [course_id])
         const target_id = target_rows[0].target_id
 
-        // 대상 수정
-        if (target.category === "regular") {
-            await conn.query(
-                `UPDATE course_target SET grade_id = ?, language_id = ?
-                WHERE target_id = ?`,
-                [target.grade_id, null, target_id]
-            );
-        } else if (target.category === "korean") {
-            await conn.query(
-                `UPDATE course_target SET grade_id = ?, language_id = ?
-                WHERE target_id = ?`,
-                [null, "KR", target_id]
-            );
-        } else if (target.category === "special") {
-            await conn.query(
-                `UPDATE course_target SET grade_id = ?, language_id = ?
-                WHERE target_id = ?`,
-                [null, "JP", target_id]
-            );
-        }
+        // 대상 수정 (Service가 번역한 grade_id, language_id 사용)
+        await conn.query(
+            `UPDATE course_target SET grade_id = ?, language_id = ?
+            WHERE target_id = ?`,
+            [grade_id, language_id, target_id]
+        );
 
         await conn.commit()
         return { course_id, target_id };

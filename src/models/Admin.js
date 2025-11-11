@@ -47,10 +47,10 @@ export async function deleteAllowedEmail(user_id) {
 }
 
 // 학생 정보
-export async function getStudentInfo(grade_name, status) {
+export async function getStudentInfo(grade_id, status) {
     const [rows] = await pool.query(
-        "SELECT * FROM v_admin_manage_users WHERE (? IS NULL OR grade_name = ?) AND (? IS NULL OR status = ?)",
-        [grade_name, grade_name, status, status]
+        "SELECT * FROM v_admin_manage_users WHERE (? IS NULL OR grade_id = ?) AND (? IS NULL OR status = ?)",
+        [grade_id, grade_id, status, status]
     );
     return rows;
 }

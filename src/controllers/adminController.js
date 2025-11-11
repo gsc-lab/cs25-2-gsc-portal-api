@@ -68,8 +68,8 @@ export const deleteAllowedEmail = async function (req, res, next) {
 // 학생 정보
 export const getStudentInfo = async function (req, res, next) {
     try {
-        const {grade_name, status} = req.query;
-        const params = { grade_name, status};
+        const {grade_id, status} = req.query;
+        const params = { grade_id, status};
         const result = await adminService.getStudentInfo(params);
         res.status(200).json(result)
     } catch (err) {

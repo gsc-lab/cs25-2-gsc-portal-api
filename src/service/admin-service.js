@@ -48,8 +48,8 @@ export const deleteAllowedEmail = async function(user_id) {
 }
 
 // 학생 정보
-export const getStudentInfo = async function({grade_name, status}) {
-    return await UserModel.getStudentInfo(grade_name, status);
+export const getStudentInfo = async function({grade_id, status}) {
+    return await UserModel.getStudentInfo(grade_id, status);
 }
 
 export const patchStudentInfo = async ({user_id, updates}) => {
