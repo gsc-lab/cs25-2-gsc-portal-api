@@ -91,20 +91,28 @@ async function authCallback(req, res) {
 
       // DB 유저가 없을 경우 회원가입 페이지 이동
       if (!user) {
-        req.session.ouathUser = {
-          email: userInfo.email,
-        };
-        // 최초 로그인시 회원가입 페이지로 이동
-        const frontendRegisterUrl = `${process.env.FE_BASE_URL}/register`;
-        return res.redirect(frontendRegisterUrl); // 회원가입 페이지 (프론트)
-      }
-      const verdict = checkUserStatus(user.status);
+        const tempToken = crypto.randomBytes(32).toString("hex");
+        const preRegisterKey = `pre-register:${tempToken}`;
 
-      // 비승인 접근 거절
-      if (!verdict.success) {
-        if (verdict.redirect) return res.redirect(verdict.redirect);
+        await redisClient.set(preRegisterKey, userInfo.email, {
+          EX: 600, // 10 minutes
+        });
+
+        // Redirect to frontend with the token
+        const frontendRegisterUrl = `${process.env.FE_BASE_URL}/register?token=${tempToken}`;
+        return res.redirect(frontendRegisterUrl);
       }
 
+      try {
+        checkUserStatus(user.status);
+      } catch (error) {
+        // 승인 대기, 거절된 사용자는 에러 메시지와 함께 로그인 페이지로 리디렉션
+        return res.redirect(
+          `${process.env.FE_BASE_URL}/?error=${encodeURIComponent(error.message)}`,
+        );
+      }
+
+      // From here, user is 'active'
       if (user) {
         const payload = {
           user_id: user.user_id,
@@ -127,20 +135,27 @@ async function authCallback(req, res) {
         await redisClient.hSet(sessionKey, deviceId, refreshToken);
         await redisClient.expire(sessionKey, sevenDaysInSeconds);
 
+        const cookieOptions = {
+          httpOnly: true,
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
+          secure: process.env.NODE_ENV === 'production', // 프로덕션 환경에서는 true
+          sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // 프로덕션은 None, 개발은 Lax
+        };
+
         // 쿠키에 토큰 설정 응답
         res.cookie("accessToken", accessToken, {
-          httpOnly: true,
-          maxAge: 1000 * 60 * 60,
+          ...cookieOptions,
+          maxAge: 1 * 60 * 60 * 1000, // 1시간
         });
-        res.cookie("refreshToken", refreshToken, {
-          httpOnly: true,
-          maxAge: 7 * 24 * 60 * 60,
-        });
+        res.cookie("refreshToken", refreshToken, cookieOptions);
         // 오늘의 날짜 계산
         const date = new Date();
         date.setDate(date.getDate());
         const startDate = date.toISOString().split("T")[0];
-        res.redirect(`${process.env.FE_BASE_URL}/dashboard?date=${startDate}`); // spa frontend route
+        console.log('이동합니다')
+        return res.redirect(
+          `${process.env.FE_BASE_URL}/dashboard?date=${startDate}`,
+        ); // spa frontend route
       }
 
       if (
@@ -185,24 +200,54 @@ async function authLogout(req, res, next) {
 // 회원가입 페이지와 연계
 async function registerAfterOAuth(req, res) {
   try {
-    const s = req.session.ouathUser;
-    if (!s) {
-      throw new BadRequestError("잘못된 요청입니다. 입력값을 확인하세요.");
+    const {
+      token,
+      user_id,
+      name,
+      phone,
+      is_student,
+      grade_id,
+      language_id,
+      class_id,
+      is_international,
+    } = req.body;
+
+    if (!token) {
+      throw new BadRequestError("잘못된 요청입니다. 인증 토큰이 없습니다.");
     }
-    const { user_id, name, phone, is_student } = req.body;
+
+    const preRegisterKey = `pre-register:${token}`;
+    const email = await redisClient.get(preRegisterKey);
+
+    if (!email) {
+      throw new BadRequestError("만료되었거나 유효하지 않은 요청입니다. 다시 시도해주세요.");
+    }
+
+    // Delete the token so it can't be reused
+    await redisClient.del(preRegisterKey);
 
     const userPayload = {
       user_id,
       name,
       phone,
       is_student,
-      email: s.email,
+      email: email,
+      grade_id,
+      language_id,
+      class_id,
+      is_international,
     };
 
     await registerUser(userPayload);
-    res.redirect(`${process.env.FE_BASE_URL}/`); // spa frontend route
+    res.status(201).json({
+      success: true,
+      message: "회원가입이 성공적으로 완료되었습니다.",
+    });
   } catch (error) {
-    console.log("회원가입 오류!" , error);
+    console.log("회원가입 오류!", error);
+    if (error.statusCode) {
+      throw error;
+    }
     throw new InternalServerError(
       "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
     );

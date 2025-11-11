@@ -57,6 +57,10 @@ export const createStudent = async ({
       [user_id, name, email, phone, status],
     );
 
+    if (user.affectedRows !== 1) {
+      throw new Error("user_account(학생) 입력 실패 ");
+    }
+
     // 2) student_entity 등록
     await conn.query(
       `INSERT INTO student_entity (user_id, grade_id, class_id, language_id, is_international, status)
@@ -69,10 +73,6 @@ export const createStudent = async ({
              VALUES (?, ?)`,
       ["student", user_id],
     );
-
-    if (user.affectedRows !== 1) {
-      throw new Error("user_account(학생) 입력 실패 ");
-    }
 
     await conn.commit();
     return {
@@ -111,16 +111,17 @@ export const createProfessor = async ({
              VALUES (?, ?, ?, ?, ?)`,
       [user_id, name, email, phone, status],
     );
+
+    if (rows.affectedRows !== 1) {
+      throw new Error("user_account 입력 실패");
+    }
+
     // 2) 권한 교수
     await conn.query(
       `INSERT INTO user_role (role_type, user_id)
              VALUES (?, ?)`,
       ["professor", user_id],
     );
-
-    if (rows.affectedRows !== 1) {
-      throw new Error("user_account 입력 실패");
-    }
 
     await conn.commit();
     return { user_id, name, email, phone, status };

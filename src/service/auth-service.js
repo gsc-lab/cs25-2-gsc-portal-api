@@ -8,7 +8,12 @@ import {
 } from "../models/Auth.js";
 import { v4 } from "uuid";
 import jwt from "jsonwebtoken";
-import { BadRequestError, UnauthenticatedError, ConflictError } from "../errors/index.js";
+import {
+  BadRequestError,
+  UnauthenticatedError,
+  ConflictError,
+  ForbiddenError,
+} from "../errors/index.js";
 import * as fileService from "./file-service.js";
 import * as noticeModel from "../models/Notice.js";
 import pool from "../db/connection.js";
@@ -35,10 +40,11 @@ export const registerUser = async (userData) => {
     throw new ConflictError("이미 등록된 학번입니다.");
   }
   try {
-    const isStudent = userData.is_student;
+    // is_student 값을 boolean으로 변환하여 명확하게 확인
+    const isStudent = [true, 'true', 'on'].includes(userData.is_student);
 
     // 학생 생성 로직 호출
-    if (isStudent === true) {
+    if (isStudent) {
       return await createStudent(userData);
     }
     // 교수 생성 로직 호출
@@ -54,9 +60,9 @@ export function checkUserStatus(status) {
     case "active":
       return { success: true };
     case "inactive":
-      return { success: false, redirect: "/", message: "승인 거절된 사용자" };
+      throw new ForbiddenError("가입이 거절된 계정입니다.");
     case "pending":
-      return { success: false, redirect: "/", message: "승인 대기중 사용자" };
+      throw new UnauthenticatedError("관리자의 승인을 기다리는 중입니다.");
     default:
       throw new UnauthenticatedError(
         "로그인 정보가 유효하지 않습니다. 다시 로그인하세요.",
