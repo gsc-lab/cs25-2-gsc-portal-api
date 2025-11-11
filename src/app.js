@@ -34,6 +34,7 @@ const corsOptions = {
   origin: process.env.FE_BASE_URL,
   credentials: true,
 };
+app.use(cors(corsOptions));
 
 app.use(
   session({
@@ -43,12 +44,12 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      // secure: process.env.NODE_ENV === 'production', // https에서만 쿠키 전송
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 1000 * 60 * 60 * 24, // 1일
     },
   }),
 );
-app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());

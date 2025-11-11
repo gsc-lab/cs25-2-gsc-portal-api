@@ -200,9 +200,9 @@ async function registerAfterOAuth(req, res) {
     };
 
     await registerUser(userPayload);
-
-    res.redirect("/"); // spa frontend route
-  } catch {
+    res.redirect(`${process.env.FE_BASE_URL}/`); // spa frontend route
+  } catch (error) {
+    console.log("회원가입 오류!" , error);
     throw new InternalServerError(
       "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
     );
