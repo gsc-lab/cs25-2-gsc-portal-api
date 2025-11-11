@@ -63,12 +63,8 @@ export async function getAllCourses() {
             cs.day_of_week AS day,
             CONCAT(cr.building, '-', cr.room_number) AS room,
             ts.time_slot_id AS period,
-
-            -- ▼▼▼▼▼ 여기가 수정되었습니다 ▼▼▼▼▼
-            cs.class_id,        -- 1. 'C003A' (이게 진짜 class_id)
-            cc.name AS class_name -- 2. 'A' (분반 이름)
-            -- ▲▲▲▲▲ 여기까지 ▲▲▲▲▲
-
+            cs.class_id,
+            cc.name AS class_name
         FROM course c
         LEFT JOIN course_target ct ON c.course_id = ct.course_id
         LEFT JOIN course_professor cp ON c.course_id = cp.course_id
@@ -76,19 +72,13 @@ export async function getAllCourses() {
         LEFT JOIN course_schedule cs ON cs.course_id = c.course_id
         LEFT JOIN classroom cr ON cs.classroom_id = cr.classroom_id
         LEFT JOIN time_slot ts ON cs.time_slot_id = ts.time_slot_id
-        
-        -- ▼▼▼▼▼ 이 JOIN이 추가되었습니다 ▼▼▼▼▼
         LEFT JOIN course_class cc ON cs.class_id = cc.class_id
-        -- ▲▲▲▲▲ 여기까지 ▲▲▲▲▲
-
         ORDER BY c.course_id, cs.day_of_week, ts.time_slot_id
     `);
 
     const result = {};
 
     for (const row of rows) {
-        const period = row.period ? parseInt(row.period, 10) : null;
-
         let target = null;
         if (row.language_id === "JP") target = "special";
         else if (row.language_id === "KR") target = "korean";
@@ -105,31 +95,36 @@ export async function getAllCourses() {
         }
 
         const scheduleArr = result[row.course_id].schedule;
-        const last = scheduleArr[scheduleArr.length - 1];
 
-        // 3. [로직 수정]
-        // 이제 'last.class_id'는 'C003A' 같은 분반 ID를 올바르게 비교합니다.
-        if (
-            last &&
-            last.day === row.day &&
-            last.room === row.room &&
-            last.class_id === row.class_id && // 이 비교가 이제 올바르게 동작
-            last.end_period + 1 === period
-        ) {
-            last.end_period = period;
-            last.schedule_ids.push(row.schedule_id);
-        } else {
-            scheduleArr.push({
-                section: row.sec_id,
-                day: row.day,
-                room: row.room,
-                class_id: row.class_id, // 4. [수정] 진짜 class_id
-                class_name: row.class_name, // 5. [추가] class_name
-                start_period: period,
-                end_period: period,
-                schedule_ids: [row.schedule_id]
-            });
+        // ▼▼▼▼▼ [핵심 버그 수정] ▼▼▼▼▼
+        // schedule_id가 NULL이 아닐 때만 (유효한 시간표가 있을 때만) push 합니다.
+        if (row.schedule_id) { 
+            const period = row.period ? parseInt(row.period, 10) : null;
+            const last = scheduleArr[scheduleArr.length - 1];
+
+            if (
+                last &&
+                last.day === row.day &&
+                last.room === row.room &&
+                last.class_id === row.class_id &&
+                last.end_period + 1 === period
+            ) {
+                last.end_period = period;
+                last.schedule_ids.push(row.schedule_id);
+            } else {
+                scheduleArr.push({
+                    section: row.sec_id,
+                    day: row.day,
+                    room: row.room,
+                    class_id: row.class_id,
+                    class_name: row.class_name,
+                    start_period: period,
+                    end_period: period,
+                    schedule_ids: [row.schedule_id]
+                });
+            }
         }
+        // ▲▲▲▲▲ [버그 수정 완료] ▲▲▲▲▲
     }
 
     return result;

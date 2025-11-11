@@ -41,8 +41,8 @@ export const getAdminTimetable = async function (req, res, next) {
 // 강의 등록
 export const postRegisterCourse = async (req, res, next) => {
     try {
-        const { sec_id, title, professor_id, target, level_id } = req.body;
-        const params = {sec_id, title, professor_id, target, level_id};
+        const { sec_id, title, professor_id, target } = req.body;
+        const params = {sec_id, title, professor_id, target} ;
         const result = await timetableService.postRegisterCourse(params);
         res.status(201).json({ message: "등록 완료", course: result });
     } catch (err) {
@@ -54,8 +54,8 @@ export const postRegisterCourse = async (req, res, next) => {
 export const putRegisterCourse = async (req, res, next) => {
     try {
         const { course_id } = req.params;
-        const { sec_id, title, professor_id, target, level_id } = req.body;
-        const params = { course_id, sec_id, title, professor_id, target, level_id};
+        const { sec_id, title, professor_id, target } = req.body;
+        const params = { course_id, sec_id, title, professor_id, target };
         const result = await timetableService.putRegisterCourse(params);
         res.status(200).json({ message: "수정 완료", course: result });
     } catch (err) {
@@ -90,7 +90,8 @@ export const postRegisterTimetable = async function (req, res, next) {
 // 시간표 수정
 export const putRegisterTimetable = async (req, res, next) => {
     try {
-        const { schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_name } = req.body;
+        const { schedule_id } = req.params;
+        const { classroom_id, start_period, end_period, course_id, day_of_week, class_name } = req.body;
         const params = { schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_name }
         const result = await timetableService.putRegisterTimetable(params);
         res.status(200).json({ message: "수정 완료", course: result})

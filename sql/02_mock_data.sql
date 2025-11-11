@@ -128,14 +128,13 @@ INSERT INTO course_schedule (schedule_id, classroom_id, time_slot_id, course_id,
 ('SCH10', 'CR004', '10', 'C008', '2025-1', 'THU', 'C008A');
 
 INSERT INTO course_professor (user_id, course_id, class_id) VALUES
-('8888001','C001','C003A'),
-('8888001','C002','C003A'),
-('8888002','C003','C003A'),
-('8888002','C004','C004A'),
-('8888001','C005','C007A'),
-('8888001','C006','C007A'),
-('8888002','C007','C007A'),
-('8888002','C008','C008A');
+('8888001', 'C001', NULL),
+('8888001', 'C002', NULL),
+('8888002', 'C003', 'C003A'),
+('8888002', 'C004', 'C004A'),
+('8888001', 'C005', NULL),
+('8888001', 'C006', NULL),
+('8888002', 'C007', 'C007A');
 
 INSERT INTO course_student (user_id, course_id, class_id) VALUES
 ('2423001', 'C007', NULL),

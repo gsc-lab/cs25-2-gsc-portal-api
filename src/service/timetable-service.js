@@ -31,57 +31,64 @@ export const getAdminTimetable = async function(targetDate) {
 }
 
 // 강의 등록
-export const postRegisterCourse = async ({sec_id, title, professor_id, target, level_id}) => {
-    if (!sec_id || !title || !professor_id || !target) {
-        throw new BadRequestError("필수 값이 누락 되었습니다.");
+export const postRegisterCourse = async ({sec_id, title, professor_id, target}) => {
+    
+    // 값 검증
+    if (!sec_id || !title || !professor_id || !target || !target.category) {
+        throw new BadRequestError("필수 값이 누락 되었습니다. (sec_id, title, professor_id, target.category)");
     }
-    let targetInfo = {};
-    if (["1", "2", "3"].includes(target)) {
-        targetInfo = { category: "regular", grade_id: parseInt(target) };
+    
+    // targetInfo 객체 생성
+    let targetInfo = { category: target.category };
+
+    // 'regular'일 때만 grade_id를 검증
+    if (target.category === "regular") {
+        if (!target.grade_id) {
+            throw new BadRequestError("정규 과목은 grade_id가 필요합니다.");
+        }
+        targetInfo.grade_id = target.grade_id;
     } 
-    else if (target === "special") {
-        if (!level_id) throw new BadRequestError("특강은 level_id가 필요합니다.");
-        targetInfo = { category: "special", level_id };
-    } 
-    else if (target === "korean") {
-        if (!level_id) throw new BadRequestError("한국어 수업은 level_id가 필요합니다.");
-        targetInfo = { category: "korean", level_id };
+
+    else if (target.category === "korean" || target.category === "special") {
+        // (level_id 검증 로직 완전 삭제)
     } 
     else {
-        throw new BadRequestError("유효하지 않은 target 값입니다.");
+        throw new BadRequestError("유효하지 않은 target category입니다.");
     }
-    const result =  await timetableModel.postRegisterCourse(sec_id, title, professor_id, targetInfo);
 
+    // 5. 수정된 targetInfo를 모델로 전달
+    const result =  await timetableModel.postRegisterCourse(sec_id, title, professor_id, targetInfo);
     return result
 };
 
 // 강의 수정
-export const putRegisterCourse = async ({course_id, sec_id, title, professor_id, target, level_id}) => {
+export const putRegisterCourse = async ({course_id, sec_id, title, professor_id, target}) => {
     
+    // 강의 값 있는지 확인
     if (!course_id) {
         throw new BadRequestError("강의 값이 누락 되었습니다.")
     }
     
-    if (!sec_id || !title || !professor_id || !target) {
-        throw new BadRequestError("필수 값이 누락 되었습니다.");
+    // 값 검증
+    if (!sec_id || !title || !professor_id || !target || !target.category) {
+        throw new BadRequestError("필수 값이 누락 되었습니다. (target.category 포함)");
     }
-    let targetInfo = {};
-    if (["1", "2", "3"].includes(target)) {
-        targetInfo = { category: "regular", grade_id: parseInt(target) };
-    } 
-    else if (target === "special") {
-        if (!level_id) throw new BadRequestError("특강은 level_id가 필요합니다.");
-        targetInfo = { category: "special", level_id };
-    } 
-    else if (target === "korean") {
-        if (!level_id) throw new BadRequestError("한국어 수업은 level_id가 필요합니다.");
-        targetInfo = { category: "korean", level_id };
-    } 
-    else {
-        throw new BadRequestError("유효하지 않은 target 값입니다.");
-    }
-    const result =  await timetableModel.putRegisterCourse(course_id, sec_id, title, professor_id, targetInfo);
 
+    let targetInfo = { category: target.category };
+
+    // 'regular'일 때만 grade_id를 검증
+    if (target.category === "regular") {
+        if (!target.grade_id) {
+            throw new BadRequestError("정규 과목은 grade_id가 필요합니다.");
+        }
+        targetInfo.grade_id = target.grade_id;
+    } 
+    // 'korean' 또는 'special'은 grade_id가 필요 없음
+    else if (target.category !== "korean" && target.category !== "special") {
+        throw new BadRequestError("유효하지 않은 target category입니다.");
+    }
+    
+    const result =  await timetableModel.putRegisterCourse(course_id, sec_id, title, professor_id, targetInfo);
     return result
 };
 

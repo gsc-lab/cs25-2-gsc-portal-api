@@ -194,7 +194,6 @@ export async function getAdminTimetable(targetDate, weekStart, weekEnd) {
         LEFT JOIN course_event ce 
             ON cs.schedule_id = ce.schedule_id 
             AND (ce.event_date BETWEEN ? AND ?)
-            AND ce.parent_event_id IS NULL
         WHERE ? BETWEEN sec.start_date AND sec.end_date
 
         UNION ALL
@@ -303,22 +302,21 @@ export async function postRegisterCourse(sec_id, title, professor_id, target) {
         await conn.query(
             `INSERT INTO course_target (target_id, course_id, grade_id, language_id)
             VALUES (?, ?, ?, ?)`,
-            [target_id, course_id, target.grade_id, "KR"]
+            [target_id, course_id, target.grade_id, null]
         );
-        } else if (target.category === "korean") {
-        await conn.query(
-            `INSERT INTO course_target (target_id, course_id, level_id, language_id)
-            VALUES (?, ?, ?, ?)`,
-            [target_id, course_id, target.level_id || null, "KR"]
-        );
+}       else if (target.category === "korean") {
+            await conn.query(
+                `INSERT INTO course_target (target_id, course_id, grade_id, language_id)
+                VALUES (?, ?, ?, ?)`,
+                [target_id, course_id, null, "KR"]
+            );
         } else if (target.category === "special") {
-        await conn.query(
-            `INSERT INTO course_target (target_id, course_id, level_id, language_id)
-            VALUES (?, ?, ?, ?)`,
-            [target_id, course_id, target.level_id || null, "JP"]
+            await conn.query(
+                `INSERT INTO course_target (target_id, course_id, grade_id, language_id)
+                VALUES (?, ?, ?, ?)`,
+                [target_id, course_id, null, "JP"]
             );
         }
-
         await conn.commit();
         return { course_id, target_id };
 
@@ -349,7 +347,7 @@ export async function putRegisterCourse(course_id, sec_id, title, professor_id, 
         
         // 강의 값 수정
         await conn.query("UPDATE course SET sec_id = ?, title = ?, is_special= ? WHERE course_id = ?", [sec_id, title, is_special, course_id])
-        
+
         // 교수 값 수정
         await conn.query(`UPDATE course_professor SET user_id = ? WHERE course_id = ?`, [professor_id, course_id]);
 
@@ -359,22 +357,22 @@ export async function putRegisterCourse(course_id, sec_id, title, professor_id, 
 
         // 대상 수정
         if (target.category === "regular") {
-        await conn.query(
-            `UPDATE course_target SET grade_id = ?, language_id = ?
-            WHERE target_id = ?`,
-            [target.grade_id, "KR", target_id]
-        );
+            await conn.query(
+                `UPDATE course_target SET grade_id = ?, language_id = ?
+                WHERE target_id = ?`,
+                [target.grade_id, null, target_id]
+            );
         } else if (target.category === "korean") {
-        await conn.query(
-            `UPDATE course_target SET level_id = ?, language_id = ?
-            WHERE target_id = ?`,
-            [target.level_id || null, "KR", target_id]
-        );
+            await conn.query(
+                `UPDATE course_target SET grade_id = ?, language_id = ?
+                WHERE target_id = ?`,
+                [null, "KR", target_id]
+            );
         } else if (target.category === "special") {
-        await conn.query(
-            `UPDATE course_target SET level_id = ?, language_id = ?
-            WHERE target_id = ?`,
-            [target.level_id || null, "JP", target_id]
+            await conn.query(
+                `UPDATE course_target SET grade_id = ?, language_id = ?
+                WHERE target_id = ?`,
+                [null, "JP", target_id]
             );
         }
 
