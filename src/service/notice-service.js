@@ -1,3 +1,7 @@
+/**
+ * @file 공지사항 관련 서비스 로직
+ * @description 공지사항의 비즈니스 로직을 처리합니다. 목록 조회, 상세 조회, 생성, 수정, 삭제, 발송, 읽음 처리 및 읽음 현황 조회 등을 포함합니다.
+ */
 // import
 import * as noticeModel from "../models/Notice.js";
 import * as fileService from "../service/file-service.js";
@@ -6,12 +10,27 @@ import { BadRequestError, ForbiddenError, NotFoundError } from "../errors/index.
 import _ from 'lodash';
 import { v4 as uuidv4 } from "uuid";
 
-// 목록 조회
+/**
+ * 공지사항 목록을 조회합니다.
+ *
+ * @param {object} spec - 사용자 정보 및 기타 스펙
+ * @param {object} query - 검색 및 필터링 쿼리 파라미터
+ * @returns {Promise<object>} 공지사항 목록 및 총 개수
+ */
 export const getNotices = async (spec, query) => {
   return await noticeModel.findBySpec(spec, query);
 };
 
-// 상세 공지
+/**
+ * 특정 공지사항의 상세 정보를 조회합니다.
+ * 사용자 역할에 따라 공지사항 조회 권한을 확인합니다.
+ *
+ * @param {string} noticeId - 조회할 공지사항의 ID
+ * @param {object} user - 현재 로그인된 사용자 정보
+ * @returns {Promise<object>} 공지사항 상세 정보
+ * @throws {NotFoundError} 공지사항을 찾을 수 없는 경우
+ * @throws {ForbiddenError} 공지사항을 조회할 권한이 없는 경우
+ */
 export const detailNotices = async (noticeId, user) => {
   const detailNt = await noticeModel.findById(noticeId);
 
@@ -41,7 +60,18 @@ export const detailNotices = async (noticeId, user) => {
   throw new ForbiddenError("해당 공지를 조회할 권한이 없습니다.");
 };
 
-// 생성
+/**
+ * 새로운 공지사항을 추가합니다.
+ * 공지사항 데이터, 첨부 파일, 타겟 그룹 및 특정 사용자 지정 정보를 받아 처리합니다.
+ * 트랜잭션을 사용하여 데이터의 일관성을 유지합니다.
+ *
+ * @param {object} user - 공지사항을 생성하는 사용자 정보
+ * @param {object} noticeData - 공지사항 데이터 (title, content, course_id, targets, specific_users 등)
+ * @param {Array<object>} files - 첨부 파일 배열
+ * @returns {Promise<{noticeId: string}>} 생성된 공지사항의 ID
+ * @throws {BadRequestError} 필수 필드 누락, 잘못된 형식의 데이터, 존재하지 않는 과목 ID 시
+ * @throws {ForbiddenError} 담당하지 않는 과목의 공지를 작성하려는 경우
+ */
 export const addNotice = async (user, noticeData, files) => {
   const { course_id, targets, specific_users, ...noticeInfo } = noticeData;
   const { title, content } = noticeInfo;
@@ -139,6 +169,20 @@ export const addNotice = async (user, noticeData, files) => {
   }
 };
 
+/**
+ * 기존 공지사항을 업데이트합니다.
+ * 공지사항 ID, 업데이트할 데이터, 새로운 파일 정보, 사용자 정보를 받아 처리합니다.
+ * 텍스트 내용, 첨부 파일, 타겟 그룹의 변경 사항을 감지하고 트랜잭션으로 업데이트합니다.
+ *
+ * @param {string} noticeId - 업데이트할 공지사항의 ID
+ * @param {object} data - 업데이트할 공지사항 데이터
+ * @param {Array<object>} newFiles - 새로 추가될 첨부 파일 배열
+ * @param {object} user - 공지사항을 수정하는 사용자 정보
+ * @returns {Promise<object>} 업데이트된 공지사항 정보
+ * @throws {NotFoundError} 공지사항을 찾을 수 없는 경우
+ * @throws {ForbiddenError} 공지사항을 수정할 권한이 없는 경우
+ * @throws {BadRequestError} 필수 필드 누락, 잘못된 형식의 데이터, 수정할 내용이 없는 경우
+ */
 export const updateNotice = async (noticeId, data, newFiles, user) => {
   const updateTableTextFields = ["title", "content", "is_pinned", "course_id"];
 
@@ -250,7 +294,6 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
         specificUsers = specificUsers.map(Number);
       }
     } catch (err) {
-      console.error("specific_users 파싱 실패:", err.message);
       specificUsers = [];
     }
   }
@@ -327,7 +370,16 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
   }
 };
 
-// 삭제
+/**
+ * 공지사항을 삭제합니다.
+ * 학생은 공지사항을 삭제할 수 없으며, 교수는 본인이 작성한 공지사항만 삭제할 수 있습니다.
+ *
+ * @param {string} noticeId - 삭제할 공지사항의 ID
+ * @param {object} user - 공지사항을 삭제하는 사용자 정보
+ * @returns {Promise<{message: string}>} 삭제 성공 메시지
+ * @throws {ForbiddenError} 공지사항을 삭제할 권한이 없는 경우
+ * @throws {NotFoundError} 공지사항을 찾을 수 없는 경우
+ */
 export const deleteNotice = async (noticeId, user) => {
   if (user.role === 'student') {
     throw new ForbiddenError('학생은 공지사항을 삭제할 수 없습니다.');
@@ -355,7 +407,18 @@ export const deleteNotice = async (noticeId, user) => {
   return { message: "공지사항이 성공적으로 삭제되었습니다." };
 };
 
-// 디스패치 (발송) 액션
+/**
+ * 특정 공지사항을 발송 처리합니다.
+ * 공지사항의 발송 대상자를 조회하고, 실제 알림톡 발송 로직을 호출하거나 mock 처리합니다.
+ *
+ * @param {string} noticeId - 발송할 공지사항의 ID
+ * @param {object} user - 공지사항을 발송하는 사용자 정보
+ * @param {object} options - 발송 옵션 (mock 여부 등)
+ * @param {boolean} [options.mock=true] - mock 발송 여부
+ * @returns {Promise<object>} 발송 결과 정보
+ * @throws {NotFoundError} 공지사항을 찾을 수 없는 경우
+ * @throws {ForbiddenError} 공지사항을 발송할 권한이 없는 경우
+ */
 export const dispatchByNoticeId = async (noticeId, user, { mock = true }) => {
   const notice = await noticeModel.findById(noticeId);
 
@@ -426,7 +489,15 @@ export const dispatchByNoticeId = async (noticeId, user, { mock = true }) => {
   }
 };
 
-// 읽음 처리
+/**
+ * 학생이 공지사항을 읽었음을 처리합니다.
+ * 학생만 이 기능을 사용할 수 있으며, 해당 공지사항의 수신 대상인 경우에만 읽음 처리가 됩니다.
+ *
+ * @param {string} noticeId - 읽음 처리할 공지사항의 ID
+ * @param {object} user - 읽음 처리하는 사용자 정보 (학생)
+ * @returns {Promise<{updated: number, message?: string}>} 업데이트된 행의 수 또는 메시지
+ * @throws {ForbiddenError} 읽음 처리할 수 없는 공지인 경우
+ */
 export const markNoticeAsRead = async (noticeId, user) => {
   if (user.role !== "student") {
     return { updated: 0, message: "읽음 처리는 학생에게만 적용됩니다." };
@@ -447,7 +518,16 @@ export const markNoticeAsRead = async (noticeId, user) => {
   return { updated: affectedRows };
 };
 
-// 읽음 현황
+/**
+ * 특정 공지사항의 읽음 현황을 조회합니다.
+ * 교수 또는 관리자만 이 기능을 사용할 수 있습니다.
+ *
+ * @param {string} noticeId - 읽음 현황을 조회할 공지사항의 ID
+ * @param {object} user - 읽음 현황을 조회하는 사용자 정보
+ * @returns {Promise<Array<object>>} 읽음 현황 목록
+ * @throws {ForbiddenError} 읽음 현황을 조회할 권한이 없는 경우
+ * @throws {NotFoundError} 공지사항을 찾을 수 없는 경우
+ */
 export const getNoticeReadStatusById = async (noticeId, user) => {
   if (user.role === 'student') {
     throw new ForbiddenError("읽음 현황을 조회할 권한이 없습니다.");
@@ -480,7 +560,15 @@ export const getNoticeReadStatusById = async (noticeId, user) => {
   return readStatusList;
 };
 
-// 과목 조회 필터
+/**
+ * 공지사항 폼에서 사용할 과목 목록을 필터링하여 반환합니다.
+ * 유효한 과목 타입인지 검증하고, 교수 역할에 따라 조회 범위를 제한합니다.
+ *
+ * @param {object} user - 현재 로그인된 사용자 정보
+ * @param {object} filters - 필터링 조건 (course_type 등)
+ * @returns {Promise<Array<object>>} 필터링된 과목 목록
+ * @throws {BadRequestError} 잘못된 과목 타입이 전달된 경우
+ */
 export const filterCourses = async (user, filters) => {
   const VALID_COURSE_TYPES = new Set(['regular', 'special', 'korean']);
 
@@ -495,3 +583,19 @@ export const filterCourses = async (user, filters) => {
 
   return await noticeModel.findCoursesForForm(searchUserId, filters);
 };
+
+
+/**
+ * 카카오 알림톡을 발송하는 mock 함수입니다.
+ * 실제 알림톡 API 연동 시 이 함수를 구현해야 합니다.
+ *
+ * @param {string} phoneNumber - 수신자 전화번호
+ * @param {string} templateCode - 알림톡 템플릿 코드
+ * @param {object} params - 템플릿에 채워질 파라미터
+ * @returns {Promise<object>} 발송 결과 (현재는 mock 결과)
+ */
+async function sendAlimtalk(phoneNumber, templateCode, params) {
+  console.log(`Sending Alimtalk to ${phoneNumber} with template ${templateCode} and params`, params);
+  // 실제 카카오 알림톡 API 호출 로직
+  return { success: true, message: "Alimtalk sent (mock)" };
+}
