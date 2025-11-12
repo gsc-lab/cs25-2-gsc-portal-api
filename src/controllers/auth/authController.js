@@ -1,3 +1,7 @@
+/**
+ * @file 인증 관련 컨트롤러
+ * @description Google OAuth2 인증 및 사용자 세션 관리를 담당합니다.
+ */
 import crypto from "crypto";
 import url from "url";
 import { google } from "googleapis";
@@ -28,7 +32,16 @@ const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_REDIRECT_URL,
 );
 
-// 사용자를 Google OAuth 2.0 서버로 리디렉션
+/**
+ * Google OAuth 2.0 인증 프로세스를 시작합니다.
+ * 사용자를 Google 인증 서버로 리디렉션하여 동의를 얻고 인증 코드를 받습니다.
+ * CSRF 공격 방지를 위해 `state` 파라미터를 사용합니다.
+ *
+ * @param {object} req - Express 요청 객체
+ * @param {object} res - Express 응답 객체
+ * @returns {void}
+ * @throws {InternalServerError} 서버 오류 발생 시
+ */
 async function googleAuthRedirect(req, res) {
   try {
     // CSRF 방지를 위한 보안 상태 문자열 생성
@@ -59,6 +72,17 @@ async function googleAuthRedirect(req, res) {
   }
 }
 
+/**
+ * Google OAuth 2.0 서버로부터 콜백을 처리합니다.
+ * 인증 코드를 사용하여 액세스 토큰을 교환하고 사용자 정보를 가져옵니다.
+ * 기존 사용자이거나 신규 사용자인 경우 회원가입 또는 로그인 처리를 진행합니다.
+ *
+ * @param {object} req - Express 요청 객체
+ * @param {object} res - Express 응답 객체
+ * @returns {void}
+ * @throws {BadRequestError} 잘못된 요청 또는 CSRF 상태 불일치 시
+ * @throws {InternalServerError} 서버 오류 발생 시
+ */
 async function authCallback(req, res) {
   // OAuth 2.0 서버 응답 처리
   let q = url.parse(req.url, true).query;
@@ -112,7 +136,7 @@ async function authCallback(req, res) {
         );
       }
 
-      // From here, user is 'active'
+      // 유저 활성화 상태의 경우
       if (user) {
         const payload = {
           user_id: user.user_id,
@@ -120,7 +144,7 @@ async function authCallback(req, res) {
           status: user.status,
         };
         const jti = v4();
-        //  JWT 생성
+        // JWT 생성
         const accessToken = sign(payload); // 앱의 Access Token
         const refreshToken = signRefresh(payload.user_id, jti); // 앱의 Refresh Token
 
@@ -152,10 +176,9 @@ async function authCallback(req, res) {
         const date = new Date();
         date.setDate(date.getDate());
         const startDate = date.toISOString().split("T")[0];
-        console.log('이동합니다')
         return res.redirect(
-          `${process.env.FE_BASE_URL}/dashboard?date=${startDate}`,
-        ); // spa frontend route
+          `${process.env.FE_BASE_URL}/dashboard?date=${startDate}`, // spa frontend route
+        );
       }
 
       if (
@@ -177,6 +200,15 @@ async function authCallback(req, res) {
   }
 }
 
+/**
+ * 현재 로그인된 사용자를 로그아웃 처리합니다.
+ * Redis에 저장된 리프레시 토큰을 삭제하고, 클라이언트의 accessToken 및 refreshToken 쿠키를 제거합니다.
+ *
+ * @param {object} req - Express 요청 객체 (req.user에서 사용자 ID를 가져옴)
+ * @param {object} res - Express 응답 객체
+ * @param {function} next - 다음 미들웨어 함수
+ * @returns {void}
+ */
 async function authLogout(req, res, next) {
   try {
     const userId = req.user?.user_id;
@@ -197,7 +229,16 @@ async function authLogout(req, res, next) {
   }
 }
 
-// 회원가입 페이지와 연계
+/**
+ * OAuth 인증 후 사용자 정보를 받아 회원가입을 처리합니다.
+ * 사전 등록 토큰을 확인하고, 유효한 경우 사용자 정보를 데이터베이스에 저장합니다.
+ *
+ * @param {object} req - Express 요청 객체 (body에 토큰 및 사용자 정보 포함)
+ * @param {object} res - Express 응답 객체
+ * @returns {void}
+ * @throws {BadRequestError} 토큰이 없거나 유효하지 않은 경우
+ * @throws {InternalServerError} 서버 오류 발생 시
+ */
 async function registerAfterOAuth(req, res) {
   try {
     const {
@@ -223,7 +264,7 @@ async function registerAfterOAuth(req, res) {
       throw new BadRequestError("만료되었거나 유효하지 않은 요청입니다. 다시 시도해주세요.");
     }
 
-    // Delete the token so it can't be reused
+    // 해당 세션의 레디스 삭제
     await redisClient.del(preRegisterKey);
 
     const userPayload = {
@@ -254,7 +295,17 @@ async function registerAfterOAuth(req, res) {
   }
 }
 
-// 현재 로그인된 사용자 정보 반환
+/**
+ * 현재 로그인된 사용자의 정보를 반환합니다.
+ * Access Token을 통해 인증된 사용자 정보를 조회하여 응답합니다.
+ *
+ * @param {object} req - Express 요청 객체 (req.user에서 사용자 ID 및 역할을 가져옴)
+ * @param {object} res - Express 응답 객체
+ * @param {function} next - 다음 미들웨어 함수
+ * @returns {void}
+ * @throws {ForbiddenError} 접근 권한이 없는 경우
+ * @throws {NotFoundError} 사용자 정보를 찾을 수 없는 경우
+ */
 async function authMe(req, res, next) {
   try {
     if (!req.user?.user_id) {
@@ -301,6 +352,16 @@ async function authMe(req, res, next) {
   }
 }
 
+/**
+ * 사용자의 프로필 정보(예: JLPT 시험 점수)를 저장합니다.
+ * 파일 업로드를 처리하고, 관련 데이터를 데이터베이스에 저장합니다.
+ *
+ * @param {object} req - Express 요청 객체 (req.user, req.files, req.body 포함)
+ * @param {object} res - Express 응답 객체
+ * @param {function} next - 다음 미들웨어 함수
+ * @returns {void}
+ * @throws {BadRequestError} 파일이 없거나 필수 데이터가 누락된 경우
+ */
 async function saveMyProfile(req, res, next) {
   try {
     const { user, files, body } = req;

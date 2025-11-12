@@ -1,3 +1,7 @@
+/**
+ * @file 인증 관련 서비스 로직
+ * @description 사용자 등록, 상태 확인, 토큰 재발급 및 학생 시험 점수 저장 등 인증과 관련된 비즈니스 로직을 처리합니다.
+ */
 import redisClient from "../db/redis.js";
 import { refreshVerify, sign, signRefresh } from "../utils/auth.utils.js";
 import {
@@ -20,6 +24,21 @@ import pool from "../db/connection.js";
 
 const secret = process.env.JWT_SECRET;
 
+/**
+ * 새로운 사용자를 등록합니다.
+ * 이메일, 학번, 이름, 전화번호의 유효성을 검사하고, 중복 여부를 확인한 후
+ * 학생 또는 교수/관리자 계정을 생성합니다.
+ *
+ * @param {object} userData - 등록할 사용자 정보
+ * @param {string} userData.email - 사용자 이메일
+ * @param {string} userData.user_id - 사용자 ID (학번)
+ * @param {string} userData.name - 사용자 이름
+ * @param {string} userData.phone - 사용자 전화번호
+ * @param {boolean|string} userData.is_student - 학생 여부 (true, 'true', 'on' 중 하나)
+ * @returns {Promise<object>} 생성된 사용자 정보
+ * @throws {BadRequestError} 필수 항목 누락 또는 전화번호 형식 오류 시
+ * @throws {ConflictError} 이미 가입된 이메일 또는 학번인 경우
+ */
 export const registerUser = async (userData) => {
   const { email, user_id, name, phone } = userData;
 
@@ -40,7 +59,7 @@ export const registerUser = async (userData) => {
     throw new ConflictError("이미 등록된 학번입니다.");
   }
   try {
-    // is_student 값을 boolean으로 변환하여 명확하게 확인
+    // is_student 값을 boolean으로 변환하여 확인
     const isStudent = [true, 'true', 'on'].includes(userData.is_student);
 
     // 학생 생성 로직 호출
@@ -55,6 +74,15 @@ export const registerUser = async (userData) => {
   }
 };
 
+/**
+ * 사용자의 계정 상태를 확인하고, 상태에 따라 적절한 응답 또는 에러를 반환합니다.
+ * 'active' 상태가 아니면 로그인 또는 접근을 제한합니다.
+ *
+ * @param {string} status - 확인할 사용자의 계정 상태 ('active', 'inactive', 'pending' 등)
+ * @returns {{success: boolean}} 상태가 'active'일 경우 성공 객체
+ * @throws {ForbiddenError} 계정이 거절된 경우
+ * @throws {UnauthenticatedError} 관리자 승인 대기 중이거나 유효하지 않은 로그인 정보인 경우
+ */
 export function checkUserStatus(status) {
   switch (status) {
     case "active":
@@ -70,7 +98,17 @@ export function checkUserStatus(status) {
   }
 }
 
-// 리프레쉬 검증
+/**
+ * Access Token이 만료되었을 때 Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급합니다.
+ * Refresh Token의 유효성을 검증하고, Redis에 저장된 토큰과 일치하는지 확인합니다.
+ *
+ * @param {string} accessToken - 만료된 Access Token
+ * @param {string} refreshToken - 유효한 Refresh Token
+ * @param {object} req - Express 요청 객체 (사용자 에이전트 정보 추출용)
+ * @returns {Promise<{newAccess: string, newRf: string}>} 새로 발급된 Access Token과 Refresh Token
+ * @throws {UnauthenticatedError} 로그인 정보가 유효하지 않거나 토큰 검증 실패 시
+ * @throws {BadRequestError} 서버 오류 발생 시
+ */
 export async function refreshTokens(accessToken, refreshToken, req) {
   try {
     // 리프레쉬 토큰 자체 verify로 검증
@@ -131,7 +169,16 @@ export async function refreshTokens(accessToken, refreshToken, req) {
   }
 }
 
-// 사용자 JLPT 점수 저장
+/**
+ * 학생의 시험 점수와 관련 파일을 저장합니다.
+ * 파일 서비스와 연동하여 파일을 추가하고, 시험 데이터를 데이터베이스에 트랜잭션으로 저장합니다.
+ *
+ * @param {object} user - 현재 로그인된 사용자 정보 (user.user_id 포함)
+ * @param {object} file - 업로드된 파일 객체
+ * @param {object} examData - 시험 점수 데이터 (exam_type, score, level 포함)
+ * @returns {Promise<void>}
+ * @throws {BadRequestError} 파일이 없거나 필수 시험 데이터가 누락된 경우
+ */
 export const saveStudentExam = async (user, file, examData) => {
   const userId = user.user_id;
   const { exam_type, score, level } = examData;
