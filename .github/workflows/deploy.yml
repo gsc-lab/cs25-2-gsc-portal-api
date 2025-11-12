@@ -62,18 +62,15 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             echo "🚀 Deploying BACKEND to EC2..."
-            
-            # 1. gsc-portal-infra 디렉터리로 이동
+
             cd ~/gsc-portal-infra
-            
-            # 2. 'backend' 이미지만 PULL (빠름)
-            sudo docker compose -f docker-compose.prod.yml pull backend
-            
-            # 3. 'backend' 서비스만 RESTART (빠름)
-            #    (의존성(db, redis)은 건드리지 않음)
-            sudo docker compose -f docker-compose.prod.yml up -d --no-deps backend
-            
-            # 4. 불필요한 이미지 정리
-            sudo docker image prune -f
-            
+
+            # Docker Hub 속도 이슈 줄이기 위해 먼저 pull
+            sudo docker compose -f docker-compose.prod.yml pull backend < /dev/null
+
+            # Run without interactive stdin
+            sudo docker compose -f docker-compose.prod.yml up -d --no-deps backend < /dev/null
+
+            sudo docker image prune -f < /dev/null
+
             echo "✅ Backend deployment completed!"
