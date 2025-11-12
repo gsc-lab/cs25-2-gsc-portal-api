@@ -1,9 +1,22 @@
+/**
+ * @file 대시보드 관련 서비스 로직
+ * @description 대시보드에 표시될 다양한 정보를 통합하여 조회하는 비즈니스 로직을 처리합니다.
+ */
 import * as noticeService from "../service/notice-service.js";
 import * as cleaningService from "./cleaning-service.js";
 import * as timetableService from "../service/timetable-service.js";
 import * as classroomService from "../service/classroom-service.js";
 import { BadRequestError } from "../errors/index.js";
 
+/**
+ * 대시보드에 필요한 모든 데이터를 통합하여 조회합니다.
+ * 사용자의 역할과 대상 날짜를 기반으로 시간표, 공지사항, 청소 당번, 주말 개방 여부 등의 정보를 병렬로 가져옵니다.
+ *
+ * @param {object} user - 현재 로그인된 사용자 정보
+ * @param {string} targetDate - 조회할 대상 날짜 (YYYY-MM-DD 형식)
+ * @returns {Promise<object>} 대시보드에 표시될 통합 데이터 객체
+ * @throws {BadRequestError} 필수 값이 누락된 경우
+ */
 export const getDashboardData = async (user, targetDate) => {
   if (!targetDate || !user) {
     throw new BadRequestError("필수 값이 누락");
