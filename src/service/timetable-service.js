@@ -135,30 +135,33 @@ export const postRegisterTimetable = async function ({classroom_id, course_id, d
 }
 
 // 시간표 수정 (기존 시간표 삭제 후 다시 만들기)
-export const putRegisterTimetable = async function({schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_name}) {
-    if (!schedule_id || !classroom_id || !start_period || !end_period || !course_id || !day_of_week) {
+export const putRegisterTimetable = async function({schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_id, class_name}) {
+    if (!schedule_id || !classroom_id || start_period == null || end_period == null || !course_id || !day_of_week) {
         throw new BadRequestError("필수 값이 누락 되었습니다.");
     }
 
-    let class_id = null;
+    let final_class_id = class_id || null;
 
     // 특강일 경우
         if (class_name) {
-        class_id = course_id + class_name;
-        const exists = await timetableModel.findClassById(class_id);
-        if (!exists) await timetableModel.insertCourseClass(class_id, course_id, class_name);
+        const generated_class_id = course_id + class_name;
+        const exists = await timetableModel.findClassById(generated_class_id);
+        if (!exists) {
+            await timetableModel.insertCourseClass(generated_class_id, course_id, class_name);
+        }
+        final_class_id = generated_class_id;
     }
 
-    return await timetableModel.putRegisterTimetable(schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_id);
+    return await timetableModel.putRegisterTimetable(schedule_id, classroom_id, start_period, end_period, day_of_week, final_class_id);
 }
 
 // 시간표 삭제
-export const deleteRegisterTimetable = async function({course_id, day_of_week}) {
-    if (!course_id || !day_of_week) {
-        throw new BadRequestError("course_id 또는 day_of_week가 누락되었습니다.");
+export const deleteRegisterTimetable = async function({schedule_id}) {
+    if (schedule_id) {
+        throw new BadRequestError("schedule_id가 누락되었습니다.");
     }
 
-    return await timetableModel.deleteRegisterTimetable(course_id, day_of_week); 
+    return await timetableModel.deleteRegisterTimetable(schedule_id); 
 }
 
 // 휴보강 등록 Service
@@ -299,5 +302,9 @@ export const postHukaCustomSchedule = async function ({student_ids, professor_id
         throw new BadRequestError("해당 날짜에 유효한 학기가 존재하지 않습니다.");
     }
 
-    return await timetableModel.postHukaCustomSchedule(student_ids, professor_id, sec_id, date, start_slot, end_slot, location);
+    // 요일 계산
+    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const day_of_week = days[new Date(date).getDay()];
+
+    return await timetableModel.postHukaCustomSchedule(student_ids, professor_id, sec_id, date, start_slot, end_slot, location, day_of_week);
 }

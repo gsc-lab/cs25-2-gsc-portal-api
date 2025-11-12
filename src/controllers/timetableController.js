@@ -103,8 +103,8 @@ export const putRegisterTimetable = async (req, res, next) => {
 // 시간표 삭제
 export const deleteRegisterTimetable = async (req, res, next) => {
     try {
-        const { course_id, day_of_week } = req.body;
-        const params = { course_id, day_of_week}
+        const { schedule_id } = req.params;
+        const params = { schedule_id }
         const result = await timetableService.deleteRegisterTimetable(params);
         res.status(200).json({ message: "삭제 완료", result });
     } catch (err) {

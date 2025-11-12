@@ -16,8 +16,8 @@ router.delete("/registerCourses/:course_id", timetableController.deleteRegisterC
 
 // 시간표 등록
 router.post("/registerTimetable", authWithRole("admin"), timetableController.postRegisterTimetable);
-router.put("/registerTimetable/:schedule_id", authWithRole("admin"), timetableController.putRegisterTimetable);
-router.delete("/registerTimetable", authWithRole("admin"), timetableController.deleteRegisterTimetable);
+router.put("/registerTimetable/:schedule_id", timetableController.putRegisterTimetable);
+router.delete("/registerTimetable/:schedule_id", authWithRole("admin"), timetableController.deleteRegisterTimetable);
 
 // 휴보강 등록
 router.post("/registerHoliday", timetableController.postRegisterHoliday);

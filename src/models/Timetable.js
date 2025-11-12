@@ -244,7 +244,8 @@ export async function getAdminTimetable(targetDate, weekStart, weekEnd) {
             ts.end_time,
             up.name,
             vhk.location,
-            vhk.event_date
+            vhk.event_date,
+            vhk.schedule_type
 
         ORDER BY FIELD(day_of_week,'MON','TUE','WED','THU','FRI'), start_time;
     `;
@@ -456,21 +457,36 @@ export async function registerTimetable(classroom_id, course_id, day_of_week, st
 
 
 // 시간표 수정
-export async function putRegisterTimetable(schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_id) {
+export async function putRegisterTimetable(schedule_id, classroom_id, start_period, end_period, day_of_week, final_class_id) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
+        // 삭제 해야할 요일 조회
+        const [oldScheduleRows] = await conn.query(
+                    `SELECT day_of_week, course_id 
+                    FROM course_schedule 
+                    WHERE schedule_id = ? LIMIT 1`,
+                    [schedule_id]
+                );
+
+        if (oldScheduleRows.length === 0) {
+            throw new Error("수정할 시간표(schedule_id)를 찾을 수 없습니다.");
+        }
+
+        const old_day_of_week = oldScheduleRows[0].day_of_week;
+        const original_course_id = oldScheduleRows[0].course_id;
+
         // 기존 스케줄 삭제 (같은 과목 + 같은 요일 전부 삭제)
         await conn.query(
             `DELETE FROM course_schedule WHERE course_id = ? AND day_of_week = ?`,
-            [course_id, day_of_week]
+            [original_course_id, old_day_of_week]
         );
 
         // 학기(sec_id) 조회
         const [secData] = await conn.query(
             `SELECT sec_id FROM course WHERE course_id = ?`,
-            [course_id]
+            [original_course_id]
         );
         if (secData.length === 0) throw new Error("해당 과목을 찾을 수 없습니다.");
         const sec_id = secData[0].sec_id;
@@ -499,10 +515,10 @@ export async function putRegisterTimetable(schedule_id, classroom_id, start_peri
                     newScheduleId,
                     classroom_id,
                     period,
-                    course_id,
+                    original_course_id, 
                     sec_id,
                     day_of_week,
-                    class_id || null,
+                    final_class_id || null,
                 ]
             );
         }
@@ -518,13 +534,13 @@ export async function putRegisterTimetable(schedule_id, classroom_id, start_peri
 }
 
 // 시간표 삭제
-export async function deleteRegisterTimetable(course_id, day_of_week) {
+export async function deleteRegisterTimetable(schedule_id) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
         await conn.query(
-            `DELETE FROM course_schedule WHERE course_id = ? AND day_of_week = ?`, [course_id, day_of_week]
+            `DELETE FROM course_schedule WHERE schedule_id = ?`, [schedule_id]
         );
 
         await conn.commit();
@@ -1069,9 +1085,9 @@ export async function postHukaCustomSchedule(student_ids, professor_id, sec_id, 
 
                 await conn.query(`
                     INSERT INTO huka_schedule 
-                    (schedule_id, student_id, professor_id, sec_id, schedule_type, date, time_slot_id, location)
-                    VALUES (?, ?, ?, ?, 'CUSTOM', ?, ?, ?)
-                `, [newId, student_id, professor_id, sec_id, date, slot, location]);
+                    (schedule_id, student_id, professor_id, sec_id, schedule_type, date, time_slot_id, location, day_of_week)
+                    VALUES (?, ?, ?, ?, 'CUSTOM', ?, ?, ?, ?)
+                `, [newId, student_id, professor_id, sec_id, date, slot, location, day_of_week]);
             }
         }
 
