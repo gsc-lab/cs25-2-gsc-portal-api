@@ -177,7 +177,7 @@ async function authCallback(req, res) {
         date.setDate(date.getDate());
         const startDate = date.toISOString().split("T")[0];
         return res.redirect(
-          `${process.env.FE_BASE_URL}/dashboard?date=${startDate}`, // spa frontend route
+          `${process.env.FE_BASE_URL}/dashboard`, // spa frontend route
         );
       }
 
