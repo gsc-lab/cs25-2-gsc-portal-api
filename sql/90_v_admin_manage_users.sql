@@ -7,6 +7,7 @@ SELECT
     se.grade_id,
     se.language_id,
     se.class_id,
+    cc.name AS class_name,
     se.is_international,
     se.status,
     ur.role_type

@@ -286,9 +286,18 @@ export const postHukaStudentTimetable = async function ({student_ids, professor_
 }
 
 // 수정 상담 등록
-export const postHukaCustomSchedule = async function ({student_ids, professor_id, sec_id, date, start_slot, end_slot, location}) {
-    if (!student_ids || !professor_id || !date || !start_slot || !end_slot || !location) {
+export const postHukaCustomSchedule = async function ({student_ids, professor_id, date, start_slot, end_slot, location}) {
+    if (!student_ids || student_ids.length === 0 || !professor_id || !date || !start_slot || !end_slot || !location) {
         throw new BadRequestError("필수 값이 누락 되었습니다.");
     }
+
+    // sec_id 조회
+    const sec_id = await timetableModel.findSecIdByDate(date);
+
+    // sec_id가 없으면 에러
+    if (!sec_id) {
+        throw new BadRequestError("해당 날짜에 유효한 학기가 존재하지 않습니다.");
+    }
+
     return await timetableModel.postHukaCustomSchedule(student_ids, professor_id, sec_id, date, start_slot, end_slot, location);
 }

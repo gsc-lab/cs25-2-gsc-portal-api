@@ -237,8 +237,8 @@ export const postHukaStudentTimetable = async function (req, res, next) {
 export const postHukaCustomSchedule = async function (req, res, next) {
     try {
         const professor_id = req.user.user_id;
-        const { student_ids, sec_id, date, start_slot, end_slot, location } = req.body;
-        const params = { student_ids, sec_id, date, start_slot, end_slot, location};
+        const { student_ids, date, start_slot, end_slot, location } = req.body;
+        const params = { professor_id, student_ids, date, start_slot, end_slot, location};
         const result = await timetableService.postHukaCustomSchedule(params);
 
         return res.status(201).json({ message: "등록 완료", result });

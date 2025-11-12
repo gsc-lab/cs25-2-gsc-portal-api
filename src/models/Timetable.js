@@ -1024,6 +1024,29 @@ export async function postHukaStudentTimetable(student_ids, professor_id, sec_id
     }
 }
 
+// sec_id 조회 함수
+export async function findSecIdByDate(date) {
+    const conn = await pool.getConnection();
+    try {
+        const [rows] = await conn.query(
+            `
+            SELECT sec_id 
+            FROM section 
+            WHERE ? BETWEEN start_date AND end_date
+            LIMIT 1
+            `,
+            [date]
+        );
+        
+        return rows.length > 0 ? rows[0].sec_id : null;
+
+    } catch (err) {
+        throw err;
+    } finally {
+        conn.release();
+    }
+}
+
 
 // 수정(일회성) 상담 등록 (교시 범위 포함)
 export async function postHukaCustomSchedule(student_ids, professor_id, sec_id, date, start_slot, end_slot, location) {
@@ -1040,7 +1063,7 @@ export async function postHukaCustomSchedule(student_ids, professor_id, sec_id, 
         let offset = 0;
 
         for (const student_id of student_ids) {
-            // ② 교시 범위 반복 (예: 8~9)
+            // 교시 범위 반복
             for (let slot = start_slot; slot <= end_slot; slot++) {
                 const newId = generateHukaScheduleId(lastId, offset++);
 
