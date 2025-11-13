@@ -464,7 +464,7 @@ export async function putRegisterTimetable(schedule_id, classroom_id, start_peri
 
         // 삭제 해야할 요일 조회
         const [oldScheduleRows] = await conn.query(
-                    `SELECT day_of_week, course_id 
+                    `SELECT day_of_week, course_id, class_id AS old_class_id
                     FROM course_schedule 
                     WHERE schedule_id = ? LIMIT 1`,
                     [schedule_id]
@@ -474,19 +474,20 @@ export async function putRegisterTimetable(schedule_id, classroom_id, start_peri
             throw new Error("수정할 시간표(schedule_id)를 찾을 수 없습니다.");
         }
 
-        const old_day_of_week = oldScheduleRows[0].day_of_week;
-        const original_course_id = oldScheduleRows[0].course_id;
+        // 변수 정의
+        const { course_id, day_of_week, old_class_id } = oldScheduleRows[0];
 
-        // 기존 스케줄 삭제 (같은 과목 + 같은 요일 전부 삭제)
+        // 기존 스케줄 삭제
         await conn.query(
-            `DELETE FROM course_schedule WHERE course_id = ? AND day_of_week = ?`,
-            [original_course_id, old_day_of_week]
+            `DELETE FROM course_schedule
+            WHERE course_id = ? AND day_of_week = ? AND class_id <=> ?`,
+            [course_id, day_of_week, old_class_id]
         );
 
         // 학기(sec_id) 조회
         const [secData] = await conn.query(
             `SELECT sec_id FROM course WHERE course_id = ?`,
-            [original_course_id]
+            [course_id]
         );
         if (secData.length === 0) throw new Error("해당 과목을 찾을 수 없습니다.");
         const sec_id = secData[0].sec_id;
@@ -515,7 +516,7 @@ export async function putRegisterTimetable(schedule_id, classroom_id, start_peri
                     newScheduleId,
                     classroom_id,
                     period,
-                    original_course_id, 
+                    course_id, 
                     sec_id,
                     day_of_week,
                     final_class_id || null,
@@ -814,12 +815,11 @@ export async function postAssignStudents(class_id, course_id, student_ids) {
     try {
         await conn.beginTransaction();
 
-        for (const userId of student_ids) {
-        await conn.query(
-            `UPDATE course_student
-            SET class_id = ?
-            WHERE user_id = ? AND course_id = ?;`,
-            [class_id, userId, course_id]
+        for (const user_id of student_ids) {
+        await conn.query(`
+            INSERT INTO course_student (user_id, course_id, class_id)
+            VALUES (?, ?, ?);`,
+            [user_id, course_id, class_id]
         );
         }
 
@@ -848,7 +848,10 @@ export async function putAssignStudents(class_id, course_id, student_ids) {
         await conn.commit();
         return { message: `${student_ids.length}명의 학생이 ${class_id} 반에 새로 배정되었습니다.` };
     } catch (err) {
+        await conn.rollback();
         throw err;
+    } finally {
+        conn.release();
     }
 }
 
@@ -865,6 +868,8 @@ export async function deleteAssignStudents(class_id, course_id) {
     } catch (err) {
         await conn.rollback();
         throw err;
+    } finally {
+        conn.release();
     }
 }
 
