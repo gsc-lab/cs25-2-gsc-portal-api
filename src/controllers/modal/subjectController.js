@@ -75,8 +75,8 @@ export const getSpecialSchedule = async function (req, res, next) {
 // 특강 학생 조회
 export const getCourseStudents = async function (req, res, next) {
     try {
-        const { course_id } = req.params;
-        const result = await subjectService.getCourseStudents(course_id);
+        const { class_id } = req.params;
+        const result = await subjectService.getCourseStudents(class_id);
         res.status(200).json(result);
     } catch (err) {
         next(err)

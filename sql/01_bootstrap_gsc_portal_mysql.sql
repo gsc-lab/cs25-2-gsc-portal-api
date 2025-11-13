@@ -84,12 +84,7 @@ ON UPDATE CASCADE ON DELETE RESTRICT
 
 CREATE TABLE course_class (
     class_id   VARCHAR(10) PRIMARY KEY,
-    course_id  VARCHAR(15) NOT NULL,
-    name       VARCHAR(50) NOT NULL,     -- "A반", "B반"
-    UNIQUE KEY ux_course_class (course_id, name),
-    CONSTRAINT fk_cc_course FOREIGN KEY (course_id) 
-        REFERENCES course(course_id) 
-        ON UPDATE CASCADE ON DELETE CASCADE
+    name       VARCHAR(50) NOT NULL     -- "A반", "B반"
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE kakao_user (
@@ -180,20 +175,16 @@ CREATE TABLE student_entity (
 CREATE TABLE course_professor (
     user_id   VARCHAR(10) NOT NULL,
     course_id VARCHAR(15) NOT NULL,
-    class_id  VARCHAR(10) NULL,
     PRIMARY KEY (user_id, course_id),
     CONSTRAINT fk_cp_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_cp_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_cp_cc     FOREIGN KEY (class_id)  REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE SET NULL
+    CONSTRAINT fk_cp_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE course_student (
     user_id   VARCHAR(10) NOT NULL,
-    course_id VARCHAR(15) NOT NULL,
     class_id  VARCHAR(10) NULL,
-    PRIMARY KEY (user_id, course_id),
+    PRIMARY KEY (user_id),
     CONSTRAINT fk_cs_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_cs_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_cs_class  FOREIGN KEY (class_id) REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

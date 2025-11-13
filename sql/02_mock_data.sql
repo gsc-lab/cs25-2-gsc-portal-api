@@ -71,78 +71,74 @@ INSERT INTO course (course_id, sec_id, title, is_special) VALUES
 ('C001','2025-1','인공지능 개론',0),
 ('C002','2025-1','데이터베이스',0),
 ('C003','2025-1','일본어 특강',1),
-('C004','2025-1','한국어 집중반',1),
+('C004','2025-1','JLPT N2 특강',1),
 ('C005','2025-1','운영체제',0),
 ('C006','2025-1','네트워크',0),
-('C007','2025-1','JLPT N2 특강',1),
+('C007','2025-1','한국어 집중반',1),
 ('C008','2025-1','TOPIK 4급 한국어 특강',1);
 
 -- ===== Course Class (Course 이후에 가능) =====
-INSERT INTO course_class (class_id, course_id, name) VALUES
-('C003A','C003','A'),
-('C003B','C003','B'),
-('C004A','C004','A'),
-('C005A','C005','A'),
-('C006A','C006','A'),
-('C007A','C007','A'),
-('C008A','C008','A');
+INSERT INTO course_class (class_id, name) VALUES
+('C003A','일본어 특강A'),
+('C007A','한국어A');
 
 -- ===== Student Entity (Course Class 이후 가능) =====
 INSERT INTO student_entity (user_id, grade_id, class_id, language_id, is_international, status) VALUES
 ('2423001','2','C003A','JP','korean','enrolled'),
-('2423002','2','C004A','KR','korean','enrolled'),
-('2423003','2','C004A','KR','korean','enrolled'),
+('2423002','2','C003A','JP','korean','enrolled'),
+('2423003','2','C003A','JP','korean','enrolled'),
 ('2423004','1','C003A','JP','korean','enrolled'),
-('2423005','3','C007A','JP','korean','enrolled'),
-('2423006','1','C008A','KR','international','enrolled'),
-('2423007','2','C008A','EN','international','enrolled'),
+('2423005','3','C007A','KR','international','enrolled'),
+('2423006','1','C007A','KR','international','enrolled'),
+('2423007','2','C007A','KR','international','enrolled'),
 ('2423008','2','C003A','JP','korean','leave'),
-('2423009','1','C003A','KR','korean','dropped'),
-('2524001','3','C007A','JP','korean','leave'),
-('2725001','1','C008A','KR','international','dropped');
+('2423009','1','C003A','JP','korean','dropped'),
+('2524001','3','C007A','KR','international','leave'),
+('2725001','1','C007A','KR','international','dropped');
 
 -- ===== Course Language / Target / Schedule / Professor / Student =====
 INSERT INTO course_language (course_id, language_id) VALUES
-('C001','KR'),('C002','KR'),('C003','JP'),('C004','KR');
+('C003','JP'),('C004','JP'),('C007','KR'),('C008','KR');
 
-INSERT INTO course_target (target_id, course_id, grade_id, language_id) VALUES
-('T001','C001','2',NULL),
-('T002','C002','2',NULL),
-('T003','C003','1','JP'),
-('T004','C004','1','KR'),
-('T005','C005','3',NULL),
-('T006','C006','2',NULL),
-('T007','C007',NULL,'JP'),
-('T008','C008',NULL,'KR');
+INSERT INTO course_target (target_id, course_id, grade_id, language_id, class_id) VALUES
+('T001','C001','2',NULL, NULL),
+('T002','C002','2',NULL, NULL),
+('T003','C003',NULL,'JP', 'C003A'),
+('T004','C004',NULL,'JP', 'C003A'),
+('T005','C005','3',NULL, NULL),
+('T006','C006','2',NULL, NULL),
+('T007','C007',NULL,'KR', 'C007A'),
+('T008','C008',NULL,'KR', 'C007A');
 
 INSERT INTO course_schedule (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week, class_id) VALUES
 ('SCH1', 'CR001', '1', 'C001', '2025-1', 'MON', NULL),
 ('SCH2', 'CR001', '2', 'C001', '2025-1', 'WED', NULL),
 ('SCH3', 'CR002', '3', 'C002', '2025-1', 'TUE', NULL),
 ('SCH4', 'CR003', '4', 'C003', '2025-1', 'FRI', 'C003A'),
-('SCH5', 'CR004', '5', 'C004', '2025-1', 'THU', 'C004A'),
+('SCH5', 'CR004', '5', 'C004', '2025-1', 'THU', 'C003A'),
 ('SCH6', 'CR001', '6', 'C005', '2025-1', 'MON', NULL),
 ('SCH7', 'CR002', '7', 'C005', '2025-1', 'WED', NULL),
 ('SCH8', 'CR003', '8', 'C006', '2025-1', 'FRI', NULL),
 ('SCH9', 'CR004', '9', 'C007', '2025-1', 'TUE', 'C007A'),
-('SCH10', 'CR004', '10', 'C008', '2025-1', 'THU', 'C008A');
+('SCH10', 'CR004', '10', 'C008', '2025-1', 'THU', 'C007A');
 
-INSERT INTO course_professor (user_id, course_id, class_id) VALUES
-('8888001', 'C001', NULL),
-('8888001', 'C002', NULL),
-('8888002', 'C003', 'C003A'),
-('8888002', 'C004', 'C004A'),
-('8888001', 'C005', NULL),
-('8888001', 'C006', NULL),
-('8888002', 'C007', 'C007A');
+INSERT INTO course_professor (user_id, course_id) VALUES
+('8888001', 'C001'),
+('8888001', 'C002'),
+('8888002', 'C003'),
+('8888002', 'C004'),
+('8888001', 'C005'),
+('8888001', 'C006'),
+('8888002', 'C007');
 
-INSERT INTO course_student (user_id, course_id, class_id) VALUES
-('2423001', 'C007', NULL),
-('2423002', 'C007', 'C007A'),
-('2423003', 'C007', 'C007A'),
-('2423004', 'C007', 'C007A'),
-('2423005', 'C007', 'C007A'),
-('2524001', 'C007', NULL);
+INSERT INTO course_student (user_id, class_id) VALUES
+('2423001', NULL),
+('2423002', NULL),
+('2423003', NULL),
+('2423004', NULL),
+('2423005', NULL),
+('2423006', NULL),
+('2423007', NULL);
 
 INSERT INTO huka_schedule
 (schedule_id, student_id, professor_id, sec_id, schedule_type, day_of_week, date, time_slot_id, location, created_at, updated_at)

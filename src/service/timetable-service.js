@@ -31,7 +31,7 @@ export const getAdminTimetable = async function(targetDate) {
 }
 
 // 강의 등록
-export const postRegisterCourse = async ({sec_id, title, professor_id, target}) => {
+export const postRegisterCourse = async ({sec_id, title, professor_id, target, class_id, class_name}) => {
     
     if (!sec_id || !title || !professor_id || !target) {
         throw new BadRequestError("필수 값이 누락 되었습니다.");
@@ -59,17 +59,16 @@ export const postRegisterCourse = async ({sec_id, title, professor_id, target}) 
         throw new BadRequestError("유효하지 않은 target 값입니다.");
     }
 
-
     // Model에 "번역된" 값들을 각각 전달
     const result =  await timetableModel.postRegisterCourse(
         sec_id, title, professor_id, 
-        db_is_special, db_grade_id, db_language_id
+        db_is_special, db_grade_id, db_language_id, class_id, class_name
     );
     return result
 };
 
 // 강의 수정
-export const putRegisterCourse = async ({course_id, sec_id, title, professor_id, target}) => {
+export const putRegisterCourse = async ({course_id, sec_id, title, professor_id, target, class_id}) => {
     
     if (!course_id) throw new BadRequestError("강의 값이 누락 되었습니다.");
     if (!sec_id || !title || !professor_id || !target) throw new BadRequestError("필수 값이 누락 되었습니다.");
@@ -96,7 +95,7 @@ export const putRegisterCourse = async ({course_id, sec_id, title, professor_id,
     // Model에 "번역된" 값들을 각각 전달
     const result =  await timetableModel.putRegisterCourse(
         course_id, sec_id, title, professor_id, 
-        db_is_special, db_grade_id, db_language_id
+        db_is_special, db_grade_id, db_language_id, class_id
     );
     return result
 };
@@ -116,52 +115,30 @@ export const deleteRegisterCourse = async ({course_id}) => {
 
 
 // 시간표 등록
-export const postRegisterTimetable = async function ({classroom_id, course_id, day_of_week, start_period, end_period, class_name}) {
+export const postRegisterTimetable = async function ({classroom_id, course_id, day_of_week, start_period, end_period}) {
     if (!classroom_id || !start_period || !end_period || !course_id || !day_of_week) {
         throw new BadRequestError("필수 값이 누락 되었습니다.");
     }
 
-    let class_id = null;
-
-    // 특강인 경우 class_id 생성 및 등록
-    if (class_name) {
-        class_id = course_id + class_name;
-        const exists = await timetableModel.findClassById(class_id);
-        if (!exists) await timetableModel.insertCourseClass(class_id, course_id, class_name);
-    }
-
     // 시간표 등록
-    return await timetableModel.registerTimetable(classroom_id, course_id, day_of_week, start_period, end_period, class_id);
+    return await timetableModel.registerTimetable(classroom_id, course_id, day_of_week, start_period, end_period);
 }
 
 // 시간표 수정 (기존 시간표 삭제 후 다시 만들기)
-export const putRegisterTimetable = async function({schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_id, class_name}) {
-    if (!schedule_id || !classroom_id || start_period == null || end_period == null || !course_id || !day_of_week) {
+export const putRegisterTimetable = async function({schedule_ids, classroom_id, start_period, end_period, day_of_week}) {
+    if (!schedule_ids || !classroom_id || start_period == null || end_period == null|| !day_of_week) {
         throw new BadRequestError("필수 값이 누락 되었습니다.");
     }
-
-    let final_class_id = class_id || null;
-
-    // 특강일 경우
-        if (class_name) {
-        const generated_class_id = course_id + class_name;
-        const exists = await timetableModel.findClassById(generated_class_id);
-        if (!exists) {
-            await timetableModel.insertCourseClass(generated_class_id, course_id, class_name);
-        }
-        final_class_id = generated_class_id;
-    }
-
-    return await timetableModel.putRegisterTimetable(schedule_id, classroom_id, start_period, end_period, day_of_week, final_class_id);
+    return await timetableModel.putRegisterTimetable(schedule_ids, classroom_id, start_period, end_period, day_of_week);
 }
-
 // 시간표 삭제
-export const deleteRegisterTimetable = async function({schedule_id}) {
-    if (schedule_id) {
+export const deleteRegisterTimetable = async function ({ schedule_ids }) {
+    console.log(typeof schedule_ids);
+    if (!schedule_ids) {
         throw new BadRequestError("schedule_id가 누락되었습니다.");
     }
 
-    return await timetableModel.deleteRegisterTimetable(schedule_id); 
+    return await timetableModel.deleteRegisterTimetable(schedule_ids); 
 }
 
 // 휴보강 등록 Service
@@ -243,29 +220,29 @@ export const deleteRegisterHoliday = async function (event_id) {
 }
 
 // 분반 등록
-export const postAssignStudents = async function ({class_id, course_id, student_ids}) {
-    if (!class_id || !course_id || !student_ids ) {
+export const postAssignStudents = async function ({class_id, student_ids}) {
+    if (!class_id || !student_ids ) {
         throw new BadRequestError("classId or student_ids 값이 누락 되었습니다.");
     }
-    return await timetableModel.postAssignStudents(class_id, course_id, student_ids);
+    return await timetableModel.postAssignStudents(class_id, student_ids);
 }
 
 // 분반 수정
-export const putAssignStudents = async function ({ class_id, course_id, student_ids }) {
-    if (!class_id || !course_id || !student_ids) {
+export const putAssignStudents = async function ({ class_id, student_ids }) {
+    if (!class_id || !student_ids) {
         throw new BadRequestError("class_id or student_ids 값이 누락 되었습니다.")
     }
 
-    return await timetableModel.putAssignStudents(class_id, course_id, student_ids)
+    return await timetableModel.putAssignStudents(class_id, student_ids)
 }
 
 // 분반 삭제
-export const deleteAssignStudents = async function (class_id, course_id) {
-    if (!class_id || !course_id) {
+export const deleteAssignStudents = async function (class_id) {
+    if (!class_id ) {
         throw new BadRequestError("class_id 값이 누락 되었습니다.")
     }
 
-    return await timetableModel.deleteAssignStudents(class_id, course_id)
+    return await timetableModel.deleteAssignStudents(class_id)
 }
 
 

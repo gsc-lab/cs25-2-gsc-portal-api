@@ -41,8 +41,8 @@ export const getAdminTimetable = async function (req, res, next) {
 // 강의 등록
 export const postRegisterCourse = async (req, res, next) => {
     try {
-        const { sec_id, title, professor_id, target } = req.body;
-        const params = {sec_id, title, professor_id, target} ;
+        const { sec_id, title, professor_id, target, class_id, class_name } = req.body;
+        const params = {sec_id, title, professor_id, target, class_id, class_name} ;
         const result = await timetableService.postRegisterCourse(params);
         res.status(201).json({ message: "등록 완료", course: result });
     } catch (err) {
@@ -54,8 +54,8 @@ export const postRegisterCourse = async (req, res, next) => {
 export const putRegisterCourse = async (req, res, next) => {
     try {
         const { course_id } = req.params;
-        const { sec_id, title, professor_id, target } = req.body;
-        const params = { course_id, sec_id, title, professor_id, target };
+        const { sec_id, title, professor_id, target, class_id } = req.body;
+        const params = { course_id, sec_id, title, professor_id, target, class_id };
         const result = await timetableService.putRegisterCourse(params);
         res.status(200).json({ message: "수정 완료", course: result });
     } catch (err) {
@@ -78,8 +78,8 @@ export const deleteRegisterCourse = async (req, res, next) => {
 // 시간표 등록
 export const postRegisterTimetable = async function (req, res, next) {
     try {
-        const { classroom_id, start_period, end_period, course_id, day_of_week, class_name } = req.body;
-        const params = {classroom_id, start_period, end_period, course_id, day_of_week, class_name}
+        const { classroom_id, start_period, end_period, course_id, day_of_week } = req.body;
+        const params = {classroom_id, start_period, end_period, course_id, day_of_week}
         const result = await timetableService.postRegisterTimetable(params);
         res.status(201).json({ message: "등록 완료", course: result });
     } catch (err) {
@@ -90,9 +90,9 @@ export const postRegisterTimetable = async function (req, res, next) {
 // 시간표 수정
 export const putRegisterTimetable = async (req, res, next) => {
     try {
-        const { schedule_id } = req.params;
-        const { classroom_id, start_period, end_period, course_id, day_of_week, class_name } = req.body;
-        const params = { schedule_id, classroom_id, start_period, end_period, course_id, day_of_week, class_name }
+        const schedule_ids  = req.params.schedule_ids.split(',');
+        const { classroom_id, start_period, end_period, day_of_week } = req.body;
+        const params = { schedule_ids, classroom_id, start_period, end_period, day_of_week }
         const result = await timetableService.putRegisterTimetable(params);
         res.status(200).json({ message: "수정 완료", course: result})
     } catch (err) {
@@ -103,8 +103,8 @@ export const putRegisterTimetable = async (req, res, next) => {
 // 시간표 삭제
 export const deleteRegisterTimetable = async (req, res, next) => {
     try {
-        const { schedule_id } = req.params;
-        const params = { schedule_id }
+        const schedule_ids = req.params.schedule_ids.split(',');
+        const params = { schedule_ids }
         const result = await timetableService.deleteRegisterTimetable(params);
         res.status(200).json({ message: "삭제 완료", result });
     } catch (err) {
@@ -160,9 +160,9 @@ export const deleteRegisterHoliday = async function (req, res, next) {
 // 분반 등록
 export const postAssignStudents = async function (req, res, next) {
     try {
-        const { class_id, course_id } = req.params
+        const { class_id } = req.params
         const { student_ids } = req.body 
-        const params = { class_id, course_id, student_ids };
+        const params = { class_id, student_ids };
         const result = await timetableService.postAssignStudents(params)
 
         return res.status(201).json({ message: "등록 완료", result});
@@ -174,10 +174,10 @@ export const postAssignStudents = async function (req, res, next) {
 // 분반 수정
 export const putAssignStudents = async function (req, res, next) {
     try {
-        const { class_id, course_id } = req.params
+        const { class_id } = req.params
         const { student_ids } = req.body
 
-        const params = { class_id, course_id, student_ids }
+        const params = { class_id, student_ids }
         const result = await timetableService.putAssignStudents(params)
 
         return res.status(200).json({ message: "분반 수정 완료", result })
@@ -189,8 +189,8 @@ export const putAssignStudents = async function (req, res, next) {
 // 분반 삭제
 export const deleteAssignStudents = async function (req, res, next) {
     try {
-        const { class_id, course_id } = req.params
-        const result = await timetableService.deleteAssignStudents(class_id, course_id)
+        const { class_id } = req.params
+        const result = await timetableService.deleteAssignStudents(class_id)
 
         return res.status(200).json({ message: "분반 삭제 완료", result})
     } catch (err) {

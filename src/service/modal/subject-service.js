@@ -40,11 +40,11 @@ export const getSpecialSchedule = async function() {
 };
 
 // 특강 학생 조회
-export const getCourseStudents = async function(course_id) {
-    if (!course_id) {
+export const getCourseStudents = async function(class_id) {
+    if (!class_id) {
         throw new BadRequestError("필수 값이 누락 되었습니다.");
     }
-    return await subjectModal.getCourseStudents(course_id);
+    return await subjectModal.getCourseStudents(class_id);
 };
 
 // 휴강 조회
