@@ -4,9 +4,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "dotenv -e .env.production -- node server.js",
     "build": "parcel build server.js",
-    "dev": "nodemon --legacy-watch server.js",
+    "dev": "dotenv -e .env.development -- nodemon --legacy-watch server.js",
     "prepare": "husky install",
     "lint:fix": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\" && eslint --fix \"src/**/*.{js,jsx,ts,tsx}\""
   },
@@ -39,6 +39,7 @@
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@eslint/json": "^0.13.2",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-json": "^4.0.1",

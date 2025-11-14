@@ -15,7 +15,7 @@ Thumbs.db
 *.code-workspace
 
 # Local env files
-.env
+.env.development
 .env.*
 .env.local
 
