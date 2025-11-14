@@ -28,6 +28,7 @@ export const verify = (token) => {
       success: true,
       user_id: decoded.user_id,
       role: decoded.role,
+      status: decoded.status,
     };
   } catch (err) {
     return {

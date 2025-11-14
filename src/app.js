@@ -1,8 +1,13 @@
 import express from "express";
 import cookieParser from "cookie-parser";
+import session from "express-session";
+import { RedisStore } from "connect-redis";
+import redisClient from './db/redis.js';
 import cors from "cors";
 import { swaggerUi, specs } from "./docs/swagger.js";
 import path from "path";
+import dotenv from "dotenv";
+
 import { fileURLToPath } from "url";
 
 //Router
@@ -19,6 +24,7 @@ import dashboardRouter from "./routes/dashboardRouter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+dotenv.config();
 
 import { centralErrorHandler } from "./middleware/errorHandler.js";
 
@@ -29,6 +35,22 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
+
+app.use(
+  session({
+    store: new RedisStore({ client: redisClient }),
+    secret: process.env.SESSION_SECRET, // .env의 SESSION_SECRET
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 1000 * 60 * 60 * 24, // 1일
+    },
+  }),
+);
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // 클라이언트에서 application/x-www-form-urlencoded 데이터를 보냈을때 파싱해서 body 객체에 넣어줌
@@ -38,16 +60,16 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // api
-app.use("/admin", adminRouter);
-app.use("/timetables", timetableRouter);
-app.use("/auth", authRouter);
-app.use("/notices", noticeRouter);
-app.use("/files", fileRouter);
-app.use("/cleaning-rosters", cleaningRouter);
-app.use("/classrooms", classroomRouter);
-app.use("/modal/subjects", subjectRouter);
-app.use("/modal/common", commonRouter);
-app.use("/dashboard", dashboardRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/timetables", timetableRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/notices", noticeRouter);
+app.use("/api/files", fileRouter);
+app.use("/api/cleaning-rosters", cleaningRouter);
+app.use("/api/classrooms", classroomRouter);
+app.use("/api/modal/subjects", subjectRouter);
+app.use("/api/modal/common", commonRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 app.use(centralErrorHandler);
 export default app;

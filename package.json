@@ -4,9 +4,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "dotenv -e .env.production -- node server.js",
     "build": "parcel build server.js",
-    "dev": "nodemon --legacy-watch server.js",
+    "dev": "dotenv -e .env.development -- nodemon --legacy-watch server.js",
     "prepare": "husky install",
     "lint:fix": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\" && eslint --fix \"src/**/*.{js,jsx,ts,tsx}\""
   },
@@ -17,10 +17,12 @@
   "dependencies": {
     "aws-sdk": "^2.1692.0",
     "axios": "^1.10.0",
+    "connect-redis": "^9.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "express-session": "^1.18.2",
     "googleapis": "^153.0.0",
     "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.2",
@@ -37,6 +39,7 @@
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@eslint/json": "^0.13.2",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-json": "^4.0.1",

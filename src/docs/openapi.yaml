@@ -18,7 +18,7 @@ tags:
 paths:
   # === AUTH SECTION ===
 
-  /auth/google:
+  /auth:
     get:
       tags: [Auth]
       summary: Google OAuth 인증 URL 요청
@@ -36,7 +36,7 @@ paths:
                     example: https://accounts.google.com/o/oauth2/v2/auth?...client_id=...
 
 
-  /auth/google/callback:
+  /auth/callback:
     get:
       tags: [Auth]
       summary: Google OAuth 인증 완료 후 콜백 처리
@@ -171,7 +171,11 @@ paths:
     get:
       tags: [Auth]
       summary: 현재 로그인된 사용자 정보
-      description: JWT를 통해 로그인된 사용자의 정보를 반환합니다.
+      description: >
+        JWT를 통해 로그인된 사용자의 정보를 반환합니다.
+        사용자 역할(`role_type`)에 따라 반환 필드가 달라집니다.  
+        - **학생(student)**: 학년, 언어, 유학생 여부 포함  
+        - **교수/관리자(professor/admin)**: 학년, 언어, 유학생 여부 미포함
       security:
         - bearerAuth: []
       responses:
@@ -180,13 +184,99 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                type: object
+                title: StudentUser
+                properties:
+                  user_id:
+                    type: string
+                    example: "2423006"
+                  name:
+                    type: string
+                    example: "김김김"
+                  email:
+                    type: string
+                    example: "이메일@g.yju.ac.kr"
+                  phone:
+                    type: string
+                    example: "010-1234-5678"
+                  role_type:
+                    type: string
+                    example: "student"
+                  grade_id:
+                    type: string
+                    example: "1"
+                  language_id:
+                    type: string
+                    example: "KR"
+                  is_international:
+                    type: string
+                    example: "international"
+
         "401":
           description: 인증 실패
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 접근 권한 없음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "접근 권한이 없습니다."
+        "404":
+          description: 사용자 정보를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "사용자 정보를 찾을 수 없습니다."
+    post:
+      tags: [Auth]
+      summary: 학생의 시험 성적 점수 업로드
+      description: >
+        - JLPT 또는 TOPIK 시험 성적 정보를 저장합니다.
+        - 점수, 레벨 등 기본 정봉와 함께 성적표 파일을 업로드할 수 있습니다.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                exam_type:
+                  type: string
+                  example: "JLPT || TOPIK"
+                score:
+                  type: integer
+                  example: 100
+                level:
+                  type: string
+                  example: "N1"
+                files:
+                  type: string
+                  format: binary
+                  description: "성적표 파일 (PDF 등)"
+      responses:
+        "200":
+          description: 성공적으로 저장 완료
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "성공적으로 완료되었습니다."
 
   # === DASHBOARD SECTION ===
 
@@ -1830,7 +1920,7 @@ paths:
       parameters:
         - name: grade_id
           in: query
-          required: true
+          required: false
           schema: { type: string, example: G1 }
         - name: date
           in: query
@@ -2808,6 +2898,9 @@ components:
         section:
           type: string
           example: "2025-2"
+        work_date:
+          type: string
+          example: "2025-10-20"
         rosters:
           type: array
           items:
@@ -2822,10 +2915,11 @@ components:
           classroom_name:
             type: string
             example: "창조관-304"
-          weekly_duties:
+          members:
             type: array
             items:
-              $ref: "#/components/schemas/CleaningWeeklyDuty"
+              type: string
+            example: ['김성식', '권혁일', '정영쳘', '김민정']
 
     CleaningWeeklyDuty:
         type: object
@@ -2939,8 +3033,6 @@ components:
           type: integer
           description: 사용자 고유 ID
           example: 1
-        name: { type: string, example: 홍길동 }
-        email: { type: string, example: test@yju.ac.kr }
         role_type:
           type: string
           enum: [student, professor, admin]
@@ -3056,6 +3148,18 @@ components:
           type: string
           description: "과목 공지일 경우 해당하는 과목 ID. 전체 공지일 경우 생략 가능."
           example: "COURSE-G1-01"
+        specific_users:
+          type: array
+          items:
+            type: integer
+            example: 2423004
+          description: |
+            "공지 대상 학생을 지정하는 객체 배열. multipart/form-data 전송 시에는 이 배열을 JSON 문자열로 변환하여 보내야 합니다."
+            - `application/json` 요청 시: `[2423004, 2423005]` 형태로 전송
+            - `multipart/form-data` 요청 시: 문자열로 직렬화하여 `"["2423004","2423005"]"` 형태로 전송해야 합니다.
+            - 비워둘 경우 전체 타겟(학년/레벨 기준)으로 발송됩니다.
+          example: [2423004, 2423005, 2423006]
+
         targets:
           type: array
           description: "공지 대상을 지정하는 객체 배열. multipart/form-data 전송 시에는 이 배열을 JSON 문자열로 변환하여 보내야 합니다."

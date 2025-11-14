@@ -1,7 +1,25 @@
+/**
+ * @file 청소 당번 관련 서비스 로직
+ * @description 청소 당번표 생성, 조회, 삭제 등 청소 당번과 관련된 비즈니스 로직을 처리합니다.
+ */
 import * as CleaningModel from "../models/Cleaning.js";
 import pool from "../db/connection.js";
 import { InternalServerError, BadRequestError } from "../errors/index.js";
 
+/**
+ * 새로운 청소 당번표를 생성합니다.
+ * 학기 정보, 청소 요일, 팀 크기, 학년별 강의실 정보를 받아 당번표를 생성하고 데이터베이스에 저장합니다.
+ * 학생들을 무작위로 섞어 공정하게 배정하며, 트랜잭션을 사용하여 데이터 일관성을 유지합니다.
+ *
+ * @param {object} rosterInfo - 당번표 생성 정보
+ * @param {string} rosterInfo.section - 학기 ID
+ * @param {string} rosterInfo.weekday - 청소 요일 (예: "MON", "TUE")
+ * @param {number} rosterInfo.team_size - 한 팀의 학생 수
+ * @param {Array<object>} rosterInfo.grade_rooms - 학년별 강의실 정보 (grade_id, classroom_id 포함)
+ * @returns {Promise<object>} 생성 결과 정보
+ * @throws {BadRequestError} 유효하지 않은 학기 ID 또는 학생이 없는 경우
+ * @throws {InternalServerError} 서버 오류 발생 시
+ */
 export const generateRosters = async (rosterInfo) => {
   // 요청 Body에서 필요한 정보들을 구조 분해 할당으로 추출
   const { section, weekday, team_size, grade_rooms } = rosterInfo;
@@ -109,8 +127,20 @@ export const generateRosters = async (rosterInfo) => {
   }
 };
 
-// 특정 날짜가 포함된 주의 청소 당번 목록 조회
+/**
+ * 특정 날짜가 포함된 주의 청소 당번 목록을 조회합니다.
+ * 주어진 날짜를 기준으로 해당 주의 시작일과 종료일을 계산하여 당번표 데이터를 가져옵니다.
+ *
+ * @param {Date|string} date - 조회할 날짜
+ * @param {string|null} [gradeId=null] - 조회할 학년 ID (선택 사항)
+ * @returns {Promise<object>} 해당 주의 청소 당번표 데이터
+ * @throws {BadRequestError} 유효하지 않은 날짜가 전달된 경우
+ */
 export const findRosterWeek = async (date, gradeId = null) => {
+  if (!date) {
+    throw new BadRequestError("유효하지 않은 값입니다.");
+  }
+
   const targetDate = new Date(date);
 
   // 입력된 날짜를 기준으로, 해당 주가 시작되는 날짜(일요일)과 끝나는 날짜(토요일) 계산
@@ -129,54 +159,103 @@ export const findRosterWeek = async (date, gradeId = null) => {
       endDate,
       gradeId,
   );
-  if (flatRosters.length === 0) {
-    return { section: null, rosters: [] };
+  if (!flatRosters.length) {
+    return { section: null, rosters: [], work_date: null };
   }
 
-  // 데이터 목록을 reduce 함수 이용해 계층적인 구조로 그룹화
-  const groupedByClassroom = flatRosters.reduce((acc, current) => {
-    // 학년|교실이름 을 기준으로 1차 그룹화
-    const key = `${current.grade_id}|${current.classroom_name}`;
-    if (!acc[key]) {
-      acc[key] = {
-        grade_id: current.grade_id,
-        classroom_name: current.classroom_name,
-        weekly_duties: {},
-      };
+  // 데이터 목록을 Map 함수 이용해 계층적인 구조로 그룹화
+  const groupByClassroom = (list) => {
+    const map = new Map();
+    for (const { grade_id, classroom_name, member_name } of list) {
+      const key = `${grade_id}|${classroom_name}`;
+      if (!map.has(key)) {
+        map.set(key, { grade_id, classroom_name, members: new Set() });
+      }
+      map.get(key).members.add(member_name);
     }
+    return Array.from(map.values()).map((g) => ({
+      ...g,
+      members: [...g.members],
+    }));
+  };
 
-    // 청소날짜를 기준으로 2차 그룹화
-    const date = new Date(current.work_date);
-    const workDateString = `${date.getFullYear()}-${String(
-        date.getMonth() + 1
-    ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-    if (!acc[key].weekly_duties[workDateString]) {
-      acc[key].weekly_duties[workDateString] = {
-        work_date: workDateString,
-        members: [],
-      };
-    }
-    // 멤버 이름 목록에 현재 멤버를 추가
-    acc[key].weekly_duties[workDateString].members.push(current.member_name);
-
-    return acc;
-  }, {});
-
-  // 그룹화된 객체(groupedByClassroom)를 명세에 맞는 최종 배열 형태로 반환
-  const rosters = Object.values(groupedByClassroom).map((group) => ({
-    ...group,
-    weekly_duties: Object.values(group.weekly_duties),
-  }));
+  // 그룹화된 객체(groupedByClassroom)를 명세에 맞는 형태로 반환
+  const rosters = groupByClassroom(flatRosters);
 
   // 최종 결과 객체를 컨트롤러에 반환
   return {
     section: flatRosters[0].section,
+    work_date: flatRosters[0].work_date,
     rosters: rosters,
   };
 };
 
+/**
+ * 월간 청소 당번표를 조회합니다.
+ * 현재 달의 1일과 마지막 날짜를 기준으로 당번표 데이터를 가져옵니다.
+ *
+ * @param {string|null} [gradeId=null] - 조회할 학년 ID (선택 사항)
+ * @returns {Promise<object>} 해당 월의 청소 당번표 데이터
+ */
+export const findRosterMonth = async (gradeId = null) => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0 ~ 11
+
+  // 이번 달의 1일과 마지막 날짜 계산
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDate = firstDay.toISOString().split("T")[0];
+  const endDate = lastDay.toISOString().split("T")[0];
+
+  // DB 조회
+  const flatRosters = await CleaningModel.getCleaningRosterView(startDate, endDate, gradeId);
+  if (!flatRosters.length) {
+    return { section: null, rosters: [], month: `${year}-${month + 1}` };
+  }
+  const dates = [...new Set(flatRosters.map(r => r.work_date))];
+
+  const days = dates.map(date => {
+    const dailyList = flatRosters.filter(r => r.work_date === date);
+
+    // 교실 기준으로 묶기
+    const classMap = {};
+    for (const row of dailyList) {
+      const key = `${row.grade_id}|${row.classroom_name}`;
+      if (!classMap[key]) {
+        classMap[key] = {
+          grade_id: row.grade_id,
+          classroom_name: row.classroom_name,
+          members: []
+        };
+      }
+      if (!classMap[key].members.includes(row.member_name)) {
+        classMap[key].members.push(row.member_name);
+      }
+    }
+
+    return {work_date: date, rosters: Object.values(classMap)};
+  });
+
+  return {
+    section: flatRosters[0].section,
+    month: `${year}-${String(month + 1).padStart(2, '0')}`,
+    days
+  }
+};
+
+/**
+ * 특정 학기 또는 학년의 청소 당번표를 삭제합니다.
+ * 학기 또는 학년 ID 중 하나는 반드시 지정되어야 합니다.
+ *
+ * @param {string} section - 삭제할 학기 ID
+ * @param {string|null} gradeId - 삭제할 학년 ID (선택 사항)
+ * @returns {Promise<{deletedCount: number}>} 삭제된 당번표의 수
+ * @throws {BadRequestError} 학기 또는 학년 ID가 지정되지 않은 경우
+ */
 export const removeRosters = async (section, gradeId) => {
-  if (!gradeId) {
+
+  if (!gradeId && !section) {
     throw new BadRequestError(`삭제할 학년(grade_id) 반드시 지정해야 합니다.`);
   }
   const deletedCount = await CleaningModel.deleteRosters(section, gradeId);
