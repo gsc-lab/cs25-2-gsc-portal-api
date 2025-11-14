@@ -12,6 +12,7 @@ export const getcoursesRegular = async function (req, res, next) {
     }
 }
 
+
 // 특강 과목 조회
 export const getcoursesSpecial = async function (req, res, next) {
     try {
