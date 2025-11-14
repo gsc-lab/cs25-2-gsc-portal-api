@@ -7,6 +7,8 @@
     "start": "dotenv -e .env.production -- node server.js",
     "build": "parcel build server.js",
     "dev": "dotenv -e .env.development -- nodemon --legacy-watch server.js",
+    "docker:dev": "docker-compose --env-file .env.development up -d --build",
+    "docker:down": "docker-compose --env-file .env.development down -v",
     "prepare": "husky install",
     "lint:fix": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\" && eslint --fix \"src/**/*.{js,jsx,ts,tsx}\""
   },
