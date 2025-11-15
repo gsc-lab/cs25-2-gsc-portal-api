@@ -182,9 +182,11 @@ CREATE TABLE course_professor (
 
 CREATE TABLE course_student (
     user_id   VARCHAR(10) NOT NULL,
+    course_id VARCHAR(15) NOT NULL,
     class_id  VARCHAR(10) NULL,
-    PRIMARY KEY (user_id),
+    PRIMARY KEY (user_id, course_id),
     CONSTRAINT fk_cs_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_cs_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_cs_class  FOREIGN KEY (class_id) REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -204,6 +206,7 @@ CREATE TABLE notice (
                         notice_id  INT PRIMARY KEY AUTO_INCREMENT,
                         user_id    VARCHAR(10) NOT NULL,
                         course_id  VARCHAR(15) NULL DEFAULT NULL,
+                        class_id     VARCHAR(10) NULL,
                         title      VARCHAR(100) NOT NULL,
                         content    TEXT NOT NULL,
                         is_pinned  BOOLEAN NOT NULL DEFAULT FALSE,
@@ -211,7 +214,8 @@ CREATE TABLE notice (
                         KEY ix_notice_course_time (course_id, created_at),
                         KEY ix_notice_author_time (user_id, created_at),
                         CONSTRAINT fk_notice_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE SET NULL,
-                        CONSTRAINT fk_notice_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+                        CONSTRAINT fk_notice_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
+                        CONSTRAINT fk_notice_class  FOREIGN KEY (class_id) REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE notice_file (
@@ -225,11 +229,13 @@ CREATE TABLE notice_file (
 CREATE TABLE notice_target (
                                target_id   INT PRIMARY KEY AUTO_INCREMENT,
                                notice_id   INT NOT NULL,
+                               course_id   VARCHAR(15) NOT NULL,
                                grade_id    VARCHAR(10),
                                language_id VARCHAR(10),
                                class_id    VARCHAR(10),
                                UNIQUE KEY ux_notice_target_combo (notice_id, grade_id, class_id, language_id),
                                CONSTRAINT fk_nt_notice FOREIGN KEY (notice_id)   REFERENCES notice(notice_id)     ON UPDATE CASCADE ON DELETE CASCADE,
+                               CONSTRAINT fk_nt_course FOREIGN KEY (course_id)   REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE,
                                CONSTRAINT fk_nt_grade  FOREIGN KEY (grade_id)    REFERENCES grade(grade_id)       ON UPDATE CASCADE ON DELETE SET NULL,
                                CONSTRAINT fk_nt_lang   FOREIGN KEY (language_id) REFERENCES language(language_id) ON UPDATE CASCADE ON DELETE SET NULL,
                                CONSTRAINT fk_nt_class  FOREIGN KEY (class_id)    REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE SET NULL
@@ -275,9 +281,6 @@ CREATE TABLE course_event (
         REFERENCES time_slot(time_slot_id)
         ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-
-
 
 CREATE TABLE notification_delivery_event (
                                              delivery_id BIGINT PRIMARY KEY AUTO_INCREMENT,

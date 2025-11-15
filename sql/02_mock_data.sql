@@ -131,14 +131,39 @@ INSERT INTO course_professor (user_id, course_id) VALUES
 ('8888001', 'C006'),
 ('8888002', 'C007');
 
-INSERT INTO course_student (user_id, class_id) VALUES
-('2423001', NULL),
-('2423002', NULL),
-('2423003', NULL),
-('2423004', NULL),
-('2423005', NULL),
-('2423006', NULL),
-('2423007', NULL);
+INSERT INTO course_student (user_id, course_id, class_id) VALUES
+-- 2학년 학생들 (C001, C002, C006 수강)
+('2423001', 'C001', NULL),
+('2423001', 'C002', NULL),
+('2423001', 'C006', NULL),
+('2423002', 'C001', NULL),
+('2423002', 'C002', NULL),
+('2423002', 'C006', NULL),
+('2423003', 'C001', NULL),
+('2423003', 'C002', NULL),
+('2423003', 'C006', NULL),
+('2423007', 'C001', NULL),
+('2423007', 'C002', NULL),
+('2423007', 'C006', NULL),
+
+-- 3학년 학생 (C005 수강)
+('2423005', 'C005', NULL),
+
+-- 특강 수강생 (C003A, C007A)
+('2423001', 'C003', 'C003A'),
+('2423001', 'C004', 'C003A'),
+('2423002', 'C003', 'C003A'),
+('2423002', 'C004', 'C003A'),
+('2423003', 'C003', 'C003A'),
+('2423003', 'C004', 'C003A'),
+('2423004', 'C003', 'C003A'),
+('2423004', 'C004', 'C003A'),
+('2423005', 'C007', 'C007A'),
+('2423005', 'C008', 'C007A'),
+('2423006', 'C007', 'C007A'),
+('2423006', 'C008', 'C007A'),
+('2423007', 'C007', 'C007A'),
+('2423007', 'C008', 'C007A');
 
 INSERT INTO huka_schedule
 (schedule_id, student_id, professor_id, sec_id, schedule_type, day_of_week, date, time_slot_id, location, created_at, updated_at)
@@ -156,14 +181,14 @@ VALUES
 ('HK006', '2725001', '8888001', '2025-1', 'CUSTOM', 'MON', '2025-10-20', '8', '국제관 202호', NOW(), NOW());
 
 INSERT INTO course_event (event_id, schedule_id, event_type, event_date, parent_event_id) VALUES
-/* 세트 1: 인공지능 개론 (SCH1) 
+/* 세트 1: 인공지능 개론 (SCH1)
   - 정규 과목 (is_special=0)
   - class_id: NULL
 */
 ('E001','SCH1','CANCEL','2025-04-15', NULL),
 ('E002','SCH1','MAKEUP','2025-05-09','E001'),
 
-/* 세트 2: 운영체제 (SCH6) 
+/* 세트 2: 운영체제 (SCH6)
   - 정규 과목 (is_special=0)
   - class_id: NULL
 */
