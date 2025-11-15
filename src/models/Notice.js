@@ -31,11 +31,42 @@ export async function findBySpec(spec, query) {
   let whereClauses = [];
   let queryParams = [];
 
-  // TODO
   if (user.role === "student") {
-    baseSql += ` JOIN notification_delivery_notice ndn ON v.notice_id = ndn.notice_id`;
-    whereClauses.push(`ndn.user_id = ?`);
-    queryParams.push(user.user_id);
+    const studentAccessSubquery = `
+    (
+      -- Course notice: check if student is in that course
+      (v.course IS NOT NULL AND EXISTS (
+        SELECT 1 FROM course_student cs
+        WHERE cs.user_id = ?
+        AND cs.course_id = JSON_UNQUOTE(JSON_EXTRACT(v.course, '$.course_id'))
+      ))
+      OR
+      -- General notice
+      (v.course IS NULL AND EXISTS (
+        SELECT 1 FROM student_entity se WHERE se.user_id = ? AND (
+          -- 대상이 지정된 공지: 여러 대상 조건 중 하나라도 만족하면 보이도록 수정 (기존 AND -> OR 조건)
+          (JSON_LENGTH(v.targets) > 0 AND
+            (
+              SELECT COUNT(*)
+              FROM JSON_TABLE(v.targets, '$[*]' COLUMNS (
+                  t_grade_id VARCHAR(10) PATH '$.grade_id',
+                  t_language_id VARCHAR(10) PATH '$.language_id',
+                  t_class_id VARCHAR(10) PATH '$.class_id'
+              )) AS jt
+              WHERE (jt.t_grade_id IS NULL OR jt.t_grade_id = se.grade_id)
+                AND (jt.t_language_id IS NULL OR jt.t_language_id = se.language_id)
+                AND (jt.t_class_id IS NULL OR jt.t_class_id = se.class_id)
+            ) > 0
+          )
+          OR
+          -- Without targets, all enrolled students
+          (JSON_LENGTH(v.targets) = 0 AND se.status = 'enrolled')
+        )
+      ))
+    )
+    `;
+    whereClauses.push(studentAccessSubquery);
+    queryParams.push(user.user_id, user.user_id);
   }
 
   if (search) {
@@ -44,7 +75,9 @@ export async function findBySpec(spec, query) {
   }
 
   if (course_id) {
-    whereClauses.push(`v.course_id = ?`);
+    whereClauses.push(
+      `JSON_UNQUOTE(JSON_EXTRACT(v.course, '$.course_id')) = ?`,
+    );
     queryParams.push(course_id);
   }
 
@@ -60,7 +93,9 @@ export async function findBySpec(spec, query) {
 
   // 모든 역할에 공통으로 적용되는 옵션 필터
   if (course_type) {
-    whereClauses.push(`v.course_type = ?`);
+    whereClauses.push(
+      `JSON_UNQUOTE(JSON_EXTRACT(v.course, '$.course_type')) = ?`,
+    );
     queryParams.push(course_type);
   }
   if (author_id) {
@@ -68,7 +103,8 @@ export async function findBySpec(spec, query) {
     queryParams.push(author_id);
   }
 
-  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+  const whereSql =
+    whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
   const countSql = `SELECT COUNT(*) as total FROM (${baseSql} ${whereSql}) as count_table`;
   const [countRows] = await pool.query(countSql, queryParams);
@@ -80,13 +116,17 @@ export async function findBySpec(spec, query) {
     ORDER BY v.is_pinned DESC, v.created_at DESC
     LIMIT ? OFFSET ?`;
 
-  const finalParams = [...queryParams, parseInt(size, 10), parseInt(offset, 10)];
+  const finalParams = [
+    ...queryParams,
+    parseInt(size, 10),
+    parseInt(offset, 10),
+  ];
   const [rows] = await pool.query(dataSql, finalParams);
 
   return {
     total,
     notices: rows,
-  }
+  };
 }
 
 /**
@@ -201,7 +241,6 @@ export async function deleteNotice(noticeId) {
   return result.affectedRows;
 }
 
-
 /**
  * 공지사항에 연결된 특정 첨부파일들을 삭제합니다.
  * `notice_file` 테이블에서 공지사항 ID와 파일 ID를 기준으로 레코드를 삭제합니다.
@@ -211,13 +250,12 @@ export async function deleteNotice(noticeId) {
  * @param {object} connection - 데이터베이스 연결 객체 (트랜잭션용)
  * @returns {Promise<number>} 삭제된 행의 수
  */
-export const deleteFiles = async (noticeId, fileIdsToDelete,  connection) => {
+export const deleteFiles = async (noticeId, fileIdsToDelete, connection) => {
   if (!fileIdsToDelete || fileIdsToDelete.length === 0) return;
   const sql = `DELETE FROM notice_file WHERE notice_id = ? AND file_id IN (?)`;
   const [result] = await connection.query(sql, [noticeId, fileIdsToDelete]);
   return result.affectedRows;
 };
-
 
 /**
  * 공지사항의 모든 타겟 그룹을 삭제합니다.
@@ -234,7 +272,6 @@ export const deleteTargets = async (noticeId, connection) => {
   return result.affectedRows;
 };
 
-
 /**
  * 특정 사용자들에게 공지 발송 대상을 채웁니다.
  * `notification_delivery_notice` 테이블에 지정된 사용자 ID와 공지사항 ID를 삽입합니다.
@@ -244,7 +281,11 @@ export const deleteTargets = async (noticeId, connection) => {
  * @param {object} connection - 데이터베이스 연결 객체 (트랜잭션용)
  * @returns {Promise<number>} 삽입된 행의 수
  */
-export const populateDeliverNoticeForSpecificUsers = async (noticeId, userIds, connection) => {
+export const populateDeliverNoticeForSpecificUsers = async (
+  noticeId,
+  userIds,
+  connection,
+) => {
   const sql = `
     INSERT IGNORE INTO notification_delivery_notice (notice_id, user_id, status)
     SELECT ?, ua.user_id, 'QUEUED'
@@ -254,7 +295,7 @@ export const populateDeliverNoticeForSpecificUsers = async (noticeId, userIds, c
   `;
   const [result] = await connection.query(sql, [noticeId, userIds]);
   return result.affectedRows;
-}
+};
 
 /**
  * 공지사항의 발송 대상을 자동으로 채웁니다.
@@ -368,7 +409,7 @@ export const deleteDeliveryStatusByNoticeId = async (noticeId, connection) => {
   const [rows] = await connection.query(sql, [noticeId]);
 
   return rows.affectedRows;
-}
+};
 
 /**
  * 공지사항 수신자들의 발송 상태를 업데이트합니다.
@@ -504,7 +545,7 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
 
 /**
  * 특정 사용자가 공지사항의 수신 대상인지 확인합니다.
- * `notification_delivery_notice` 테이블에서 공지사항 ID와 사용자 ID를 기준으로 확인합니다.
+ * (동적 확인 로직으로 변경)
  *
  * @param {string} noticeId - 확인할 공지사항의 ID
  * @param {string} userId - 확인할 사용자의 ID
@@ -512,13 +553,51 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
  * @returns {Promise<boolean>} 수신 대상이면 true, 아니면 false
  */
 export const isRecipient = async (noticeId, userId, connection = pool) => {
-  const [rows] = await connection.query(
-    `SELECT COUNT(*) as count FROM notification_delivery_notice WHERE notice_id = ? AND user_id = ?`,
-    [noticeId, userId],
+  const [noticeRows] = await connection.query(
+    `SELECT * FROM v_notice_details WHERE notice_id = ?`,
+    [noticeId],
   );
-  return rows[0].count > 0;
-};
+  if (noticeRows.length === 0) return false;
+  const notice = noticeRows[0];
 
+  const [studentRows] = await connection.query(
+    `SELECT * FROM student_entity WHERE user_id = ?`,
+    [userId],
+  );
+  if (studentRows.length === 0) return false; // Not a student
+  const student = studentRows[0];
+
+  // Case 1: Course notice
+  if (notice.course) {
+    const [enrollmentRows] = await connection.query(
+      `SELECT 1 FROM course_student WHERE user_id = ? AND course_id = ?`,
+      [userId, notice.course.course_id],
+    );
+    return enrollmentRows.length > 0;
+  }
+
+  // Case 2: General notice
+  if (student.status !== "enrolled") return false;
+
+  // Without targets
+  if (notice.targets.length === 0) {
+    return true;
+  }
+
+  // With targets (must satisfy all target rows)
+  const totalTargets = notice.targets.length;
+  let satisfiedTargetRows = 0;
+  for (const target of notice.targets) {
+    const gradeMatch = !target.grade_id || target.grade_id === student.grade_id;
+    const langMatch =
+      !target.language_id || target.language_id === student.language_id;
+    const classMatch = !target.class_id || target.class_id === student.class_id;
+    if (gradeMatch && langMatch && classMatch) {
+      satisfiedTargetRows++;
+    }
+  }
+  return satisfiedTargetRows === totalTargets;
+};
 
 /**
  * 특정 과목이 데이터베이스에 존재하는지 확인합니다.
@@ -527,10 +606,10 @@ export const isRecipient = async (noticeId, userId, connection = pool) => {
  * @param {object} [connection=pool] - 데이터베이스 연결 객체
  * @returns {Promise<boolean>} 과목이 존재하면 true, 아니면 false
  */
-export const exists = async (courseId, connection = pool) => {
+export const courseExists = async (courseId, connection = pool) => {
   const [rows] = await connection.query(
-      `SELECT 1 FROM course WHERE course_id = ?`,
-      [courseId],
+    `SELECT 1 FROM course WHERE course_id = ?`,
+    [courseId],
   );
   return rows.length > 0;
 };
@@ -543,10 +622,14 @@ export const exists = async (courseId, connection = pool) => {
  * @param {object} [connection=pool] - 데이터베이스 연결 객체
  * @returns {Promise<boolean>} 담당 교수이면 true, 아니면 false
  */
-export const isProfessorOfCourse = async (userId, courseId, connection = pool) => {
+export const isProfessorOfCourse = async (
+  userId,
+  courseId,
+  connection = pool,
+) => {
   const [rows] = await connection.query(
-      `SELECT COUNT(*) as count FROM course_professor WHERE user_id = ? AND course_id = ?`,
-      [userId, courseId],
+    `SELECT COUNT(*) as count FROM course_professor WHERE user_id = ? AND course_id = ?`,
+    [userId, courseId],
   );
   return rows[0].count > 0;
 };

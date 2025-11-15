@@ -6,8 +6,12 @@
 import * as noticeModel from "../models/Notice.js";
 import * as fileService from "../service/file-service.js";
 import pool from "../db/connection.js";
-import { BadRequestError, ForbiddenError, NotFoundError } from "../errors/index.js";
-import _ from 'lodash';
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+} from "../errors/index.js";
+import _ from "lodash";
 import { v4 as uuidv4 } from "uuid";
 
 /**
@@ -55,7 +59,6 @@ export const detailNotices = async (noticeId, user) => {
     return detailNt; // 권한이 있으면 즉시 반환
   }
 
-
   // 위 모든 조건에 해당하지 않으면 권한 없음
   throw new ForbiddenError("해당 공지를 조회할 권한이 없습니다.");
 };
@@ -76,7 +79,7 @@ export const addNotice = async (user, noticeData, files) => {
   const { course_id, targets, specific_users, ...noticeInfo } = noticeData;
   const { title, content } = noticeInfo;
 
-  if (!title|| title.trim() === "") {
+  if (!title || title.trim() === "") {
     throw new BadRequestError("공지사항 제목은 필수 입력 항목입니다.");
   }
   if (!content || content.trim() === "") {
@@ -117,17 +120,20 @@ export const addNotice = async (user, noticeData, files) => {
 
   if (course_id) {
     // 강의가 실제로 존재하는지 검증
-    const courseExists = await noticeModel.exists(course_id);
+    const courseExists = await noticeModel.courseExists(course_id);
     if (!courseExists) {
       throw new BadRequestError("존재하지 않는 과목입니다.");
     }
 
     // 교수 -> 자신의 강의 & 전체만 가능
     if (user.role === "professor") {
-      const isOwner = await noticeModel.isProfessorOfCourse(user.user_id, course_id);
+      const isOwner = await noticeModel.isProfessorOfCourse(
+        user.user_id,
+        course_id,
+      );
       if (!isOwner) {
         throw new ForbiddenError(
-            "담당하지 않는 과목의 공지는 작성할 수 없습니다.",
+          "담당하지 않는 과목의 공지는 작성할 수 없습니다.",
         );
       }
     }
@@ -154,7 +160,11 @@ export const addNotice = async (user, noticeData, files) => {
     }
 
     if (Array.isArray(specificUsers) && specificUsers.length > 0) {
-      await noticeModel.populateDeliverNoticeForSpecificUsers(noticeId, specificUsers, connection);
+      await noticeModel.populateDeliverNoticeForSpecificUsers(
+        noticeId,
+        specificUsers,
+        connection,
+      );
     } else {
       await noticeModel.populateDeliverNotice(noticeId, connection);
     }
@@ -197,26 +207,32 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
   }
 
   if (data.title !== undefined && (!data.title || data.title.trim() === "")) {
-    throw new BadRequestError("공지사항 제목은 비워둘 수 없습니다.")
+    throw new BadRequestError("공지사항 제목은 비워둘 수 없습니다.");
   }
-  if (data.content !== undefined && (!data.content || data.content.trim() === "")) {
-    throw new BadRequestError("공지사항 내용은 비워둘 수 없습니다.")
+  if (
+    data.content !== undefined &&
+    (!data.content || data.content.trim() === "")
+  ) {
+    throw new BadRequestError("공지사항 내용은 비워둘 수 없습니다.");
   }
 
   const { course_id } = data;
   if (course_id) {
     // 강의가 실제로 존재하는지 검증
-    const courseExists = await noticeModel.exists(course_id);
+    const courseExists = await noticeModel.courseExists(course_id);
     if (!courseExists) {
       throw new BadRequestError("존재하지 않는 과목입니다.");
     }
 
     // 교수 -> 자신의 강의 & 전체만 가능
     if (user.role === "professor") {
-      const isOwner = await noticeModel.isProfessorOfCourse(user.user_id, course_id);
+      const isOwner = await noticeModel.isProfessorOfCourse(
+        user.user_id,
+        course_id,
+      );
       if (!isOwner) {
         throw new ForbiddenError(
-            "담당하지 않는 과목의 공지는 수정할 수 없습니다.",
+          "담당하지 않는 과목의 공지는 수정할 수 없습니다.",
         );
       }
     }
@@ -224,24 +240,30 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
 
   // 1. 텍스트 데이터 변경 확인
   const updateData = _.pick(data, updateTableTextFields);
-  const hasTextChanges = Object.keys(updateData).some(
-      key => !_.isEqual(updateData[key], notice[key])
-  );
+  const hasTextChanges = Object.keys(updateData).some((key) => {
+    if (key === "course_id") {
+      return !_.isEqual(updateData.course_id, notice.course?.course_id);
+    }
+    return !_.isEqual(updateData[key], notice[key]);
+  });
 
   // 2. 파일 변경 확인
   let { existing_file_ids = [] } = data;
   if (existing_file_ids) {
     if (typeof existing_file_ids === "string") {
       try {
-      existing_file_ids = JSON.parse(existing_file_ids);
+        existing_file_ids = JSON.parse(existing_file_ids);
       } catch {
         throw new BadRequestError("요청 타겟의 형식이 올바른 JSON이 아닙니다.");
       }
     }
   }
   const hasNewFileUploads = !_.isEmpty(newFiles);
-  const currentFileIds = notice.attachments.map(file => String(file.file_id));
-  const hasExistingFileChanges = !_.isEqual(_.sortBy(currentFileIds), _.sortBy(existing_file_ids.map(String)));
+  const currentFileIds = notice.attachments.map((file) => String(file.file_id));
+  const hasExistingFileChanges = !_.isEqual(
+    _.sortBy(currentFileIds),
+    _.sortBy(existing_file_ids.map(String)),
+  );
   const hasFileChanges = hasNewFileUploads || hasExistingFileChanges;
 
   const { targets: targetsJSON, specific_users } = data;
@@ -274,8 +296,11 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
     const newTargets = parsedTargets.map(normalize);
 
     // 정렬 후 비교 (순서에 상관없이 내용물만 비교)
-    const sortKey = ['grade_id', 'class_id', 'language_id'];
-    hasTargetChanges = !_.isEqual(_.sortBy(currentTargets, sortKey), _.sortBy(newTargets, sortKey));
+    const sortKey = ["grade_id", "class_id", "language_id"];
+    hasTargetChanges = !_.isEqual(
+      _.sortBy(currentTargets, sortKey),
+      _.sortBy(newTargets, sortKey),
+    );
   }
 
   let specificUsers = specific_users;
@@ -303,7 +328,6 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
     throw new BadRequestError("수정할 내용이 없습니다.");
   }
 
-
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -320,7 +344,10 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
         newFileIds = await fileService.addFiles(newFiles, connection);
       }
 
-      const desiredFileIds = [...existing_file_ids.map(String), ...newFileIds.map(String)];
+      const desiredFileIds = [
+        ...existing_file_ids.map(String),
+        ...newFileIds.map(String),
+      ];
 
       const filesToDelete = _.difference(currentFileIds, desiredFileIds);
       const filesToAdd = _.difference(desiredFileIds, currentFileIds);
@@ -347,21 +374,24 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
     }
 
     // 특정 유저 지정 수정 처리
-    if (specificUsers && Array.isArray(specificUsers) && specificUsers.length > 0) {
+    if (
+      specificUsers &&
+      Array.isArray(specificUsers) &&
+      specificUsers.length > 0
+    ) {
       // 기존 delivery 삭제 (중복 방지)
       await noticeModel.deleteDeliveryStatusByNoticeId(noticeId, connection);
 
       // 지정된 유저만 다시 채움
       await noticeModel.populateDeliverNoticeForSpecificUsers(
-          noticeId,
-          specificUsers,
-          connection
+        noticeId,
+        specificUsers,
+        connection,
       );
     }
 
     await connection.commit();
     return await noticeModel.findById(noticeId);
-
   } catch (err) {
     await connection.rollback();
     throw err;
@@ -381,8 +411,8 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
  * @throws {NotFoundError} 공지사항을 찾을 수 없는 경우
  */
 export const deleteNotice = async (noticeId, user) => {
-  if (user.role === 'student') {
-    throw new ForbiddenError('학생은 공지사항을 삭제할 수 없습니다.');
+  if (user.role === "student") {
+    throw new ForbiddenError("학생은 공지사항을 삭제할 수 없습니다.");
   }
 
   const notice = await noticeModel.findById(noticeId);
@@ -439,12 +469,13 @@ export const dispatchByNoticeId = async (noticeId, user, { mock = true }) => {
   if (!userIds || !userIds.length === 0) {
     return { message: "발송 대상자가 없습니다." };
   }
-  const targetUserIds = userIds.map(t => t.user_id);
+  const targetUserIds = userIds.map((t) => t.user_id);
 
   // 임시 목 데이터
   if (mock) {
     const accepted = await noticeModel.updateRecipients(
-      noticeId, targetUserIds,
+      noticeId,
+      targetUserIds,
       "SENT",
     );
 
@@ -458,23 +489,23 @@ export const dispatchByNoticeId = async (noticeId, user, { mock = true }) => {
   // 실제 알림톡 발송 로직들
   const templatedParams = {
     "GSC Portal": "공지사항",
-    "title": notice.title,
-    "content_preview": notice.content.substring(0, 20) + "...",
-    "URL": `${process.env.FE_BASE_URL}/notices/${noticeId}`,
+    title: notice.title,
+    content_preview: notice.content.substring(0, 20) + "...",
+    URL: `${process.env.FE_BASE_URL}/notices/${noticeId}`,
   };
   const TEMPLATE_CODE = "NOTICE_TEMPLATE_CODE";
 
   // 알림톡 발송
   const results = await Promise.allSettled(
-      userIds.map(target =>
-      sendAlimtalk(target.phone, TEMPLATE_CODE, templatedParams)
-      )
+    userIds.map((target) =>
+      sendAlimtalk(target.phone, TEMPLATE_CODE, templatedParams),
+    ),
   );
 
   const successfulUserIds = [];
   const failedUserIds = [];
   results.forEach((result, index) => {
-    if (results.status === 'fulfilled') {
+    if (results.status === "fulfilled") {
       successfulUserIds.push(userIds[index].user_id);
     } else {
       failedUserIds.push(userIds[index].user_id);
@@ -529,7 +560,7 @@ export const markNoticeAsRead = async (noticeId, user) => {
  * @throws {NotFoundError} 공지사항을 찾을 수 없는 경우
  */
 export const getNoticeReadStatusById = async (noticeId, user) => {
-  if (user.role === 'student') {
+  if (user.role === "student") {
     throw new ForbiddenError("읽음 현황을 조회할 권한이 없습니다.");
   }
 
@@ -570,7 +601,7 @@ export const getNoticeReadStatusById = async (noticeId, user) => {
  * @throws {BadRequestError} 잘못된 과목 타입이 전달된 경우
  */
 export const filterCourses = async (user, filters) => {
-  const VALID_COURSE_TYPES = new Set(['regular', 'special', 'korean']);
+  const VALID_COURSE_TYPES = new Set(["regular", "special", "korean"]);
 
   if (filters.course_type && !VALID_COURSE_TYPES.has(filters.course_type)) {
     throw new BadRequestError(`잘못된 과목 타입입니다: ${filters.course_type}`);
@@ -584,7 +615,6 @@ export const filterCourses = async (user, filters) => {
   return await noticeModel.findCoursesForForm(searchUserId, filters);
 };
 
-
 /**
  * 카카오 알림톡을 발송하는 mock 함수입니다.
  * 실제 알림톡 API 연동 시 이 함수를 구현해야 합니다.
@@ -595,7 +625,10 @@ export const filterCourses = async (user, filters) => {
  * @returns {Promise<object>} 발송 결과 (현재는 mock 결과)
  */
 async function sendAlimtalk(phoneNumber, templateCode, params) {
-  console.log(`Sending Alimtalk to ${phoneNumber} with template ${templateCode} and params`, params);
+  console.log(
+    `Sending Alimtalk to ${phoneNumber} with template ${templateCode} and params`,
+    params,
+  );
   // 실제 카카오 알림톡 API 호출 로직
   return { success: true, message: "Alimtalk sent (mock)" };
 }
