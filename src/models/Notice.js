@@ -217,10 +217,11 @@ export const createFiles = async (noticeId, files, connection) => {
  * @param {object} connection - 데이터베이스 연결 객체 (트랜잭션용)
  * @returns {Promise<void>}
  */
-export const createTargets = async (noticeId, targets, connection) => {
-  const sql = `INSERT IGNORE INTO notice_target (notice_id, grade_id, class_id, language_id) VALUES ?`;
+export const createTargets = async (noticeId, courseId, targets, connection) => {
+  const sql = `INSERT IGNORE INTO notice_target (notice_id, course_id, grade_id, class_id, language_id) VALUES ?`;
   const values = targets.map((t) => [
     noticeId,
+    courseId,
     t.grade_id,
     t.class_id,
     t.language_id,
@@ -306,6 +307,7 @@ export const populateDeliverNoticeForSpecificUsers = async (
  * @returns {Promise<number>} 삽입된 행의 수
  */
 export const populateDeliverNotice = async (noticeId, connection) => {
+  const numericNoticeId = Number(noticeId);
   const sql = `
     INSERT IGNORE INTO notification_delivery_notice (notice_id, user_id, status)
 
@@ -353,15 +355,15 @@ export const populateDeliverNotice = async (noticeId, connection) => {
   `;
 
   const params = [
-    noticeId,
-    noticeId,
-    noticeId,
-    noticeId,
-    noticeId,
-    noticeId,
-    noticeId,
-    noticeId,
-    noticeId,
+    numericNoticeId,
+    numericNoticeId,
+    numericNoticeId,
+    numericNoticeId,
+    numericNoticeId,
+    numericNoticeId,
+    numericNoticeId,
+    numericNoticeId,
+    numericNoticeId,
   ];
   const [result] = await connection.query(sql, params);
   console.log("Populate Result", result);

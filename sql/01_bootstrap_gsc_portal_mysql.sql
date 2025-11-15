@@ -229,7 +229,7 @@ CREATE TABLE notice_file (
 CREATE TABLE notice_target (
                                target_id   INT PRIMARY KEY AUTO_INCREMENT,
                                notice_id   INT NOT NULL,
-                               course_id   VARCHAR(15) NOT NULL,
+                               course_id   VARCHAR(15) NULL,
                                grade_id    VARCHAR(10),
                                language_id VARCHAR(10),
                                class_id    VARCHAR(10),
