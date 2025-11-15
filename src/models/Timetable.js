@@ -671,12 +671,18 @@ async function handleMakeupEvent(conn, { cancel_event_ids, event_date, start_per
         throw new BadRequestError("보강 교시(time_slot)를 찾을 수 없습니다.");
     }
 
-    const timeslot_id = timeRows[0].time_slot_id;
+    // 휴강과 보강 교시 확인
+    if (cancel_event_ids.length !== timeRows.length) {
+        throw new BadRequestError("휴강 시간과 보강 시간의 교시 수가 다릅니다.")
+    }
 
     // 보강 이벤트 생성
-    for (const cancel_id of cancel_event_ids) {
+    for (const [index, cancel_id] of cancel_event_ids.entries()) {
         const schedule_id = eventMap.get(cancel_id);
         if (!schedule_id) throw new BadRequestError(`휴강(${cancel_id})의 schedule_id를 찾을 수 없습니다.`);
+
+        // index에 맞게 보강 등록
+        const timeslot_id = timeRows[index].time_slot_id;
 
         lastId = generateEventId(lastId);
         await conn.query(
@@ -759,10 +765,11 @@ export async function putRegisterHoliday(event_id, event_type, event_date, start
                     event_date = ?,
                     classroom = ?,
                     schedule_id = ?,
-                    parent_event_id = ?
+                    parent_event_id = ?,
+                    time_slot_id = ?
                 WHERE event_id = ?
                 `,
-                [event_date, classroom, schedule_id, parent_event_id, event_id]
+                [event_date, classroom, schedule_id, parent_event_id, start_period, event_id]
             );
         } else {
             throw new BadRequestError("지원하지 않는 event_type 입니다.");
