@@ -51,7 +51,7 @@ export async function getCoursesKorean() {
 }
 
 // 전체 과목 조회
-export async function getAllCourses() {
+export async function getAllCourses(section_id) {
     const [rows] = await pool.query(`
         SELECT 
             c.course_id, 
@@ -74,8 +74,9 @@ export async function getAllCourses() {
         LEFT JOIN classroom cr ON cs.classroom_id = cr.classroom_id
         LEFT JOIN time_slot ts ON cs.time_slot_id = ts.time_slot_id
         LEFT JOIN course_class cc ON cs.class_id = cc.class_id
+        WHERE c.sec_id = ?
         ORDER BY c.course_id, cs.day_of_week, ts.time_slot_id
-    `);
+    `, [section_id]);
 
     const result = {};
 
@@ -181,7 +182,7 @@ export async function getSpecialSchedule() {
 
 // 특강 학생 조회
 export async function getCourseStudents(class_id) {
-    const [rows] = await pool.query(
+        const [rows] = await pool.query(
         `
         SELECT 
             ua.user_id,
@@ -192,7 +193,7 @@ export async function getCourseStudents(class_id) {
         FROM course_student cs
         JOIN user_account ua ON ua.user_id = cs.user_id
         JOIN student_entry se ON se.user_id = cs.user_id
-        ORDER BY ua.name;
+          ORDER BY ua.name;
         `,
     );
     console.log("rows", rows);

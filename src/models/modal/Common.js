@@ -3,7 +3,7 @@ import pool from "../../db/connection.js";
 // 학기 조회
 export async function getSections() {
     const [rows] = await pool.query(
-        `SELECT sec_id, CONCAT(year, '-', semester) AS label FROM section`
+        `SELECT sec_id, CONCAT(year, '-', semester) AS label, start_date, end_date FROM section`
     )
     return rows
 }

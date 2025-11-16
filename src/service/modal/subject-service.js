@@ -20,8 +20,8 @@ export const getCoursesKorean = async function() {
 };
 
 // 전체 과목 조회
-export const getCoursesAll = async function() {
-    return await subjectModal.getAllCourses();
+export const getCoursesAll = async function(section_id) {
+    return await subjectModal.getAllCourses(section_id);
 };
 
 // 특강 분반 조회 (level_id 없이)

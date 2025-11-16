@@ -35,7 +35,8 @@ export const getcoursesKorean = async function (req, res, next) {
 // 전체 과목 조회
 export const getcoursesAll = async function (req, res, next) {
     try {
-        const result = await subjectService.getCoursesAll();
+        const {section_id} = req.params
+        const result = await subjectService.getCoursesAll(section_id);
         res.status(200).json(result);
     } catch (err) {
         next(err)
