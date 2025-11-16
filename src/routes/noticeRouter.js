@@ -85,11 +85,11 @@ router.patch(
 
 /**
  * GET /api/notices/form/courses
- * 공지사항 폼에서 사용할 교수 과목 목록을 조회합니다. 교수 역할만 접근 가능합니다.
+ * 공지사항 폼에서 사용할 교수 과목 목록을 조회합니다. 학생이상  접근 가능합니다.
  */
 router.get(
   "/form/courses",
-  authWithRole("professor"),
+  authWithRole("student"),
   noticeController.getCourses,
 );
 
