@@ -78,9 +78,9 @@ INSERT INTO course (course_id, sec_id, title, is_special) VALUES
 ('C008','2025-1','TOPIK 4급 한국어 특강',1);
 
 -- ===== Course Class (Course 이후에 가능) =====
-INSERT INTO course_class (class_id, name) VALUES
-('C003A','일본어 특강A'),
-('C007A','한국어A');
+INSERT INTO course_class (class_id, name, language_id) VALUES
+('C003A','일본어 특강A', 'JP'),
+('C007A','한국어A', 'KR');
 
 -- ===== Student Entity (Course Class 이후 가능) =====
 INSERT INTO student_entity (user_id, grade_id, class_id, language_id, is_international, status) VALUES

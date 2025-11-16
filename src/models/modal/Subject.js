@@ -182,19 +182,32 @@ export async function getSpecialSchedule() {
 
 // 특강 학생 조회
 export async function getCourseStudents(class_id) {
-        const [rows] = await pool.query(
+    // 조회하는 class_id의 언어가 JP/KR 확인
+    const [lang] = await pool.query(
+        `
+        SELECT 
+            language_id
+        FROM course_class
+        WHERE class_id = ?;
+        `,[class_id],
+    );
+    
+    // 해당 language_id의 재학 중 학생 조회
+    const [rows] = await pool.query(
         `
         SELECT 
             ua.user_id,
             ua.name,
             se.language_id,
-            se.grade,
+            se.grade_id,
             cs.class_id
         FROM course_student cs
         JOIN user_account ua ON ua.user_id = cs.user_id
-        JOIN student_entry se ON se.user_id = cs.user_id
-          ORDER BY ua.name;
-        `,
+        JOIN student_entity se ON se.user_id = cs.user_id
+  
+        WHERE se.language_id = ? AND se.status = 'enrolled'
+        ORDER BY ua.name;
+        `,[lang[0].language_id]
     );
     console.log("rows", rows);
 

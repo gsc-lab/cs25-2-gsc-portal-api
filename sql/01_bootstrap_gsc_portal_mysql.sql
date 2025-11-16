@@ -84,7 +84,8 @@ ON UPDATE CASCADE ON DELETE RESTRICT
 
 CREATE TABLE course_class (
     class_id   VARCHAR(10) PRIMARY KEY,
-    name       VARCHAR(50) NOT NULL     -- "A반", "B반"
+    name       VARCHAR(50) NOT NULL,     -- "A반", "B반"
+    language_id VARCHAR(10) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE kakao_user (
