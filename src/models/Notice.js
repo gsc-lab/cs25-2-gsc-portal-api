@@ -507,7 +507,7 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
       FROM course c
       JOIN course_professor cp ON c.course_id = cp.course_id
       LEFT JOIN course_target ct ON c.course_id = ct.course_id
-      LEFT JOIN course_class cc ON ct.class_id = cc.class_id
+      LEFT JOIN course_class cc ON cc.course_id = c.course_id
   `;
 
   const whereClauses = [];
@@ -530,9 +530,10 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
     }
   }
 
+  // A / B 필터 적용
   if (class_id) {
-    whereClauses.push(`ct.class_id LIKE CONCAT('%', ?, '%')`);
-    params.push(filters.class_id);
+    whereClauses.push(`RIGHT(cc.class_id, 1) = ?`);
+    params.push(class_id);
   }
 
   if (whereClauses.length > 0) {
