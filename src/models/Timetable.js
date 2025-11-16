@@ -289,7 +289,7 @@ export async function postRegisterCourse(sec_id, title, professor_id, is_special
         const target_id = generateTargetId(lastTargetId);
         
         let cls_id = null
-        if (!class_id) {
+        if (class_name && !class_id) {
             cls_id = course_id + class_name;
             const exists = await findClassById(cls_id);
             if (!exists) await insertCourseClass(cls_id, class_name);
