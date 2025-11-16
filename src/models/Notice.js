@@ -221,10 +221,10 @@ export const createTargets = async (noticeId, courseId, targets, connection) => 
   const sql = `INSERT IGNORE INTO notice_target (notice_id, course_id, grade_id, class_id, language_id) VALUES ?`;
   const values = targets.map((t) => [
     noticeId,
-    courseId,
-    t.grade_id,
-    t.class_id,
-    t.language_id,
+    t.course_id ?? courseId ?? null,
+    t.grade_id ?? null,
+    t.class_id ?? null,
+    t.language_id ?? null,
   ]);
   await connection.query(sql, [values]);
 };
@@ -497,6 +497,8 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
           c.course_id,
           c.title,
           ct.grade_id,
+          cc.class_id,
+          cc.name AS class_name,
           (CASE 
                WHEN c.is_special = 2 THEN 'korean'
                WHEN c.is_special = 1 THEN 'special'
@@ -505,20 +507,13 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
       FROM course c
       JOIN course_professor cp ON c.course_id = cp.course_id
       LEFT JOIN course_target ct ON c.course_id = ct.course_id
+      LEFT JOIN course_class cc ON ct.class_id = cc.class_id
   `;
 
   const whereClauses = [];
   const params = [];
 
-  // 역할에 따라 분기 주석 처리
-  // if (user) {
-  //   whereClauses.push(`cp.user_id = ?`);
-  //   params.push(user.user_id);
-  // }
-
-  // 관리자는 모두 확인 가능
-
-  const { grade_id, course_type } = filters;
+  const { grade_id, course_type, class_id } = filters;
 
   if (grade_id) {
     whereClauses.push(`ct.grade_id = ?`);
@@ -535,11 +530,16 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
     }
   }
 
+  if (class_id) {
+    whereClauses.push(`ct.class_id LIKE CONCAT('%', ?, '%')`);
+    params.push(filters.class_id);
+  }
+
   if (whereClauses.length > 0) {
     sql += ` WHERE ` + whereClauses.join(" AND ");
   }
 
-  sql += ` ORDER BY c.course_id`;
+  sql += ` ORDER BY c.course_id, cc.class_id`;
 
   const [rows] = await pool.query(sql, params);
   return rows;
