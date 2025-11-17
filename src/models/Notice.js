@@ -44,7 +44,7 @@ export async function findBySpec(spec, query) {
       -- General notice
       (v.course IS NULL AND EXISTS (
         SELECT 1 FROM student_entity se WHERE se.user_id = ? AND (
-          -- 대상이 지정된 공지: 여러 대상 조건 중 하나라도 만족하면 보이도록 수정 (기존 AND -> OR 조건)
+          -- 대상이 지정된 공지: 여러 대상 조건 중 하나라도 만족하면 보이도록
           (JSON_LENGTH(v.targets) > 0 AND
             (
               SELECT COUNT(*)
@@ -221,7 +221,7 @@ export const createTargets = async (noticeId, courseId, targets, connection) => 
   const sql = `INSERT IGNORE INTO notice_target (notice_id, course_id, grade_id, class_id, language_id) VALUES ?`;
   const values = targets.map((t) => [
     noticeId,
-    t.course_id ?? courseId ?? null,
+    courseId ?? null,
     t.grade_id ?? null,
     t.class_id ?? null,
     t.language_id ?? null,
@@ -485,7 +485,6 @@ export const getNoticeReadStatus = async (noticeId) => {
 
 /**
  * 공지사항 폼에서 사용할 교수 과목 목록을 필터링하여 조회합니다.
- * 사용자 역할(교수)에 따라 담당 과목만 조회하거나, 관리자는 모든 과목을 조회할 수 있습니다.
  *
  * @param {object} [user=null] - 현재 로그인된 사용자 정보 (교수일 경우 user_id 사용)
  * @param {object} [filters={}] - 필터링 조건 (grade_id, course_type 등)
@@ -496,18 +495,13 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
       SELECT DISTINCT 
           c.course_id,
           c.title,
+          c.is_special,
           ct.grade_id,
           cc.class_id,
-          cc.name AS class_name,
-          (CASE 
-               WHEN c.is_special = 2 THEN 'korean'
-               WHEN c.is_special = 1 THEN 'special'
-               ELSE 'regular'
-          END) AS course_type
+          cc.name AS class_name
       FROM course c
-      JOIN course_professor cp ON c.course_id = cp.course_id
-      LEFT JOIN course_target ct ON c.course_id = ct.course_id
-      LEFT JOIN course_class cc ON cc.course_id = c.course_id
+      LEFT JOIN course_target ct ON ct.course_id = c.course_id
+      LEFT JOIN course_class cc ON cc.class_id = ct.class_id
   `;
 
   const whereClauses = [];
@@ -515,11 +509,13 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
 
   const { grade_id, course_type, class_id } = filters;
 
+  // 학년 필터
   if (grade_id) {
     whereClauses.push(`ct.grade_id = ?`);
     params.push(grade_id);
   }
 
+  // 과목 타입 틸터
   if (course_type) {
     if (course_type === "regular") {
       whereClauses.push(`c.is_special = 0`);
@@ -536,6 +532,7 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
     params.push(class_id);
   }
 
+  // WHERE 추가
   if (whereClauses.length > 0) {
     sql += ` WHERE ` + whereClauses.join(" AND ");
   }
@@ -543,12 +540,44 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
   sql += ` ORDER BY c.course_id, cc.class_id`;
 
   const [rows] = await pool.query(sql, params);
-  return rows;
+
+  // ====== 그룹핑 처리 (course_id 기준) ======
+  const coursesMap = new Map();
+
+  for (const row of rows) {
+    if (!coursesMap.has(row.course_id)) {
+      coursesMap.set(row.course_id, {
+        course_id: row.course_id,
+        title: row.title,
+        course_type:
+          row.is_special === 2 ? "korean" :
+            row.is_special === 1 ? "special" : "regular",
+        targets: []
+      });
+    }
+
+    // target 정보 푸시
+    if (row.class_id) {
+      coursesMap.get(row.course_id).targets.push({
+        target_id: row.target_id,
+        class_id: row.class_id,
+        class_name: row.class_name,
+        grade_id: row.grade_id,
+        language_id: row.language_id
+      });
+    }
+  }
+
+  return Array.from(coursesMap.values());
 };
 
 /**
  * 특정 사용자가 공지사항의 수신 대상인지 확인합니다.
  * (동적 확인 로직으로 변경)
+ *
+ * 1) 과목 공지일 경우 -> 학생이 해당 course_id의 target_id를 수강 중인지 확인
+ * 2) 일반 공지일 경우 -> notice.targets(학년/언어/분반)를
+ *    학생이 수강 중인 course_target 정보와 비교하여 매칭 여부 판단
  *
  * @param {string} noticeId - 확인할 공지사항의 ID
  * @param {string} userId - 확인할 사용자의 ID
@@ -556,6 +585,7 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
  * @returns {Promise<boolean>} 수신 대상이면 true, 아니면 false
  */
 export const isRecipient = async (noticeId, userId, connection = pool) => {
+  // 1. 공지사항 상세 정보 조회
   const [noticeRows] = await connection.query(
     `SELECT * FROM v_notice_details WHERE notice_id = ?`,
     [noticeId],
@@ -563,43 +593,54 @@ export const isRecipient = async (noticeId, userId, connection = pool) => {
   if (noticeRows.length === 0) return false;
   const notice = noticeRows[0];
 
+  // 2. 학생 정보 조회
   const [studentRows] = await connection.query(
     `SELECT * FROM student_entity WHERE user_id = ?`,
     [userId],
   );
-  if (studentRows.length === 0) return false; // Not a student
+  if (studentRows.length === 0) return false;
   const student = studentRows[0];
 
-  // Case 1: Course notice
-  if (notice.course) {
-    const [enrollmentRows] = await connection.query(
-      `SELECT 1 FROM course_student WHERE user_id = ? AND course_id = ?`,
-      [userId, notice.course.course_id],
-    );
-    return enrollmentRows.length > 0;
-  }
-
-  // Case 2: General notice
   if (student.status !== "enrolled") return false;
 
-  // Without targets
-  if (notice.targets.length === 0) {
-    return true;
+  // 3. 학생이 수강 중인 target 목록 로드 ---
+  const [targetRows] = await connection.query(
+    `
+    SELECT ct.*
+    FROM course_student cs
+    JOIN course_target ct ON ct.target_id = cs.target_id
+    WHERE cs.user_id = ?
+    `,
+    [userId],
+  );
+
+  // (학생이 아무 수업도 안 듣는 경우)
+  if (targetRows.length === 0) return false;
+
+  // 4. 과목 공지 처리
+  if (notice.course) {
+    // 학생이 듣는 target 중 course_id가 일치하는 경우
+    return targetRows.some(t => t.course_id === notice.course.course_id);
   }
 
-  // With targets (must satisfy all target rows)
-  const totalTargets = notice.targets.length;
-  let satisfiedTargetRows = 0;
+  // 5. 일반 공지 처리
+  // 타겟 조건이 없으면 전체 학생에게 발송
+  if (notice.targets.length === 0) return true;
+
+  // 학생이 수강 중인 target 중 하나라도 조건을 만족하면 true
   for (const target of notice.targets) {
-    const gradeMatch = !target.grade_id || target.grade_id === student.grade_id;
-    const langMatch =
-      !target.language_id || target.language_id === student.language_id;
-    const classMatch = !target.class_id || target.class_id === student.class_id;
-    if (gradeMatch && langMatch && classMatch) {
-      satisfiedTargetRows++;
-    }
+    const match = targetRows.some(t => {
+      const gradeOk = !target.grade_id || t.grade_id === target.grade_id;
+      const langOk = !target.language_id || t.language_id === target.language_id;
+      const classOk = !target.class_id || t.class_id === target.class_id;
+      return gradeOk && langOk && classOk;
+    });
+
+    // target 조건 중 하나라도 만족했다면 수신 가능
+    if (match) return true;
   }
-  return satisfiedTargetRows === totalTargets;
+
+  return false;
 };
 
 /**
