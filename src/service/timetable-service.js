@@ -252,8 +252,11 @@ export const getEvents = async function () {
 }
 
 // 후까 교수님
-export const getHukaStudentTimetable = async function() {
-    return await timetableModel.getHukaStudentTimetable();
+export const getHukaStudentTimetable = async function(sec_id) {
+    if (!sec_id) {
+        throw new BadRequestError("sec_id 값이 없습니다.")
+    }
+    return await timetableModel.getHukaStudentTimetable(sec_id);
 }
 
 // 정규 상담 등록

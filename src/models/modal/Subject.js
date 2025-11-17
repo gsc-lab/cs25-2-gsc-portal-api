@@ -204,7 +204,7 @@ export async function getCourseStudents(class_id) {
         FROM course_student cs
         JOIN user_account ua ON ua.user_id = cs.user_id
         JOIN student_entity se ON se.user_id = cs.user_id
-  
+
         WHERE se.language_id = ? AND se.status = 'enrolled'
         ORDER BY ua.name;
         `,[lang[0].language_id]

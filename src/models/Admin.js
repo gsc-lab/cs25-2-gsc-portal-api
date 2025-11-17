@@ -84,3 +84,18 @@ export async function deleteStudentInfo(user_id) {
     );
     return rows;
 }
+
+// 교수, 관리자
+export async function getProAdminInfo() {
+    const [rows] = await pool.query(`
+        SELECT * FROM user_account ua
+        JOIN user_role ur ON ua.user_id = ur.user_id
+        WHERE ur.role_type = 'professor' OR ur.role_type = 'admin'
+        ORDER BY 
+            CASE ur.role_type
+                WHEN 'professor' THEN 1
+                WHEN 'admin'    THEN 2
+            END ASC
+    `);
+    return rows;
+}

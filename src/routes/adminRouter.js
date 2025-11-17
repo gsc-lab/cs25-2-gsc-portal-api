@@ -19,5 +19,7 @@ router.get('/students', authWithRole("professor"), adminController.getStudentInf
 router.patch('/students/:user_id', authWithRole("admin"), adminController.patchStudentInfo);
 router.delete('/students/:user_id', authWithRole("admin"), adminController.deleteStudentInfo);
 
+// 교수, 관리자 정보
+router.get('/proadmin', authWithRole("professor"), adminController.getProAdminInfo)
 
 export default router;

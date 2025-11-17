@@ -212,7 +212,8 @@ export const getEvents = async function (req, res, next) {
 // 후까 교수님
 export const getHukaStudentTimetable = async function (req, res, next) {
     try {
-        const result = await timetableService.getHukaStudentTimetable();
+        const { sec_id } = req.body;
+        const result = await timetableService.getHukaStudentTimetable(sec_id);
         res.status(200).json(result);
     } catch(err) {
         next(err)

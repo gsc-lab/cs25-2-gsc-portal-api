@@ -105,3 +105,13 @@ export const deleteStudentInfo = async function (req, res, next) {
         next(err)
     }
 }
+
+// 교수 관리자 정보
+export const getProAdminInfo = async function (req, res, next) {
+    try {
+        const result = await adminService.getProAdminInfo();
+        res.status(200).json(result)
+    } catch (err) {
+        next(err)
+    }
+}

@@ -1014,24 +1014,125 @@ export async function getEvents() {
 
 // 후까 교수님
 // 학생 리스트
-export async function getHukaStudentTimetable() {
-    const sql = `
+export async function getHukaStudentTimetable(sec_id) {
+    const [rows] = await pool.query(`
     SELECT
-        ua.user_id,
+        hs.student_id,
         ua.name,
-        se.grade_id
-    FROM user_account ua
-    JOIN student_entity se ON ua.user_id = se.user_id
-    JOIN user_role ur ON ua.user_id = ur.user_id
-    WHERE ur.role_type = 'student'
-        AND ua.status = 'active'
-        AND se.status = 'enrolled'
-        AND se.grade_id IN ('1','2','3')
-    ORDER BY se.grade_id ASC, ua.user_id ASC;
-    `
+        se.grade_id,
+        hs.schedule_type,
+        hs.day_of_week,
+        hs.date,
+        hs.time_slot_id,
+        hs.location
+    FROM huka_schedule hs
+    JOIN student_entity se ON hs.student_id = se.user_id
+    JOIN user_account ua ON ua.user_id = se.user_id
+    WHERE  se.status = 'enrolled'
+        AND hs.sec_id = ?
+    /* ★★★ 정렬 순서가 매우 중요합니다! ★★★ */
+    ORDER BY 
+        hs.student_id ASC, 
+        hs.schedule_type ASC, 
+        hs.day_of_week ASC, 
+        hs.date ASC, 
+        hs.time_slot_id ASC;
+    `,[sec_id]
+    );
 
-    const [rows] = await pool.query(sql);
-    return rows;
+    // --- 1단계: 학생별로 데이터를 묶고, 연속 시간을 합칩니다. ---
+
+    const studentMap = new Map();
+
+    for (const row of rows) {
+        // 학생이 Map에 없으면, 기본 정보와 빈 'schedules' 배열을 생성
+        if (!studentMap.has(row.student_id)) {
+            studentMap.set(row.student_id, {
+                student_id: String(row.student_id),
+                name: row.name,
+                grade_id: String(row.grade_id),
+                schedules: [] // 이 학생의 병합된 일정이 들어갈 곳
+            });
+        }
+
+        const studentData = studentMap.get(row.student_id);
+        const lastSchedule = studentData.schedules.length > 0 
+            ? studentData.schedules[studentData.schedules.length - 1] 
+            : null;
+
+        // "연속" 조건 확인
+        if (
+            lastSchedule && // 마지막 일정이 있고
+            lastSchedule.schedule_type === row.schedule_type &&
+            lastSchedule.day_of_week === row.day_of_week &&
+            lastSchedule.date === row.date &&
+            lastSchedule.location === row.location &&
+            // ★ time_slot_id가 바로 다음 번호일 때
+            parseInt(lastSchedule.end_time) + 1 === parseInt(row.time_slot_id)
+        ) {
+            // "연속"이면: end_time만 업데이트
+            lastSchedule.end_time = String(row.time_slot_id);
+        } else {
+            // "연속"이 아니면: 새 일정 블록으로 추가
+            studentData.schedules.push({
+                schedule_type: row.schedule_type,
+                day_of_week: row.day_of_week,
+                date: row.date,
+                location: row.location,
+                start_time: String(row.time_slot_id),
+                end_time: String(row.time_slot_id) // 시작과 끝이 같음
+            });
+        }
+    }
+
+    // --- 2단계: '학생 중심' 데이터를 '일정 중심' 틀로 재조립합니다. ---
+
+    const result = {
+        regular: [],
+        custom: []
+    };
+    const finalScheduleMap = new Map(); // 최종 그룹화를 위한 Map
+
+    // 'studentMap'에 있는 모든 학생을 순회
+    for (const [student_id, student] of studentMap.entries()) {
+        
+        // 해당 학생의 병합된 일정들을 순회
+        for (const schedule of student.schedules) {
+            
+            // 학생 정보 객체 생성
+            const studentData = {
+                student_id: student.student_id,
+                name: student.name,
+                grade_id: student.grade_id
+            };
+
+            // "일정"을 기준으로 고유 '틀(key)' 생성
+            // 예: "REGULAR-MON-null-8-9-실습동 301호"
+            const key = `${schedule.schedule_type}-${schedule.day_of_week}-${schedule.date}-${schedule.start_time}-${schedule.end_time}-${schedule.location}`;
+
+            // 이 '틀'이 Map에 없으면 새로 생성
+            if (!finalScheduleMap.has(key)) {
+                finalScheduleMap.set(key, {
+                    ...schedule, // { day_of_week, date, start_time, end_time, location }
+                    student: []  // 학생 배열
+                });
+            }
+            
+            // '틀'에 학생 정보 추가
+            finalScheduleMap.get(key).student.push(studentData);
+        }
+    }
+
+    // Map에 저장된 최종 '틀'들을 'regular'와 'custom'으로 분배
+    for (const [key, schedule] of finalScheduleMap.entries()) {
+        if (schedule.schedule_type === 'REGULAR') {
+            result.regular.push(schedule);
+        } else {
+            result.custom.push(schedule);
+        }
+    }
+
+    return result;
 }
 
 // 학생 정규 상담 등록 (교시 범위 포함)
