@@ -7,6 +7,7 @@ import * as cleaningService from "./cleaning-service.js";
 import * as timetableService from "../service/timetable-service.js";
 import * as classroomService from "../service/classroom-service.js";
 import { BadRequestError } from "../errors/index.js";
+import {getEvents} from "../service/timetable-service.js";
 
 /**
  * 대시보드에 필요한 모든 데이터를 통합하여 조회합니다.
@@ -40,13 +41,15 @@ export const getDashboardData = async (user, targetDate) => {
     timetablePromise = timetableService.getAdminTimetable(targetDate);
   }
 
+  let eventPromise = timetableService.getEvents();
+
   let hukaPromise;
   if (user.role === "professor" || user.role === "admin") {
     hukaPromise = timetableService.getHukaStudentTimetable(); // 상담 시간표
   }
 
   const spec = { user };
-  const noticeQuery = { size: 5, sortBy: "createdAt:desc" };
+  const noticeQuery = { size: 10, sortBy: "createdAt:desc" };
 
   // 2. 모든 비동기 작업을 Promise.all로 병렬 처리
   const [scheduleData, hukaData, noticeData, cleaningData, reservationData] =
