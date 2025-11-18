@@ -36,19 +36,25 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+const isProd = process.env.NODE_ENV === "production";
+
 app.use(
   session({
     store: new RedisStore({ client: redisClient }),
-    secret: process.env.SESSION_SECRET, // .env의 SESSION_SECRET
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 1000 * 60 * 60 * 24, // 1일
+
+      secure: isProd,                        // prod만 secure=true
+      sameSite: isProd ? "none" : "lax",     // prod는 none, dev는 lax
+      domain: isProd ? process.env.SESSION_COOKIE_DOMAIN : undefined,
+      // dev에서는 domain 없어야 쿠키 저장됨
+
+      maxAge: 1000 * 60 * 60 * 24,
     },
-  }),
+  })
 );
 
 app.use(express.json());
