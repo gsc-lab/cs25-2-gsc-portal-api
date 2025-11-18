@@ -35,14 +35,14 @@ export async function findBySpec(spec, query) {
     const studentAccessSubquery = `
     (
       -- Course notice: check if student is in that course
-      (v.course IS NOT NULL AND EXISTS (
+      (v.course_id IS NOT NULL AND EXISTS (
         SELECT 1 FROM course_student cs
         WHERE cs.user_id = ?
-        AND cs.course_id = JSON_UNQUOTE(JSON_EXTRACT(v.course, '$.course_id'))
+        AND cs.course_id = v.course_id
       ))
       OR
       -- General notice
-      (v.course IS NULL AND EXISTS (
+      (v.course_id IS NULL AND EXISTS (
         SELECT 1 FROM student_entity se WHERE se.user_id = ? AND (
           -- 대상이 지정된 공지: 여러 대상 조건 중 하나라도 만족하면 보이도록
           (JSON_LENGTH(v.targets) > 0 AND
@@ -75,9 +75,7 @@ export async function findBySpec(spec, query) {
   }
 
   if (course_id) {
-    whereClauses.push(
-      `JSON_UNQUOTE(JSON_EXTRACT(v.course, '$.course_id')) = ?`,
-    );
+    whereClauses.push(`v.course_id = ?`);
     queryParams.push(course_id);
   }
 
@@ -93,9 +91,7 @@ export async function findBySpec(spec, query) {
 
   // 모든 역할에 공통으로 적용되는 옵션 필터
   if (course_type) {
-    whereClauses.push(
-      `JSON_UNQUOTE(JSON_EXTRACT(v.course, '$.course_type')) = ?`,
-    );
+    whereClauses.push(`v.course_type = ?`);
     queryParams.push(course_type);
   }
   if (author_id) {
@@ -618,9 +614,9 @@ export const isRecipient = async (noticeId, userId, connection = pool) => {
   if (targetRows.length === 0) return false;
 
   // 4. 과목 공지 처리
-  if (notice.course) {
+  if (notice.course_id) {
     // 학생이 듣는 target 중 course_id가 일치하는 경우
-    return targetRows.some(t => t.course_id === notice.course.course_id);
+    return targetRows.some(t => t.course_id === notice.course_id);
   }
 
   // 5. 일반 공지 처리

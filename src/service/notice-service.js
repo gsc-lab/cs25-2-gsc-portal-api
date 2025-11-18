@@ -242,7 +242,7 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
   const updateData = _.pick(data, updateTableTextFields);
   const hasTextChanges = Object.keys(updateData).some((key) => {
     if (key === "course_id") {
-      return !_.isEqual(updateData.course_id, notice.course?.course_id);
+      return !_.isEqual(updateData.course_id, notice.course_id);
     }
     return !_.isEqual(updateData[key], notice[key]);
   });
@@ -367,7 +367,7 @@ export const updateNotice = async (noticeId, data, newFiles, user) => {
       await noticeModel.deleteDeliveryStatusByNoticeId(noticeId, connection);
       // 최종 ID 목록으로 새로운 연결 생성
       if (parsedTargets.length > 0) {
-        await noticeModel.createTargets(noticeId, notice.course?.course_id, parsedTargets, connection);
+        await noticeModel.createTargets(noticeId, notice.course_id, parsedTargets, connection);
       }
       // 새로운 수신자 목록 재설정
       await noticeModel.populateDeliverNotice(noticeId, connection);
