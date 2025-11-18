@@ -182,9 +182,32 @@ INSERT INTO reservation (user_id, classroom_id, reserve_date, start_time, end_ti
 ('2423001','CR003','2025-04-01','10:00:00','12:00:00'),
 ('2725001','CR001','2025-04-03','09:00:00','11:00:00');
 
-INSERT INTO weekend_attendance_poll (poll_id, grade_id, classroom_id, poll_date, target_weekend, required_count, status) VALUES
-('P001','2','CR001','2025-04-05','SAT',8,1),
-('P002','1','CR003','2025-04-12','SUN',6,0);
+INSERT INTO poll_rules (rule_id, grade_id, required_count, start_date) VALUES
+('r001', '1', 5, '2025-11-01'),
+('r002', '2', 8, '2025-11-01'),
+('r003', '3', 3, '2025-11-01');
+
+
+INSERT INTO weekend_attendance_poll (poll_id, grade_id, poll_date, required_count, status) VALUES
+('w2511221', '1', '2025-11-22', 5, 0), 
+('w2511231', '1', '2025-11-23', 5, 0),
+('w2511222', '2', '2025-11-22', 8, 0),
+('w2511232', '2', '2025-11-23', 8, 0),
+('w2511223', '3', '2025-11-22', 3, 0),
+('w2511291', '1', '2025-11-29', 5, 0),
+('w2511301', '1', '2025-11-30', 5, 0),
+('w2511292', '2', '2025-11-29', 8, 0),
+('w2511302', '2', '2025-11-30', 8, 0);
+
+INSERT INTO weekend_attendance_votes (poll_id, user_id) VALUES
+('w2511221', '2423001'),
+('w2511221', '2423002'),
+('w2511221', '2423003'),
+('w2511221', '2423004'),
+('w2511221', '2423005'),
+('w2511231', '2423006'),
+('w2511231', '2423007'),
+('w2511223', '2423008');
 
 -- ===== Kakao & Exams & Logs =====
 INSERT INTO kakao_user (user_id, kakao_id, is_verified) VALUES
@@ -290,9 +313,3 @@ INSERT INTO reservation (user_id, classroom_id, reserve_date, start_time, end_ti
 ('2423001', 'CR002', '2025-10-24', '13:00:00', '14:00:00', NOW()),
 ('2725001', 'CR003', '2025-10-24', '14:00:00', '15:00:00', NOW()),
 ('8888001', 'CR003', '2025-10-24', '15:00:00', '16:00:00', NOW());
-
-INSERT INTO weekend_attendance_votes (poll_id, user_id) VALUES
-('P001', '2423001'),
-('P001', '2423002'),
-('P001', '2524001'),
-('P001', '2725001');

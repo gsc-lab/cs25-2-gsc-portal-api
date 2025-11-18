@@ -33,7 +33,7 @@ router.delete("/classes/:class_id/assign", authWithRole("professor"), timetableC
 router.get("/events", authWithRole("professor"), timetableController.getEvents)
 
 // 후까 교수님
-router.get("/huka/student", authWithRole("professor"), timetableController.getHukaStudentTimetable);
+router.get("/huka/student", timetableController.getHukaStudentTimetable);
 router.post("/huka/student", authWithRole("professor"), timetableController.postHukaStudentTimetable);
 router.post("/huka/student/custom", authWithRole("professor"), timetableController.postHukaCustomSchedule)
 

@@ -83,7 +83,8 @@ export const deleteClassroomReservation = async function (req, res, next) {
 export const getClassroomPolls = async function (req, res, next) {
     try {
         const { date } = req.query;
-        const user_id = req.user.user_id
+        // const user_id = req.user.user_id
+        const user_id = 2423001;
         const params = { date, user_id };
         const result = await classroomService.getClassroomPolls(params);
         res.status(200).json(result)
@@ -92,11 +93,11 @@ export const getClassroomPolls = async function (req, res, next) {
     }
 }
 
-// 강의실 개방 투표 생성
+// 강의실 개방 투표 룰 생성
 export const postClassroomPolls = async function (req, res, next) {
     try {
-        const { grade_id, classroom_id, poll_date, target_weekend, required_count } = req.body;
-        const params = { grade_id, classroom_id, poll_date, target_weekend, required_count }
+        const { grade_id, required_count } = req.body;
+        const params = { grade_id, required_count }
         const result =await classroomService.postClassroomPolls(params)
         res.status(201).json({ message: "투표 생성 완료", result })
     } catch (err) {
@@ -104,10 +105,32 @@ export const postClassroomPolls = async function (req, res, next) {
     }
 }
 
+// 투표 규칙 목록 조회
+export const getPollRules = async function (req, res, next) {
+    try {
+        const result = await classroomService.getPollRules();
+        res.status(200).json(result);
+    } catch (err) {
+        next(err);
+    }
+}
+
+// 투표 규칙 목록 삭제
+export const deletePollRules = async function (req, res, next) {
+    try {
+        const { rule_id } = req.params;
+        const result = await classroomService.deletePollRules(rule_id);
+        res.status(200).json({message: "투표 삭제 완료", result});
+    } catch (err) {
+        next(err);
+    }
+}
+
+
 // 강의실 개방 투표
 export const postReservationPolls = async function (req, res, next) {
     try {
-        const user_id = req.user.user_id;
+        const user_id = 2423001;
         const { poll_id } = req.params;
         const { action } = req.body;
         const params = { user_id, poll_id, action };

@@ -20,3 +20,12 @@ export function getWeekRange(dateStr) {
 
     return { weekStart: toYMD(ws), weekEnd: toYMD(we) };
 }
+
+export const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`; // "2024-05-20" 형식 반환
+}

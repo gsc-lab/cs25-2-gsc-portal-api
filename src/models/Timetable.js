@@ -1197,7 +1197,7 @@ export async function findSecIdByDate(date) {
 
 
 // 수정(일회성) 상담 등록 (교시 범위 포함)
-export async function postHukaCustomSchedule(student_ids, professor_id, sec_id, date, start_slot, end_slot, location) {
+export async function postHukaCustomSchedule(student_ids, professor_id, sec_id, date, start_slot, end_slot, location, day_of_week) {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();

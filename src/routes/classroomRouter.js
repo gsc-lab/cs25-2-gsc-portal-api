@@ -16,9 +16,11 @@ router.post("/:id/reservations", authWithRole("student"), classroomController.po
 router.delete("/:id/reservations/:reservation_id", authWithRole("student"), classroomController.deleteClassroomReservation);
 
 // 이번 주 강의실 개방 투표 현황 조회
-router.get("/polls", authWithRole("student"), classroomController.getClassroomPolls)
-router.post("/polls", authWithRole("professor"), classroomController.postClassroomPolls)
-router.post("/polls/:poll_id/vote", authWithRole("student"), classroomController.postReservationPolls)
+router.get("/polls", classroomController.getClassroomPolls)
+router.post("/polls", classroomController.postClassroomPolls)
+router.get("/polls/rules", classroomController.getPollRules)
+router.delete("/polls/rules/:rule_id", classroomController.deletePollRules)
+router.post("/polls/:poll_id/vote", classroomController.postReservationPolls)
 
 
 export default router
