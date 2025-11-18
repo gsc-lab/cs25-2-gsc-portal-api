@@ -4,7 +4,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "dotenv -e .env.production -- node server.js",
+    "start": "node server.js",
     "build": "parcel build server.js",
     "dev": "dotenv -e .env.development -- nodemon --legacy-watch server.js",
     "docker:dev": "docker-compose --env-file .env.development up -d --build",
