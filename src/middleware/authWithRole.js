@@ -7,14 +7,14 @@ const ROLE_ORDER = { admin: 3, professor: 2, student: 1 };
 export const authWithRole = (requiredRole = "student") => {
   return async (req, res, next) => {
     try {
-    const token = req.cookies?.accessToken;
+    const token = req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
     if (!token) {
-      throw new UnauthenticatedError("토큰이 제공되지 않았습니다.");
+      throw new UnauthenticatedError(`토큰이 제공되지 않았습니다.`);
     }
 
     const result = verify(token);
     if (!result.success) {
-      throw new UnauthenticatedError("토큰이 제공되지 않았습니다.");
+      throw new UnauthenticatedError("토큰이 유효하지 않습니다.");
     }
 
     const user = await findById(result.user_id);
