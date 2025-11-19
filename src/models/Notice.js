@@ -557,9 +557,8 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
     }
 
     // target 정보 푸시
-    if (row.class_id) {
+    if (row.class_id || row.grade_id) {
       coursesMap.get(row.course_id).targets.push({
-        target_id: row.target_id,
         class_id: row.class_id,
         class_name: row.class_name,
         grade_id: row.grade_id,
