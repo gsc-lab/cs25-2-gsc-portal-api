@@ -218,10 +218,10 @@ export const createFiles = async (noticeId, files, connection) => {
  * @returns {Promise<void>}
  */
 export const createTargets = async (noticeId, courseId, targets, connection) => {
-  const sql = `INSERT IGNORE INTO notice_target (notice_id, course_id, grade_id, class_id, language_id) VALUES ?`;
+  const sql = `INSERT IGNORE INTO notice_target (notice_id, grade_id, class_id, language_id) VALUES ?`;
   const values = targets.map((t) => [
     noticeId,
-    courseId ?? null,
+    // courseId ?? null,
     t.grade_id ?? null,
     t.class_id ?? null,
     t.language_id ?? null,
