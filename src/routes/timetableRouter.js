@@ -5,8 +5,8 @@ import { authWithRole } from "../middleware/authWithRole.js";
 const router = express.Router();
 
 // 시간표 조회 (학생, 교수, 관리자)
-router.get("/student/:user_id", authWithRole("student"), timetableController.getStudentTimetable);
-router.get("/professor/:user_id", authWithRole("professor"), timetableController.getProfessorTimetable);
+router.get("/student", authWithRole("student"), timetableController.getStudentTimetable);
+router.get("/professor", authWithRole("professor"), timetableController.getProfessorTimetable);
 router.get("/admin", authWithRole("admin"), timetableController.getAdminTimetable);
 
 // 강의 등록
