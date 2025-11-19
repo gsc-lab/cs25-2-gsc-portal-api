@@ -19,6 +19,7 @@ router.delete("/:id/reservations/:reservation_id", authWithRole("student"), clas
 router.get("/polls", classroomController.getClassroomPolls)
 router.post("/polls", classroomController.postClassroomPolls)
 router.get("/polls/rules", classroomController.getPollRules)
+router.put("/polls/rules", classroomController.putPollRules)
 router.delete("/polls/rules/:rule_id", classroomController.deletePollRules)
 router.post("/polls/:poll_id/vote", classroomController.postReservationPolls)
 

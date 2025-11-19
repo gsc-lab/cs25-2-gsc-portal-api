@@ -94,6 +94,17 @@ export const getPollRules = async function() {
     return await classroomModels.getPollRules();
 }
 
+// 규칙 목록 수정
+export const putPollRules = async function({ rule_id, required_count}) {
+    if (!rule_id || !required_count) {
+        throw new BadRequestError("rule_id, required_count 값이 누락되었습니다.")
+    }
+
+    const start_date = getTodayDate(); 
+
+    return await classroomModels.putPollRules(rule_id, required_count, start_date);
+}
+
 // 규칙 목록 삭제
 export const deletePollRules = async function(rule_id) {
     if (!rule_id) {

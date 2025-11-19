@@ -242,6 +242,21 @@ export const getPollRules = async function () {
     return rows;
 }
 
+// 규칙 목록 수정
+export const putPollRules = async function (rule_id, required_count, start_date) {
+    const [rows] = await pool.query(`
+        UPDATE poll_rules
+        SET
+            required_count = ?,
+            start_date = ?
+        WHERE rule_id = ?`,
+        [required_count, start_date, rule_id]
+        );
+    
+    return rows;
+}
+
+
 // 규칙 목록 삭제
 export const deletePollRules = async function (rule_id) {
     const [result] = await pool.query(`

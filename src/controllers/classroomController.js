@@ -115,6 +115,18 @@ export const getPollRules = async function (req, res, next) {
     }
 }
 
+// 투표 규칙 수정
+export const putPollRules = async function (req, res, next) {
+    try {
+        const { rule_id, required_count} = req.body;
+        const params = { rule_id, required_count }
+        const result = await classroomService.putPollRules(params);
+        res.status(200).json({ message: "규칙 수정 완료", result});
+    } catch (err) {
+        next(err);
+    }
+}
+
 // 투표 규칙 목록 삭제
 export const deletePollRules = async function (req, res, next) {
     try {
