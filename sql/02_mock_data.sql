@@ -131,15 +131,34 @@ INSERT INTO course_professor (user_id, course_id) VALUES
                                                       ('8888001', 'C006'),
                                                       ('8888002', 'C007');
 
-INSERT INTO course_student (user_id, class_id) VALUES
-                                                   ('2423001', NULL),
-                                                   ('2423002', NULL),
-                                                   ('2423003', NULL),
-                                                   ('2423004', NULL),
-                                                   ('2423005', NULL),
-                                                   ('2423006', NULL),
-                                                   ('2423007', NULL);
+-- ===== Course Student (수정된 로직) =====
+-- 기존: INSERT INTO course_student (user_id, course_id, class_id) VALUES ('2423001', NULL), ...
+-- 변경: 학생의 class_id에 해당하는 course_id를 연결하여 삽입합니다.
 
+INSERT INTO course_student (user_id, course_id, class_id) VALUES
+                                                              ('2423001', 'C001', NULL), -- 인공지능 개론 (분반 없음)
+                                                              ('2423001', 'C003', 'C003A'), -- 일본어 특강
+                                                              ('2423001', 'C004', 'C003A'), -- JLPT N2 특강
+
+                                                              ('2423002', 'C002', NULL), -- 데이터베이스 (분반 없음)
+                                                              ('2423002', 'C003', 'C003A'), -- 일본어 특강
+                                                              ('2423002', 'C006', NULL), -- 네트워크 (분반 없음)
+
+                                                              ('2423003', 'C001', NULL), -- 인공지능 개론 (분반 없음)
+                                                              ('2423003', 'C003', 'C003A'), -- 일본어 특강
+                                                              ('2423003', 'C004', 'C003A'), -- JLPT N2 특강
+
+                                                              ('2423004', 'C005', NULL), -- 운영체제 (분반 없음)
+                                                              ('2423004', 'C003', 'C003A'), -- 일본어 특강
+
+                                                              ('2423005', 'C007', 'C007A'), -- 한국어 집중반
+                                                              ('2423005', 'C008', 'C007A'), -- TOPIK 4급 한국어 특강
+
+                                                              ('2423006', 'C007', 'C007A'), -- 한국어 집중반
+                                                              ('2423006', 'C008', 'C007A'), -- TOPIK 4급 한국어 특강
+
+                                                              ('2423007', 'C007', 'C007A'), -- 한국어 집중반
+                                                              ('2423007', 'C008', 'C007A'); -- TOPIK 4급 한국어 특강
 INSERT INTO huka_schedule
 (schedule_id, student_id, professor_id, sec_id, schedule_type, day_of_week, date, time_slot_id, location, created_at, updated_at)
 VALUES
