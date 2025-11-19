@@ -4,7 +4,7 @@ import * as timetableService from '../service/timetable-service.js';
 // 학생
 export const getStudentTimetable = async function (req, res, next) {
     try {
-        const user_id = req.params.user_id;
+        const user_id = req.user.user_id;
         const targetDate = req.query.date;
         const params = {user_id, targetDate};
         const result = await timetableService.getStudentTimetable(params);
@@ -17,7 +17,7 @@ export const getStudentTimetable = async function (req, res, next) {
 // 교수
 export const getProfessorTimetable = async function (req, res, next) {
     try {
-        const user_id = req.params.user_id;
+        const user_id = req.user.user_id;
         const targetDate = req.query.date;
         const params = {user_id, targetDate};
         const result = await timetableService.getProfessorTimetable(params);
