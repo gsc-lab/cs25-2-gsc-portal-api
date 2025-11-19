@@ -34,33 +34,37 @@ export async function findBySpec(spec, query) {
   if (user.role === "student") {
     const studentAccessSubquery = `
     (
-      -- Course notice: check if student is in that course
+      -- 강의 공지사항: 학생이 해당 코스에 명시적으로 등록되어 있는지 확인 (course_student 테이블 사용)
       (v.course_id IS NOT NULL AND EXISTS (
-        SELECT 1 FROM course_student cs
-        WHERE cs.user_id = ?
-        AND cs.course_id = v.course_id
+        SELECT 1
+        FROM student_entity se
+        JOIN course_target ct ON (
+            (ct.grade_id IS NULL OR ct.grade_id = se.grade_id) AND
+            (ct.language_id IS NULL OR ct.language_id = se.language_id) AND
+            (ct.class_id IS NULL OR ct.class_id = se.class_id)
+        )
+        WHERE se.user_id = ? AND ct.course_id = v.course_id
       ))
       OR
-      -- General notice
+      -- 일반 공지사항 (notice_target 테이블을 직접 사용하여 필터링)
       (v.course_id IS NULL AND EXISTS (
-        SELECT 1 FROM student_entity se WHERE se.user_id = ? AND (
-          -- 대상이 지정된 공지: 여러 대상 조건 중 하나라도 만족하면 보이도록
-          (JSON_LENGTH(v.targets) > 0 AND
-            (
-              SELECT COUNT(*)
-              FROM JSON_TABLE(v.targets, '$[*]' COLUMNS (
-                  t_grade_id VARCHAR(10) PATH '$.grade_id',
-                  t_language_id VARCHAR(10) PATH '$.language_id',
-                  t_class_id VARCHAR(10) PATH '$.class_id'
-              )) AS jt
-              WHERE (jt.t_grade_id IS NULL OR jt.t_grade_id = se.grade_id)
-                AND (jt.t_language_id IS NULL OR jt.t_language_id = se.language_id)
-                AND (jt.t_class_id IS NULL OR jt.t_class_id = se.class_id)
-            ) > 0
-          )
-          OR
-          -- Without targets, all enrolled students
-          (JSON_LENGTH(v.targets) = 0 AND se.status = 'enrolled')
+        SELECT 1 FROM student_entity se
+        WHERE se.user_id = ?
+        AND se.status = 'enrolled' -- 등록된(enrolled) 학생에게만 보임
+        AND (
+            -- 조건 1: 학생의 속성이 공지사항의 타겟 조건 중 하나라도 만족하는지 확인
+            EXISTS (
+                SELECT 1 FROM notice_target nt
+                WHERE nt.notice_id = v.notice_id
+                AND (nt.grade_id IS NULL OR nt.grade_id = se.grade_id)
+                AND (nt.language_id IS NULL OR nt.language_id = se.language_id)
+                AND (nt.class_id IS NULL OR nt.class_id = se.class_id)
+            )
+            OR
+            -- 조건 2: 공지사항에 타겟팅 조건이 아예 없는 경우 (모든 등록 학생에게 노출)
+            NOT EXISTS (
+                SELECT 1 FROM notice_target nt2 WHERE nt2.notice_id = v.notice_id
+            )
         )
       ))
     )
