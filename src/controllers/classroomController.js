@@ -142,7 +142,7 @@ export const deletePollRules = async function (req, res, next) {
 // 강의실 개방 투표
 export const postReservationPolls = async function (req, res, next) {
     try {
-        const user_id = 2423001;
+        const user_id = req.user.user_id;
         const { poll_id } = req.params;
         const { action } = req.body;
         const params = { user_id, poll_id, action };

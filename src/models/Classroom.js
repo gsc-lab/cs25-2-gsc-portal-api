@@ -5,8 +5,12 @@ import { BadRequestError, NotFoundError } from "../errors/index.js"
 
 // 강의실 목록 조회
 export async function getClassrooms() {
-    const [results] = await pool.query("SELECT * FROM classroom");
-    
+    const [results] = await pool.query(`
+        SELECT * FROM classroom
+        ORDER BY
+            CASE WHEN room_type = 'CLASSROOM' THEN 1 ELSE 2 END,
+            room_number ASC;
+        `);
     return results
 }
 
