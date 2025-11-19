@@ -20,15 +20,15 @@ CREATE TABLE language (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE section (
-    sec_id     VARCHAR(10) PRIMARY KEY,
-    semester   VARCHAR(2) NOT NULL,
-    year       YEAR NOT NULL,
-    start_date DATE,
-    end_date   DATE,
-    CONSTRAINT chk_section_dates CHECK (
-        end_date IS NULL OR start_date IS NULL OR end_date >= start_date
-    ),
-    UNIQUE KEY ux_section_year_sem (year, semester)
+                         sec_id     VARCHAR(10) PRIMARY KEY,
+                         semester   VARCHAR(2) NOT NULL,
+                         year       YEAR NOT NULL,
+                         start_date DATE,
+                         end_date   DATE,
+                         CONSTRAINT chk_section_dates CHECK (
+                             end_date IS NULL OR start_date IS NULL OR end_date >= start_date
+                             ),
+                         UNIQUE KEY ux_section_year_sem (year, semester)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE time_slot (
@@ -62,29 +62,30 @@ CREATE TABLE user_account (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE user_role (
-user_id   VARCHAR(10) NOT NULL,
-role_type ENUM('student','professor','admin') NOT NULL,
-PRIMARY KEY (user_id, role_type),
-KEY ix_user_role_type (role_type),
-CONSTRAINT fk_user_role_user
-FOREIGN KEY (user_id) REFERENCES user_account(user_id)
-ON UPDATE CASCADE ON DELETE CASCADE
+                           user_id   VARCHAR(10) NOT NULL,
+                           role_type ENUM('student','professor','admin') NOT NULL,
+                           PRIMARY KEY (user_id, role_type),
+                           KEY ix_user_role_type (role_type),
+                           CONSTRAINT fk_user_role_user
+                               FOREIGN KEY (user_id) REFERENCES user_account(user_id)
+                                   ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE course (
-course_id  VARCHAR(15) PRIMARY KEY,
-sec_id     VARCHAR(10) NOT NULL,
-title      VARCHAR(100) NOT NULL,
-is_special BOOLEAN NOT NULL DEFAULT FALSE,
-KEY ix_course_sec_title (sec_id, title),
-CONSTRAINT fk_course_sec
-FOREIGN KEY (sec_id) REFERENCES section(sec_id)
-ON UPDATE CASCADE ON DELETE RESTRICT
+                        course_id  VARCHAR(15) PRIMARY KEY,
+                        sec_id     VARCHAR(10) NOT NULL,
+                        title      VARCHAR(100) NOT NULL,
+                        is_special BOOLEAN NOT NULL DEFAULT FALSE,
+                        KEY ix_course_sec_title (sec_id, title),
+                        CONSTRAINT fk_course_sec
+                            FOREIGN KEY (sec_id) REFERENCES section(sec_id)
+                                ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE course_class (
-    class_id   VARCHAR(10) PRIMARY KEY,
-    name       VARCHAR(50) NOT NULL,     -- "A반", "B반"
+                              class_id   VARCHAR(10) PRIMARY KEY,
+                              name       VARCHAR(50) NOT NULL,     -- "A반", "B반"
+                              language_id VARCHAR(10) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE kakao_user (
@@ -102,24 +103,24 @@ CREATE TABLE kakao_user (
 -- =========================================================
 
 CREATE TABLE course_schedule (
-    schedule_id  VARCHAR(10) PRIMARY KEY,
-    classroom_id VARCHAR(10)  NOT NULL,
-    time_slot_id VARCHAR(10)  NOT NULL,
-    course_id    VARCHAR(15) NOT NULL,
-    sec_id       VARCHAR(10) NOT NULL,
-    day_of_week  ENUM('MON','TUE','WED','THU','FRI') NOT NULL,
-    class_id     VARCHAR(10) NULL,
-    UNIQUE KEY ux_sched_slot_room (time_slot_id, classroom_id, day_of_week),
-    KEY ix_sched_course_slot (course_id, time_slot_id, day_of_week),
-    KEY ix_sched_room_day (classroom_id, day_of_week),
-    CONSTRAINT fk_sched_classroom FOREIGN KEY (classroom_id) REFERENCES classroom(classroom_id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_sched_timeslot FOREIGN KEY (time_slot_id) REFERENCES time_slot(time_slot_id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_sched_course FOREIGN KEY (course_id) REFERENCES course(course_id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_sched_class FOREIGN KEY (class_id) REFERENCES course_class(class_id)
-        ON UPDATE CASCADE ON DELETE SET NULL
+                                 schedule_id  VARCHAR(10) PRIMARY KEY,
+                                 classroom_id VARCHAR(10)  NOT NULL,
+                                 time_slot_id VARCHAR(10)  NOT NULL,
+                                 course_id    VARCHAR(15) NOT NULL,
+                                 sec_id       VARCHAR(10) NOT NULL,
+                                 day_of_week  ENUM('MON','TUE','WED','THU','FRI') NOT NULL,
+                                 class_id     VARCHAR(10) NULL,
+                                 UNIQUE KEY ux_sched_slot_room (time_slot_id, classroom_id, day_of_week),
+                                 KEY ix_sched_course_slot (course_id, time_slot_id, day_of_week),
+                                 KEY ix_sched_room_day (classroom_id, day_of_week),
+                                 CONSTRAINT fk_sched_classroom FOREIGN KEY (classroom_id) REFERENCES classroom(classroom_id)
+                                     ON UPDATE CASCADE ON DELETE CASCADE,
+                                 CONSTRAINT fk_sched_timeslot FOREIGN KEY (time_slot_id) REFERENCES time_slot(time_slot_id)
+                                     ON UPDATE CASCADE ON DELETE CASCADE,
+                                 CONSTRAINT fk_sched_course FOREIGN KEY (course_id) REFERENCES course(course_id)
+                                     ON UPDATE CASCADE ON DELETE CASCADE,
+                                 CONSTRAINT fk_sched_class FOREIGN KEY (class_id) REFERENCES course_class(class_id)
+                                     ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE course_language (
@@ -173,19 +174,19 @@ CREATE TABLE student_entity (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE course_professor (
-    user_id   VARCHAR(10) NOT NULL,
-    course_id VARCHAR(15) NOT NULL,
-    PRIMARY KEY (user_id, course_id),
-    CONSTRAINT fk_cp_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_cp_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE
+                                  user_id   VARCHAR(10) NOT NULL,
+                                  course_id VARCHAR(15) NOT NULL,
+                                  PRIMARY KEY (user_id, course_id),
+                                  CONSTRAINT fk_cp_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
+                                  CONSTRAINT fk_cp_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE course_student (
-    user_id   VARCHAR(10) NOT NULL,
-    course_id VARCHAR(15) NOT NULL,
-    PRIMARY KEY (user_id, course_id),
-    CONSTRAINT fk_cs_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_cs_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE,
+                                user_id   VARCHAR(10) NOT NULL,
+                                class_id  VARCHAR(10) NULL,
+                                PRIMARY KEY (user_id),
+                                CONSTRAINT fk_cs_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
+                                CONSTRAINT fk_cs_class  FOREIGN KEY (class_id) REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
@@ -204,7 +205,6 @@ CREATE TABLE notice (
                         notice_id  INT PRIMARY KEY AUTO_INCREMENT,
                         user_id    VARCHAR(10) NOT NULL,
                         course_id  VARCHAR(15) NULL DEFAULT NULL,
-                        class_id     VARCHAR(10) NULL,
                         title      VARCHAR(100) NOT NULL,
                         content    TEXT NOT NULL,
                         is_pinned  BOOLEAN NOT NULL DEFAULT FALSE,
@@ -212,8 +212,7 @@ CREATE TABLE notice (
                         KEY ix_notice_course_time (course_id, created_at),
                         KEY ix_notice_author_time (user_id, created_at),
                         CONSTRAINT fk_notice_course FOREIGN KEY (course_id) REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE SET NULL,
-                        CONSTRAINT fk_notice_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
-                        CONSTRAINT fk_notice_class  FOREIGN KEY (class_id) REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE SET NULL
+                        CONSTRAINT fk_notice_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE notice_file (
@@ -227,13 +226,11 @@ CREATE TABLE notice_file (
 CREATE TABLE notice_target (
                                target_id   INT PRIMARY KEY AUTO_INCREMENT,
                                notice_id   INT NOT NULL,
-                               course_id   VARCHAR(15) NULL,
                                grade_id    VARCHAR(10),
                                language_id VARCHAR(10),
                                class_id    VARCHAR(10),
                                UNIQUE KEY ux_notice_target_combo (notice_id, grade_id, class_id, language_id),
                                CONSTRAINT fk_nt_notice FOREIGN KEY (notice_id)   REFERENCES notice(notice_id)     ON UPDATE CASCADE ON DELETE CASCADE,
-                               CONSTRAINT fk_nt_course FOREIGN KEY (course_id)   REFERENCES course(course_id)     ON UPDATE CASCADE ON DELETE CASCADE,
                                CONSTRAINT fk_nt_grade  FOREIGN KEY (grade_id)    REFERENCES grade(grade_id)       ON UPDATE CASCADE ON DELETE SET NULL,
                                CONSTRAINT fk_nt_lang   FOREIGN KEY (language_id) REFERENCES language(language_id) ON UPDATE CASCADE ON DELETE SET NULL,
                                CONSTRAINT fk_nt_class  FOREIGN KEY (class_id)    REFERENCES course_class(class_id) ON UPDATE CASCADE ON DELETE SET NULL
@@ -254,31 +251,34 @@ CREATE TABLE notification_delivery_notice (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE course_event (
-    event_id        VARCHAR(10) PRIMARY KEY,
-    schedule_id     VARCHAR(10) NOT NULL,
-    event_type      ENUM('CANCEL','MAKEUP') NOT NULL,
-    event_date      DATE NOT NULL,
-    classroom       VARCHAR(100),
-    parent_event_id VARCHAR(10) NULL,  -- 보강일 경우 연결된 휴강 이벤트 ID
-    time_slot_id    VARCHAR(10) NULL,          -- ✅ 보강 교시(시간표 교시) 정보 추가
+                              event_id        VARCHAR(10) PRIMARY KEY,
+                              schedule_id     VARCHAR(10) NOT NULL,
+                              event_type      ENUM('CANCEL','MAKEUP') NOT NULL,
+                              event_date      DATE NOT NULL,
+                              classroom       VARCHAR(100),
+                              parent_event_id VARCHAR(10) NULL,  -- 보강일 경우 연결된 휴강 이벤트 ID
+                              time_slot_id    VARCHAR(10) NULL,          -- ✅ 보강 교시(시간표 교시) 정보 추가
 
-    UNIQUE KEY ux_event_sched_date_type (schedule_id, event_date, event_type),
-    KEY ix_event_date (event_date),
-    KEY ix_event_parent (parent_event_id),
-    KEY ix_event_timeslot (time_slot_id), -- ✅ 조회 성능 향상용 인덱스
+                              UNIQUE KEY ux_event_sched_date_type (schedule_id, event_date, event_type),
+                              KEY ix_event_date (event_date),
+                              KEY ix_event_parent (parent_event_id),
+                              KEY ix_event_timeslot (time_slot_id), -- ✅ 조회 성능 향상용 인덱스
 
-    CONSTRAINT fk_event_sched FOREIGN KEY (schedule_id)
-        REFERENCES course_schedule(schedule_id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
+                              CONSTRAINT fk_event_sched FOREIGN KEY (schedule_id)
+                                  REFERENCES course_schedule(schedule_id)
+                                  ON UPDATE CASCADE ON DELETE CASCADE,
 
-    CONSTRAINT fk_event_parent FOREIGN KEY (parent_event_id)
-        REFERENCES course_event(event_id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
+                              CONSTRAINT fk_event_parent FOREIGN KEY (parent_event_id)
+                                  REFERENCES course_event(event_id)
+                                  ON UPDATE CASCADE ON DELETE SET NULL,
 
-    CONSTRAINT fk_event_timeslot FOREIGN KEY (time_slot_id)
-        REFERENCES time_slot(time_slot_id)
-        ON UPDATE CASCADE ON DELETE SET NULL
+                              CONSTRAINT fk_event_timeslot FOREIGN KEY (time_slot_id)
+                                  REFERENCES time_slot(time_slot_id)
+                                  ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
 
 CREATE TABLE notification_delivery_event (
                                              delivery_id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -349,18 +349,18 @@ CREATE TABLE reservation (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE weekend_attendance_poll (
-                                         poll_id        VARCHAR(10) PRIMARY KEY,
-                                         grade_id       VARCHAR(10),
-                                         classroom_id   VARCHAR(10) NOT NULL,
-                                         poll_date      DATE NOT NULL,
-                                         target_weekend ENUM('SAT','SUN'),
-                                         required_count INT NOT NULL DEFAULT 8,
-                                         status         BOOLEAN NOT NULL DEFAULT FALSE,
-                                         created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
-                                         UNIQUE KEY ux_poll_room_date_day (classroom_id, poll_date, target_weekend),
+                                         poll_id         VARCHAR(20) PRIMARY KEY,
+                                         grade_id        VARCHAR(10),
+                                         poll_date       DATE NOT NULL,
+                                         required_count  INT NOT NULL DEFAULT 8,
+                                         status          BOOLEAN NOT NULL DEFAULT FALSE,
+                                         created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+                                         UNIQUE KEY ux_poll_grade_date (grade_id, poll_date),
+
                                          CONSTRAINT chk_weekend_required_count CHECK (required_count > 0),
-                                         CONSTRAINT fk_poll_grade FOREIGN KEY (grade_id)     REFERENCES grade(grade_id)         ON UPDATE CASCADE ON DELETE SET NULL,
-                                         CONSTRAINT fk_poll_room  FOREIGN KEY (classroom_id) REFERENCES classroom(classroom_id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                         CONSTRAINT fk_poll_grade FOREIGN KEY (grade_id) REFERENCES grade(grade_id) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE weekend_attendance_votes (
@@ -373,34 +373,53 @@ CREATE TABLE weekend_attendance_votes (
                                           CONSTRAINT fk_vote_poll FOREIGN KEY (poll_id) REFERENCES weekend_attendance_poll(poll_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE poll_rules (
+                            rule_id          VARCHAR(10) PRIMARY KEY,
+                            grade_id         VARCHAR(10) NOT NULL UNIQUE,
+                            required_count   INT NOT NULL DEFAULT 8,
+                            start_date       DATE NOT NULL,
+                            is_active        BOOLEAN NOT NULL DEFAULT TRUE,
+                            created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    -- grade 테이블의 grade_id를 참조하는 외래 키
+                            CONSTRAINT fk_rule_grade
+                                FOREIGN KEY (grade_id)
+                                    REFERENCES grade(grade_id)
+                                    ON UPDATE CASCADE
+                                    ON DELETE CASCADE,
+
+    -- 필요한 인원 수는 0보다 커야 한다는 제약 조건
+                            CONSTRAINT chk_rule_required_count CHECK (required_count > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- =========================================================
 -- 06. Cleaning
 -- (simple rotation: generate once per semester, read-only on UI)
 -- =========================================================
 CREATE TABLE cleaning_roster (
-  roster_id    BIGINT PRIMARY KEY AUTO_INCREMENT,
-  section      VARCHAR(10) NOT NULL,         -- 예: 2025-2
-  grade_id     VARCHAR(10) NOT NULL,         -- 예: G1
-  classroom_id VARCHAR(10) NOT NULL,         -- 학기/연도 고정 강의실
-  work_date    DATE NOT NULL,                -- 주차 기준일(또는 실제 청소일)
-  team_size    TINYINT NOT NULL DEFAULT 4,   -- 팀 구성 인원 수
-  created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_roster_scope_day (section, grade_id, work_date),
-  KEY ix_cleaning_date (work_date),
-  CONSTRAINT chk_cleaning_team_size CHECK (team_size > 0),
-  CONSTRAINT fk_clean_grade FOREIGN KEY (grade_id)     REFERENCES grade(grade_id)         ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT fk_clean_room  FOREIGN KEY (classroom_id) REFERENCES classroom(classroom_id) ON UPDATE CASCADE ON DELETE CASCADE
+                                 roster_id    BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                 section      VARCHAR(10) NOT NULL,         -- 예: 2025-2
+                                 grade_id     VARCHAR(10) NOT NULL,         -- 예: G1
+                                 classroom_id VARCHAR(10) NOT NULL,         -- 학기/연도 고정 강의실
+                                 work_date    DATE NOT NULL,                -- 주차 기준일(또는 실제 청소일)
+                                 team_size    TINYINT NOT NULL DEFAULT 4,   -- 팀 구성 인원 수
+                                 created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                 UNIQUE KEY uq_roster_scope_day (section, grade_id, work_date),
+                                 KEY ix_cleaning_date (work_date),
+                                 CONSTRAINT chk_cleaning_team_size CHECK (team_size > 0),
+                                 CONSTRAINT fk_clean_grade FOREIGN KEY (grade_id)     REFERENCES grade(grade_id)         ON UPDATE CASCADE ON DELETE CASCADE,
+                                 CONSTRAINT fk_clean_room  FOREIGN KEY (classroom_id) REFERENCES classroom(classroom_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE cleaning_roster_member (
-  roster_id BIGINT NOT NULL,
-  user_id   VARCHAR(10) NOT NULL,           -- FK → user_account.user_id (학생)
-  work_date DATE NOT NULL,                  -- 부모의 work_date를 복제 저장
-  PRIMARY KEY (roster_id, user_id),
-  UNIQUE KEY uq_no_double_per_day (user_id, work_date), -- 같은 날 중복 배정 금지(전역)
-  KEY ix_member_user (user_id),
-  CONSTRAINT fk_member_roster FOREIGN KEY (roster_id) REFERENCES cleaning_roster(roster_id) ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT fk_member_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id)      ON UPDATE CASCADE ON DELETE CASCADE
+                                        roster_id BIGINT NOT NULL,
+                                        user_id   VARCHAR(10) NOT NULL,           -- FK → user_account.user_id (학생)
+                                        work_date DATE NOT NULL,                  -- 부모의 work_date를 복제 저장
+                                        PRIMARY KEY (roster_id, user_id),
+                                        UNIQUE KEY uq_no_double_per_day (user_id, work_date), -- 같은 날 중복 배정 금지(전역)
+                                        KEY ix_member_user (user_id),
+                                        CONSTRAINT fk_member_roster FOREIGN KEY (roster_id) REFERENCES cleaning_roster(roster_id) ON UPDATE CASCADE ON DELETE CASCADE,
+                                        CONSTRAINT fk_member_user   FOREIGN KEY (user_id)   REFERENCES user_account(user_id)      ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
