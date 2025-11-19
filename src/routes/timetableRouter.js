@@ -7,7 +7,7 @@ const router = express.Router();
 // 시간표 조회 (학생, 교수, 관리자)
 router.get("/student", authWithRole("student"), timetableController.getStudentTimetable);
 router.get("/professor", authWithRole("professor"), timetableController.getProfessorTimetable);
-router.get("/admin", authWithRole("admin"), timetableController.getAdminTimetable);
+router.get("/admin", authWithRole("professor"), timetableController.getAdminTimetable);
 
 // 강의 등록
 router.post("/registerCourses", authWithRole("professor"), timetableController.postRegisterCourse);
