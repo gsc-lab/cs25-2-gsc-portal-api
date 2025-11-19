@@ -605,9 +605,9 @@ export const isRecipient = async (noticeId, userId, connection = pool) => {
   // 3. 학생이 수강 중인 target 목록 로드 ---
   const [targetRows] = await connection.query(
     `
-    SELECT ct.*
+    SELECT DISTINCT ct.*
     FROM course_student cs
-    JOIN course_target ct ON ct.target_id = cs.target_id
+        JOIN course_target ct ON ct.course_id = cs.course_id
     WHERE cs.user_id = ?
     `,
     [userId],
