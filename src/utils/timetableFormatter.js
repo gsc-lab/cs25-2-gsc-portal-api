@@ -203,6 +203,7 @@ export function formatReservation(rows) {
         timetable[day].push({
             id: row.reservation_id,
             user: row.user_name,
+            user_id: row.user_id,
             start: row.start_time,
             end: row.end_time,
             date: formattedDate,
