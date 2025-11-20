@@ -34,11 +34,21 @@ const isVeryRefresh = async (req, res) => {
         req,
       );
 
+      // const cookieOptions = {
+      //   httpOnly: true,
+      //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
+      //   secure: process.env.NODE_ENV === 'production', // 프로덕션 환경에서는 true
+      //   sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // 프로덕션은 None, 개발은 Lax
+      // };
       const cookieOptions = {
         httpOnly: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
-        secure: process.env.NODE_ENV === 'production', // 프로덕션 환경에서는 true
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // 프로덕션은 None, 개발은 Lax
+
+        //  1. secure: 현재 HTTP 환경이므로 NODE_ENV에 관계없이 'false'로 임시 고정
+        secure: false,
+
+        //  2. sameSite: secure: false일 때 'None'은 작동하지 않으므로 'Lax'로 고정
+        sameSite: 'Lax',
       };
 
       res.cookie("accessToken", newAccess, {
