@@ -603,20 +603,6 @@ export const isRecipient = async (noticeId, userId, connection = pool) => {
   const student = studentRows[0];
   if (student.status !== "enrolled") return false;
 
-  // 3. 학생이 수강 중인 target 목록 로드 ---
-  const [targetRows] = await connection.query(
-    `
-    SELECT DISTINCT ct.*
-    FROM course_student cs
-        JOIN course_target ct ON ct.course_id = cs.course_id
-    WHERE cs.user_id = ?
-    `,
-    [userId],
-  );
-
-  // (학생이 아무 수업도 안 듣는 경우)
-  if (targetRows.length === 0) return false;
-
   // 3. 과목 공지인 경우
   if (notice.course_id) {
     // course_target 기준으로 학생이 매칭되는지 확인
