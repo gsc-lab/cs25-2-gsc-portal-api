@@ -35,6 +35,9 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // 클라이언트에서 application/x-www-form-urlencoded 데이터를 보냈을때 파싱해서 body 객체에 넣어줌
+app.use(cookieParser());
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -64,13 +67,10 @@ app.use(
   })
 );
 
-app.use(express.json());
-app.use(cookieParser());
-app.use(express.urlencoded({ extended: true })); // 클라이언트에서 application/x-www-form-urlencoded 데이터를 보냈을때 파싱해서 body 객체에 넣어줌
-// Swagger 설정
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 // 파일 디렉토리 설정
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Swagger 설정
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // api
 app.use("/api/admin", adminRouter);
