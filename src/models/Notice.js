@@ -314,12 +314,19 @@ export const populateDeliverNotice = async (noticeId, connection) => {
     -- CASE 1: '과목 공지'인 경우 (course_id가 지정됨)
     -- -> 해당 과목의 수강생만 대상.
     SELECT
-      n.notice_id,
-      cs.user_id,
-      'QUEUED'
+        n.notice_id,
+        se.user_id,
+        'QUEUED'
     FROM notice n
-           JOIN course_student cs ON n.course_id = cs.course_id
-    WHERE n.notice_id = ? AND n.course_id IS NOT NULL
+    JOIN course_target ct ON ct.course_id = n.course_id
+    JOIN student_entity se
+        ON se.status = 'enrolled'
+        AND (ct.grade_id IS NULL OR ct.grade_id = se.grade_id)
+        AND (ct.language_id IS NULL OR ct.language_id = se.language_id)
+        AND (ct.class_id IS NULL OR ct.class_id = se.class_id)
+    WHERE n.notice_id = ?
+      AND n.course_id IS NOT NULL
+
 
     UNION ALL
 
@@ -356,17 +363,11 @@ export const populateDeliverNotice = async (noticeId, connection) => {
 
   const params = [
     numericNoticeId,
-    numericNoticeId,
-    numericNoticeId,
-    numericNoticeId,
-    numericNoticeId,
-    numericNoticeId,
-    numericNoticeId,
-    numericNoticeId,
-    numericNoticeId,
+    numericNoticeId, numericNoticeId, numericNoticeId, numericNoticeId, numericNoticeId,
+    numericNoticeId, numericNoticeId, numericNoticeId,
   ];
+
   const [result] = await connection.query(sql, params);
-  console.log("Populate Result", result);
   return result.affectedRows;
 };
 
@@ -598,8 +599,8 @@ export const isRecipient = async (noticeId, userId, connection = pool) => {
     [userId],
   );
   if (studentRows.length === 0) return false;
-  const student = studentRows[0];
 
+  const student = studentRows[0];
   if (student.status !== "enrolled") return false;
 
   // 3. 학생이 수강 중인 target 목록 로드 ---
@@ -616,15 +617,28 @@ export const isRecipient = async (noticeId, userId, connection = pool) => {
   // (학생이 아무 수업도 안 듣는 경우)
   if (targetRows.length === 0) return false;
 
-  // 4. 과목 공지 처리
+  // 3. 과목 공지인 경우
   if (notice.course_id) {
-    // 학생이 듣는 target 중 course_id가 일치하는 경우
-    return targetRows.some(t => t.course_id === notice.course_id);
+    // course_target 기준으로 학생이 매칭되는지 확인
+    const [rows] = await connection.query(
+      `
+        SELECT 1
+        FROM course_target ct
+        WHERE ct.course_id = ?
+          AND (ct.grade_id IS NULL OR ct.grade_id = ?)
+          AND (ct.language_id IS NULL OR ct.language_id = ?)
+          AND (ct.class_id IS NULL OR ct.class_id = ?)
+        LIMIT 1
+      `,
+      [notice.course_id, student.grade_id, student.language_id, student.class_id]
+    );
+
+    return rows.length > 0;
   }
 
   // 5. 일반 공지 처리
   // 타겟 조건이 없으면 전체 학생에게 발송
-  if (notice.targets.length === 0) return true;
+  if (!notice.targets || notice.targets.length === 0) return true;
 
   // 학생이 수강 중인 target 중 하나라도 조건을 만족하면 true
   for (const target of notice.targets) {
