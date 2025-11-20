@@ -177,6 +177,9 @@ async function authCallback(req, res) {
           sameSite: 'Lax',
         };
 
+        // 디버깅을 위해 쿠키 옵션 출력
+        console.log("Setting cookie with options:", cookieOptions);
+
         // 쿠키에 토큰 설정 응답
         res.cookie("accessToken", accessToken, {
           ...cookieOptions,

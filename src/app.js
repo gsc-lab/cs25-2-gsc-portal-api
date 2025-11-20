@@ -56,7 +56,7 @@ app.use(
       secure: false, // 혹은 isProd && process.env.COOKIE_SECURE_ALLOWED ,
 
       // SameSite도 현재 개발 환경에 더 적합한 'lax'로 고정
-      sameSite: "lax",     // "none"은 HTTPS와 함께 사용
+      sameSite: "Lax",     // "none"은 HTTPS와 함께 사용
 
       // domain 설정도 일단 주석처리하거나 undefined로 변경 (IP/Port 기반으로 테스트 시)
       // domain: isProd ? process.env.SESSION_COOKIE_DOMAIN : undefined,

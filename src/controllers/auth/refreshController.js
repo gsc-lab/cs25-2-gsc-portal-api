@@ -51,6 +51,9 @@ const isVeryRefresh = async (req, res) => {
         sameSite: 'Lax',
       };
 
+      // 디버깅을 위해 쿠키 옵션 출력
+      console.log("Setting cookie with options (refresh):", cookieOptions);
+
       res.cookie("accessToken", newAccess, {
         ...cookieOptions,
         maxAge: 1 * 60 * 60 * 1000, // 1시간
