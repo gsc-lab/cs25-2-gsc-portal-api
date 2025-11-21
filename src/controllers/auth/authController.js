@@ -1,3 +1,7 @@
+/**
+ * @file 인증 관련 컨트롤러
+ * @description Google OAuth2 인증 및 사용자 세션 관리를 담당합니다.
+ */
 import crypto from "crypto";
 import url from "url";
 import { google } from "googleapis";
@@ -28,7 +32,16 @@ const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_REDIRECT_URL,
 );
 
-// 사용자를 Google OAuth 2.0 서버로 리디렉션
+/**
+ * Google OAuth 2.0 인증 프로세스를 시작합니다.
+ * 사용자를 Google 인증 서버로 리디렉션하여 동의를 얻고 인증 코드를 받습니다.
+ * CSRF 공격 방지를 위해 `state` 파라미터를 사용합니다.
+ *
+ * @param {object} req - Express 요청 객체
+ * @param {object} res - Express 응답 객체
+ * @returns {void}
+ * @throws {InternalServerError} 서버 오류 발생 시
+ */
 async function googleAuthRedirect(req, res) {
   try {
     // CSRF 방지를 위한 보안 상태 문자열 생성
@@ -59,6 +72,17 @@ async function googleAuthRedirect(req, res) {
   }
 }
 
+/**
+ * Google OAuth 2.0 서버로부터 콜백을 처리합니다.
+ * 인증 코드를 사용하여 액세스 토큰을 교환하고 사용자 정보를 가져옵니다.
+ * 기존 사용자이거나 신규 사용자인 경우 회원가입 또는 로그인 처리를 진행합니다.
+ *
+ * @param {object} req - Express 요청 객체
+ * @param {object} res - Express 응답 객체
+ * @returns {void}
+ * @throws {BadRequestError} 잘못된 요청 또는 CSRF 상태 불일치 시
+ * @throws {InternalServerError} 서버 오류 발생 시
+ */
 async function authCallback(req, res) {
   // OAuth 2.0 서버 응답 처리
   let q = url.parse(req.url, true).query;
@@ -91,20 +115,28 @@ async function authCallback(req, res) {
 
       // DB 유저가 없을 경우 회원가입 페이지 이동
       if (!user) {
-        req.session.ouathUser = {
-          email: userInfo.email,
-        };
-        // 최초 로그인시 회원가입 페이지로 이동
-        const frontendRegisterUrl = `${process.env.FE_BASE_URL}/register`;
-        return res.redirect(frontendRegisterUrl); // 회원가입 페이지 (프론트)
-      }
-      const verdict = checkUserStatus(user.status);
+        const tempToken = crypto.randomBytes(32).toString("hex");
+        const preRegisterKey = `pre-register:${tempToken}`;
 
-      // 비승인 접근 거절
-      if (!verdict.success) {
-        if (verdict.redirect) return res.redirect(verdict.redirect);
+        await redisClient.set(preRegisterKey, userInfo.email, {
+          EX: 600, // 10 minutes
+        });
+
+        // Redirect to frontend with the token
+        const frontendRegisterUrl = `${process.env.FE_BASE_URL}/register?token=${tempToken}`;
+        return res.redirect(frontendRegisterUrl);
       }
 
+      try {
+        checkUserStatus(user.status);
+      } catch (error) {
+        // 승인 대기, 거절된 사용자는 에러 메시지와 함께 로그인 페이지로 리디렉션
+        return res.redirect(
+          `${process.env.FE_BASE_URL}/?error=${encodeURIComponent(error.message)}`,
+        );
+      }
+
+      // 유저 활성화 상태의 경우
       if (user) {
         const payload = {
           user_id: user.user_id,
@@ -112,7 +144,7 @@ async function authCallback(req, res) {
           status: user.status,
         };
         const jti = v4();
-        //  JWT 생성
+        // JWT 생성
         const accessToken = sign(payload); // 앱의 Access Token
         const refreshToken = signRefresh(payload.user_id, jti); // 앱의 Refresh Token
 
@@ -127,20 +159,40 @@ async function authCallback(req, res) {
         await redisClient.hSet(sessionKey, deviceId, refreshToken);
         await redisClient.expire(sessionKey, sevenDaysInSeconds);
 
+        // const cookieOptions = {
+        //   httpOnly: true,
+        //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
+        //   secure: process.env.NODE_ENV === 'production', // 프로덕션 환경에서는 true
+        //   sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // 프로덕션은 None, 개발은 Lax
+        // };
+
+        const cookieOptions = {
+          httpOnly: true,
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
+
+          //  1. secure: 현재 HTTP 환경이므로 NODE_ENV에 관계없이 'false'로 임시 고정
+          secure: false,
+
+          //  2. sameSite: secure: false일 때 'None'은 작동하지 않으므로 'Lax'로 고정
+          sameSite: 'Lax',
+        };
+
+        // 디버깅을 위해 쿠키 옵션 출력
+        console.log("Setting cookie with options:", cookieOptions);
+
         // 쿠키에 토큰 설정 응답
         res.cookie("accessToken", accessToken, {
-          httpOnly: true,
-          maxAge: 1000 * 60 * 60,
+          ...cookieOptions,
+          maxAge: 1 * 60 * 60 * 1000, // 1시간
         });
-        res.cookie("refreshToken", refreshToken, {
-          httpOnly: true,
-          maxAge: 7 * 24 * 60 * 60,
-        });
+        res.cookie("refreshToken", refreshToken, cookieOptions);
         // 오늘의 날짜 계산
         const date = new Date();
         date.setDate(date.getDate());
         const startDate = date.toISOString().split("T")[0];
-        res.redirect(`${process.env.FE_BASE_URL}/dashboard?date=${startDate}`); // spa frontend route
+        return res.redirect(
+          `${process.env.FE_BASE_URL}`, // spa frontend route
+        );
       }
 
       if (
@@ -162,6 +214,15 @@ async function authCallback(req, res) {
   }
 }
 
+/**
+ * 현재 로그인된 사용자를 로그아웃 처리합니다.
+ * Redis에 저장된 리프레시 토큰을 삭제하고, 클라이언트의 accessToken 및 refreshToken 쿠키를 제거합니다.
+ *
+ * @param {object} req - Express 요청 객체 (req.user에서 사용자 ID를 가져옴)
+ * @param {object} res - Express 응답 객체
+ * @param {function} next - 다음 미들웨어 함수
+ * @returns {void}
+ */
 async function authLogout(req, res, next) {
   try {
     const userId = req.user?.user_id;
@@ -182,34 +243,83 @@ async function authLogout(req, res, next) {
   }
 }
 
-// 회원가입 페이지와 연계
+/**
+ * OAuth 인증 후 사용자 정보를 받아 회원가입을 처리합니다.
+ * 사전 등록 토큰을 확인하고, 유효한 경우 사용자 정보를 데이터베이스에 저장합니다.
+ *
+ * @param {object} req - Express 요청 객체 (body에 토큰 및 사용자 정보 포함)
+ * @param {object} res - Express 응답 객체
+ * @returns {void}
+ * @throws {BadRequestError} 토큰이 없거나 유효하지 않은 경우
+ * @throws {InternalServerError} 서버 오류 발생 시
+ */
 async function registerAfterOAuth(req, res) {
   try {
-    const s = req.session.ouathUser;
-    if (!s) {
-      throw new BadRequestError("잘못된 요청입니다. 입력값을 확인하세요.");
+    const {
+      token,
+      user_id,
+      name,
+      phone,
+      is_student,
+      grade_id,
+      language_id,
+      class_id,
+      is_international,
+    } = req.body;
+
+    if (!token) {
+      throw new BadRequestError("잘못된 요청입니다. 인증 토큰이 없습니다.");
     }
-    const { user_id, name, phone, is_student } = req.body;
+
+    const preRegisterKey = `pre-register:${token}`;
+    const email = await redisClient.get(preRegisterKey);
+
+    if (!email) {
+      throw new BadRequestError("만료되었거나 유효하지 않은 요청입니다. 다시 시도해주세요.");
+    }
+
+    // 해당 세션의 레디스 삭제
+    await redisClient.del(preRegisterKey);
 
     const userPayload = {
       user_id,
       name,
       phone,
       is_student,
-      email: s.email,
+      email: email,
+      grade_id,
+      language_id,
+      class_id,
+      is_international,
     };
 
     await registerUser(userPayload);
-
-    res.redirect("/"); // spa frontend route
-  } catch {
+    res.status(201).json({
+      success: true,
+      message: "회원가입이 성공적으로 완료되었습니다.",
+    });
+  } catch (error) {
+    console.log("회원가입 오류!", error);
+    if (error.statusCode) {
+      throw error;
+    }
     throw new InternalServerError(
       "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
     );
   }
 }
 
-// 현재 로그인된 사용자 정보 반환
+/**
+ * 현재 로그인된 사용자의 정보를 반환합니다.
+ * Access Token을 통해 인증된 사용자 정보를 조회하여 응답합니다.
+ *
+ * @param {object} req - Express 요청 객체 (req.user에서 사용자 ID 및 역할을 가져옴)
+ * @param {object} res - Express 응답 객체
+ * @param {function} next - 다음 미들웨어 함수
+ * @returns {void}
+ * @throws {ForbiddenError} 접근 권한이 없는 경우
+ * @throws {NotFoundError} 사용자 정보를 찾을 수 없는 경우
+ */
 async function authMe(req, res, next) {
   try {
     if (!req.user?.user_id) {
@@ -256,6 +366,16 @@ async function authMe(req, res, next) {
   }
 }
 
+/**
+ * 사용자의 프로필 정보(예: JLPT 시험 점수)를 저장합니다.
+ * 파일 업로드를 처리하고, 관련 데이터를 데이터베이스에 저장합니다.
+ *
+ * @param {object} req - Express 요청 객체 (req.user, req.files, req.body 포함)
+ * @param {object} res - Express 응답 객체
+ * @param {function} next - 다음 미들웨어 함수
+ * @returns {void}
+ * @throws {BadRequestError} 파일이 없거나 필수 데이터가 누락된 경우
+ */
 async function saveMyProfile(req, res, next) {
   try {
     const { user, files, body } = req;

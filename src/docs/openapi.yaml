@@ -453,6 +453,12 @@ paths:
           schema:
             type: string
             example: '1'
+        - in: query
+          name: class_id
+          description: 분반으로 필터링합니다.
+          schema:
+            type: string
+            example: 'A OR B'
       responses:
         '200':
           description: 성공적으로 과목 목록을 조회한 경우
@@ -475,6 +481,31 @@ paths:
                     course_type:
                       type: string
                       example: 'regular'
+                    targets:
+                      type: array
+                      description: |
+                        해당 과목이 타겟팅하는 대상 그룹 목록입니다.
+                        이 배열은 과목이 어떤 학년, 분반 등을 대상으로 하는지 나타냅니다.
+                        정규 과목(regular)의 경우 targets 배열 내에 학년만 포함되거나, 비어 있을 수 있습니다.
+                      items:
+                        type: object
+                        properties:
+                          class_id:
+                            type: string
+                            nullable: true
+                            description: 대상의 분반 고유 ID 입니다.
+                            example: 'C003A'
+                          class_name:
+                            type: string
+                            nullable: true
+                            description: 대상 분반의 표시 이름입니다.
+                            example: '일본어 특강A'
+                          grade_id:
+                            type: string
+                            nullable: true
+                            description: 대상 학년의 고유 ID입니다.
+                            example: '1'
+
 
 
   /notices/{noticeId}:
@@ -1967,8 +1998,33 @@ paths:
           description: 잘못된 요청 (필수 파라미터 누락)
         "403":
           description: 권한 없음 (관리자 X)
-        "404":
-          description: 삭제할 데이터를 찾을 수 없음
+
+  /cleaning/monthly:
+    get:
+      tags: [Cleaning]
+      summary: 월간 청소 당번 조회
+      description: 현재 달의 청소 당번표 데이터를 반환합니다.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 월간 청소 당번 목록 반환
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonthlyCleaningRosterResponse"
+        "401":
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 접근 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /cleaning-rosters/generate:
     post:
@@ -2004,6 +2060,7 @@ paths:
           description: 잘못된 요청(파라미터/형식 오류)
         "409":
           description: 충돌(잘못된 중복 또는 생성 불가 주차)
+
 
 
   # === MODAL SECTION ===
@@ -3626,3 +3683,31 @@ components:
                 members:
                   - G2 Student 01
                   - G2 Student 02
+
+    MonthlyCleaningRosterResponse:
+      type: object
+      properties:
+        month:
+          type: string
+          example: "2025-11"
+        roster:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                example: "2025-11-19"
+              day_of_week:
+                type: string
+                example: "수"
+              cleaning_area:
+                type: string
+                example: "1층"
+              students:
+                type: array
+                items:
+                  type: string
+                  example: "김학생"
+

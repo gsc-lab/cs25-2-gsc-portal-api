@@ -8,7 +8,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: dev_backend
     volumes:
       - .:/app
@@ -16,16 +16,8 @@ services:
       - ./uploads:/app/uploads
     ports:
       - "3000:3000"
-    command: sh -c "sleep 5 && npm install && npm run dev"
-    environment:
-      TZ: ${TIME_ZONE}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      JWT_SECRET: ${JWT_SECRET}
-      NODE_ENV: development
+    env_file:
+      - .env.development
     networks:
       - gsc
     depends_on:
@@ -45,10 +37,8 @@ services:
       timeout: 3s
       retries: 5
     container_name: dev_db
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      TZ: ${TIME_ZONE}
+    env_file:
+      - .env.development
     ports:
       - "3306:3306"
     volumes:

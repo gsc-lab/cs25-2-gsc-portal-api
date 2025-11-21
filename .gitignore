@@ -16,7 +16,8 @@ Thumbs.db
 
 # Local env files
 .env
-.env.*          # for .env.development, .env.production
+.env.development
+.env.*
 .env.local
 
 # User-uploaded files
