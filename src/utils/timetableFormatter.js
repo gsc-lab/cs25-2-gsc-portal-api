@@ -32,12 +32,13 @@ export function formatTimetable(rows) {
         // 휴보강이면 event_date로 요일 재계산
         let day = row.day_of_week;
         if (row.event_status && row.event_date) {
-            const eventDay = new Date(row.event_date).getDay(); // 0=Sun, 1=Mon...
+            const eventDay = new Date(row.event_date).getDay();
             const map = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
             day = map[eventDay];
         }
 
-        if (!day || !timetable[day]) continue;
+        // 주말은 시간표에 존재하지 않으므로 제외
+        if (!days.includes(day)) continue;
 
         // 휴강
         if (row.event_status === "CANCEL") {
@@ -45,36 +46,49 @@ export function formatTimetable(rows) {
                 title: "휴강",
                 course_id: row.course_id,
                 professor: row.professor_name || "-",
-                room: row.location || `${row.building}-${row.room_number}` || "-",
+                room: row.location 
+                    ? row.location 
+                    : (row.building && row.room_number 
+                        ? `${row.building}-${row.room_number}` 
+                        : "-"),
                 source: "EVENT",
                 event: { status: "CANCEL", date: row.event_date }
             });
             continue;
         }
 
-        // 보강
+        // 보강 (단, 주말 제외)
         if (row.event_status === "MAKEUP") {
+            const eventDay = new Date(row.event_date).getDay();
+            if (eventDay === 0 || eventDay === 6) continue;
+
             timetable[day][period].push({
                 title: `${row.course_title || "보강"} (보강)`,
                 course_id: row.course_id,
                 professor: row.professor_name || "-",
-                room: row.location || `${row.building}-${row.room_number}` || "-",
+                room: row.location 
+                    ? row.location 
+                    : (row.building && row.room_number 
+                        ? `${row.building}-${row.room_number}` 
+                        : "-"),
                 source: row.source_type || "CLASS",
                 event: { status: "MAKEUP", date: row.event_date }
             });
             continue;
         }
 
-        // 일반 수업 / 상담
+        // 기본 수업 / 상담 (event 없음)
         timetable[day][period].push({
             title: row.course_title || "상담",
             course_id: row.course_id,
             professor: row.professor_name || null,
-            room: row.location || `${row.building}-${row.room_number}` || "-",
+            room: row.location 
+                ? row.location 
+                : (row.building && row.room_number 
+                    ? `${row.building}-${row.room_number}` 
+                    : "-"),
             source: row.source_type || "CLASS",
-            event: row.event_status
-                ? { status: row.event_status, date: row.event_date }
-                : null
+            event: null
         });
     }
 
@@ -82,12 +96,13 @@ export function formatTimetable(rows) {
 }
 
 
+
 export function formatTimetableForAdmin(rows) {
     const grades = ["1", "2", "3", "special", "korean"];
     const days = ["MON", "TUE", "WED", "THU", "FRI"];
-
-    // 기본 구조
     const timetable = {};
+
+    // 1. 기본 구조 초기화 (기존과 동일)
     for (const g of grades) {
         timetable[g] = {};
         for (const d of days) {
@@ -99,18 +114,16 @@ export function formatTimetableForAdmin(rows) {
     if (!rows || rows.length === 0) return timetable;
 
     for (const row of rows) {
-        const period = periodMap[row.start_time];
-        if (!period) continue;
+        // 2. SQL에서 'period'를 직접 가져옴
+        const period = row.period;
+        const original_day = row.day_of_week; // 'THU' (원래 요일)
+        
+        if (!original_day || !period) continue; // 유효하지 않으면 스킵
 
-        // event_date 기준 요일 재계산 (휴보강용)
-        let day = row.day_of_week;
-        if (row.event_status && row.event_date) {
-            const eventDay = new Date(row.event_date).getDay(); // 0=Sun
-            const map = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-            day = map[eventDay];
-        }
+        const status = row.event_status;
+        const date = row.event_date || null;
 
-        // 학년 구분
+        // 3. 학년 그룹 결정 (기존과 동일)
         let group = "special";
         if (row.language_id === "KR") group = "korean";
         else if (row.is_special === 0) {
@@ -118,48 +131,58 @@ export function formatTimetableForAdmin(rows) {
             else if (row.grade_name === "2학년") group = "2";
             else if (row.grade_name === "3학년") group = "3";
         }
+        if (!timetable[group]) group = "special"; // 방어 코드
 
-        // 휴강
-        if (row.event_status === "CANCEL") {
-            timetable[group][day][period].push({
-                title: "휴강",
-                course_id: row.course_id,
-                professor: row.professor_name || "-",
-                room: row.location || "-",
-                source: "EVENT",
-                event: { status: "CANCEL", date: row.event_date }
-            });
-            continue;
+        // 4. [버그 수정] 표시할 요일(display_day) 계산
+        let display_day = original_day; // 기본값: 원래 요일
+
+        if (status === "MAKEUP") {
+            // "보강"일 때만 event_date의 요일로 덮어쓴다
+            const eventDay = new Date(date).getDay();
+            const map = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+            display_day = map[eventDay];
         }
+        // "휴강(CANCEL)"이나 "정상 수업(null)"은 original_day를 그대로 사용
 
-        // 보강
-        if (row.event_status === "MAKEUP") {
-            timetable[group][day][period].push({
-                title: `${row.course_title || "보강"} (보강)`,
-                course_id: row.course_id,
-                professor: row.professor_name || "-",
-                room: row.location || "-",
-                source: "CLASS",
-                event: { status: "MAKEUP", date: row.event_date }
-            });
-            continue;
-        }
+        if (!days.includes(display_day)) continue; // 주말(보강) 스킵
 
-        // 일반 수업 / 상담
-        timetable[group][day][period].push({
+        // 5. [수정] 기본 항목 객체 생성 (상담 변수 포함)
+        const entry = {
             title: row.course_title || "상담",
             course_id: row.course_id,
             professor: row.professor_name || null,
             room: row.location || "-",
             source: row.source_type || "CLASS",
-            event: row.event_status
-                ? { status: row.event_status, date: row.event_date }
-                : null
-        });
+            event: null,
+            
+            // ▼▼▼▼▼ 여기 상담 변수가 있습니다! ▼▼▼▼▼
+            students: row.student_list,      // 예: "A, B" (수업일땐 null)
+            student_count: row.student_count // 예: 2 (수업일땐 null)
+            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+        };
+
+        // 6. [버그 수정] 이벤트 상태에 따라 덮어쓰기 (continue 제거)
+        if (status === "CANCEL") {
+            entry.title = "휴강";
+            entry.source = "EVENT";
+            entry.event = { status: "CANCEL", date };
+        } else if (status === "MAKEUP") {
+            entry.title = `${row.course_title || "보강"} (보강)`;
+            // source는 "CLASS" 또는 "COUNSELING" 유지
+            entry.event = { status: "MAKEUP", date };
+        }
+
+        // 7. [버그 수정] 최종 슬롯에 삽입 (continue가 없으므로 모든 로우가 여기를 통과)
+        timetable[group][display_day][period].push(entry);
     }
 
     return timetable;
 }
+
+
+
+
+
 
 // 강의실 예약
 export function formatReservation(rows) {
@@ -180,6 +203,7 @@ export function formatReservation(rows) {
         timetable[day].push({
             id: row.reservation_id,
             user: row.user_name,
+            user_id: row.user_id,
             start: row.start_time,
             end: row.end_time,
             date: formattedDate,

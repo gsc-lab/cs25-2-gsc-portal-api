@@ -8,6 +8,7 @@ SELECT
     sec.start_date     AS start_date,
     sec.end_date       AS end_date,
     cs.day_of_week     AS day,
+    ts.time_slot_id    AS time_slot_id,
     ts.start_time      AS start_time,
     ts.end_time        AS end_time,
     cr.building        AS building,
@@ -20,7 +21,12 @@ SELECT
     lang.name          AS language_name,
     c.is_special       AS is_special,
     ce.event_type      AS event_status,
-    ce.event_date      AS event_date
+    ce.event_date      AS event_date,
+    ce.parent_event_id,
+    ce.event_id,
+    ce.time_slot_id    AS event_time_slot_id,
+    cc.class_id,
+    cc.name AS class_name
 FROM course_schedule cs
 JOIN course c ON cs.course_id = c.course_id
 JOIN time_slot ts ON cs.time_slot_id = ts.time_slot_id
@@ -31,4 +37,5 @@ JOIN user_account ua ON cp.user_id = ua.user_id
 LEFT JOIN course_target ct ON c.course_id = ct.course_id
 LEFT JOIN grade g ON ct.grade_id = g.grade_id
 LEFT JOIN language lang ON ct.language_id = lang.language_id
-LEFT JOIN course_event ce ON cs.schedule_id = ce.schedule_id;
+LEFT JOIN course_event ce ON cs.schedule_id = ce.schedule_id
+LEFT JOIN course_class cc ON cs.class_id = cc.class_id;

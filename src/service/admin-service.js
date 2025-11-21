@@ -40,16 +40,16 @@ export const postAllowedEmail = async function({email, reason}) {
     return await UserModel.postAllowedEmail(email, reason);
 }
 
-export const deleteAllowedEmail = async function(id) {
-    if (!id) {
+export const deleteAllowedEmail = async function(user_id) {
+    if (!user_id) {
         throw new BadRequestError("필수 값이 누락 되었습니다.");
     }
-    return await UserModel.deleteAllowedEmail(id);
+    return await UserModel.deleteAllowedEmail(user_id);
 }
 
 // 학생 정보
-export const getStudentInfo = async function({grade_name, status}) {
-    return await UserModel.getStudentInfo(grade_name, status);
+export const getStudentInfo = async function({grade_id, status}) {
+    return await UserModel.getStudentInfo(grade_id, status);
 }
 
 export const patchStudentInfo = async ({user_id, updates}) => {
@@ -59,7 +59,7 @@ export const patchStudentInfo = async ({user_id, updates}) => {
     if (Object.keys(updates).length === 0) {
         throw new BadRequestError("updates 값이 누락 되었습니다.");
     }
-    const userFields = ["name", "email", "phone"];
+    const userFields = ["name", "phone"];
     const studentFields = ["grade_id", "class_id", "language_id", "status", "is_international"];
 
     const userUpdates = {};
@@ -88,4 +88,9 @@ export const deleteStudentInfo = async function(user_id) {
         throw new BadRequestError("user_id 값이 누락 되었습니다.");
     }
     return await UserModel.deleteStudentInfo(user_id);
+}
+
+// 교수, 관리자 정보
+export const getProAdminInfo = async function() {
+    return await UserModel.getProAdminInfo();
 }

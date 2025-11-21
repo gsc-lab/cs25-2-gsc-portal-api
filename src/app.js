@@ -5,6 +5,7 @@ import cors from "cors";
 import { swaggerUi, specs } from "./docs/swagger.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { initPollScheduler } from "./utils/pollScheduler.js";
 
 //Router
 import adminRouter from "./routes/adminRouter.js";
@@ -57,6 +58,9 @@ app.use("/classrooms", classroomRouter);
 app.use("/modal/subjects", subjectRouter);
 app.use("/modal/common", commonRouter);
 app.use("/dashboard", dashboardRouter);
+
+// 주간 투표 자동 생성 함수
+initPollScheduler();
 
 app.use(centralErrorHandler);
 export default app;

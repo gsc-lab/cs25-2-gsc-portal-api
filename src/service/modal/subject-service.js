@@ -20,8 +20,8 @@ export const getCoursesKorean = async function() {
 };
 
 // 전체 과목 조회
-export const getCoursesAll = async function() {
-    return await subjectModal.getAllCourses();
+export const getCoursesAll = async function(section_id) {
+    return await subjectModal.getAllCourses(section_id);
 };
 
 // 특강 분반 조회 (level_id 없이)
@@ -40,11 +40,11 @@ export const getSpecialSchedule = async function() {
 };
 
 // 특강 학생 조회
-export const getCourseStudents = async function(course_id) {
-    if (!course_id) {
+export const getCourseStudents = async function(class_id) {
+    if (!class_id) {
         throw new BadRequestError("필수 값이 누락 되었습니다.");
     }
-    return await subjectModal.getCourseStudents(course_id);
+    return await subjectModal.getCourseStudents(class_id);
 };
 
 // 휴강 조회

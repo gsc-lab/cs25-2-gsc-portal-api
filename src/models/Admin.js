@@ -38,19 +38,29 @@ export async function postAllowedEmail(email, reason) {
     return rows;
 }
 
-export async function deleteAllowedEmail(id) {
+export async function deleteAllowedEmail(user_id) {
     const [rows] = await pool.query(
         "DELETE FROM allowed_email WHERE id = ?",
-        [id]
+        [user_id]
     );
     return rows;
 }
 
 // 학생 정보
-export async function getStudentInfo(grade_name, status) {
+export async function getStudentInfo(grade_id, status) {
     const [rows] = await pool.query(
-        "SELECT * FROM v_admin_manage_users WHERE (? IS NULL OR grade_name = ?) AND (? IS NULL OR status = ?)",
-        [grade_name, grade_name, status, status]
+        `SELECT * FROM v_admin_manage_users 
+        WHERE (? IS NULL OR grade_id = ?) 
+        AND (? IS NULL OR status = ?)
+        ORDER BY
+            grade_id ASC,
+            CASE status
+                WHEN 'enrolled' THEN 1
+                ELSE 2
+            END ASC,
+            name ASC;
+        `,
+        [grade_id, grade_id, status, status]
     );
     return rows;
 }
@@ -82,5 +92,20 @@ export async function deleteStudentInfo(user_id) {
         "DELETE FROM user_account WHERE user_id = ?",
         [user_id]
     );
+    return rows;
+}
+
+// 교수, 관리자
+export async function getProAdminInfo() {
+    const [rows] = await pool.query(`
+        SELECT * FROM user_account ua
+        JOIN user_role ur ON ua.user_id = ur.user_id
+        WHERE ur.role_type = 'professor' OR ur.role_type = 'admin'
+        ORDER BY 
+            CASE ur.role_type
+                WHEN 'professor' THEN 1
+                WHEN 'admin'    THEN 2
+            END ASC
+    `);
     return rows;
 }

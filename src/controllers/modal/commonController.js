@@ -11,6 +11,19 @@ export const getSections = async function (req, res) {
     }
 }
 
+// 학기 등록
+export const postSections = async function (req, res) {
+    try {
+        const { year, semester, start_date, end_date } = req.body
+        const params = { year, semester, start_date, end_date }
+        const result = await commonService.postSections(params);
+        res.status(200).json(result)
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
 // 교수 목록
 export const getProfessors = async function (req, res) {
     try {

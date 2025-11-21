@@ -7,17 +7,19 @@ const router = express.Router();
 // 승인
 router.get('/users', authWithRole("admin"), adminController.getPendingUsers);
 router.post('/users', authWithRole("admin"), adminController.postPendingUsers);
-router.delete('/users', authWithRole("admin"), adminController.deletePendingUsers);
+router.delete('/users/:user_id', authWithRole("admin"), adminController.deletePendingUsers);
 
 // 예외 이메일
 router.get('/email', authWithRole("admin"), adminController.getAllowedEmail);
 router.post('/email', authWithRole("admin"), adminController.postAllowedEmail);
-router.delete('/email', authWithRole("admin"), adminController.deleteAllowedEmail);
+router.delete('/email/:user_id', authWithRole("admin"), adminController.deleteAllowedEmail);
 
 // 학생 정보
-router.get('/students', authWithRole("admin"), adminController.getStudentInfo);
+router.get('/students', adminController.getStudentInfo);
 router.patch('/students/:user_id', authWithRole("admin"), adminController.patchStudentInfo);
-router.delete('/students', authWithRole("admin"), adminController.deleteStudentInfo);
+router.delete('/students/:user_id', authWithRole("admin"), adminController.deleteStudentInfo);
 
+// 교수, 관리자 정보
+router.get('/proadmin', authWithRole("professor"), adminController.getProAdminInfo)
 
 export default router;

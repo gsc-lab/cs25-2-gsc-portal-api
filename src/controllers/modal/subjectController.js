@@ -35,7 +35,8 @@ export const getcoursesKorean = async function (req, res, next) {
 // 전체 과목 조회
 export const getcoursesAll = async function (req, res, next) {
     try {
-        const result = await subjectService.getCoursesAll();
+        const {section_id} = req.params
+        const result = await subjectService.getCoursesAll(section_id);
         res.status(200).json(result);
     } catch (err) {
         next(err)
@@ -75,8 +76,8 @@ export const getSpecialSchedule = async function (req, res, next) {
 // 특강 학생 조회
 export const getCourseStudents = async function (req, res, next) {
     try {
-        const { course_id } = req.params;
-        const result = await subjectService.getCourseStudents(course_id);
+        const { class_id } = req.params;
+        const result = await subjectService.getCourseStudents(class_id);
         res.status(200).json(result);
     } catch (err) {
         next(err)

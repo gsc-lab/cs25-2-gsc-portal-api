@@ -20,13 +20,13 @@ router.get('/courses/korean/classes', authWithRole("professor"), subjectControll
 router.get('/courses/korean', authWithRole("professor"), subjectController.getcoursesKorean);
 
 // 전체 과목 조회
-router.get('/courses/all', authWithRole("professor"), subjectController.getcoursesAll);
+router.get('/courses/all/:section_id', subjectController.getcoursesAll);
 
 // 특강 스케줄 조회 (경로 수정)
 router.get('/courses/special/schedule', authWithRole("professor"), subjectController.getSpecialSchedule);
 
 // 특강 학생 조회
-router.get('/courses/:course_id/students', authWithRole("professor"), subjectController.getCourseStudents);
+router.get('/courses/:class_id/students', authWithRole("professor"), subjectController.getCourseStudents);
 
 // 휴강 조회
 router.get('/holidays', authWithRole("professor"), subjectController.getHolidays);

@@ -71,77 +71,74 @@ INSERT INTO course (course_id, sec_id, title, is_special) VALUES
 ('C001','2025-1','인공지능 개론',0),
 ('C002','2025-1','데이터베이스',0),
 ('C003','2025-1','일본어 특강',1),
-('C004','2025-1','한국어 집중반',2),
+('C004','2025-1','JLPT N2 특강',1),
 ('C005','2025-1','운영체제',0),
 ('C006','2025-1','네트워크',0),
-('C007','2025-1','JLPT N2 특강',1),
-('C008','2025-1','TOPIK 4급 한국어 특강',2);
+('C007','2025-1','한국어 집중반',1),
+('C008','2025-1','TOPIK 4급 한국어 특강',1);
 
 -- ===== Course Class (Course 이후에 가능) =====
-INSERT INTO course_class (class_id, course_id, name) VALUES
-('C003A','C003','A'),
-('C003B','C003','B'),
-('C004A','C004','A'),
-('C007A','C007','A'),
-('C008A','C008','A');
+INSERT INTO course_class (class_id, name, language_id) VALUES
+('C003A','일본어 특강A', 'JP'),
+('C007A','한국어A', 'KR');
 
 -- ===== Student Entity (Course Class 이후 가능) =====
 INSERT INTO student_entity (user_id, grade_id, class_id, language_id, is_international, status) VALUES
 ('2423001','2','C003A','JP','korean','enrolled'),
-('2423002','2','C004A','KR','korean','enrolled'),
-('2423003','2','C004A','KR','korean','enrolled'),
+('2423002','2','C003A','JP','korean','enrolled'),
+('2423003','2','C003A','JP','korean','enrolled'),
 ('2423004','1','C003A','JP','korean','enrolled'),
-('2423005','3','C007A','JP','korean','enrolled'),
-('2423006','1','C008A','KR','international','enrolled'),
-('2423007','2','C008A','EN','international','enrolled'),
+('2423005','3','C007A','KR','international','enrolled'),
+('2423006','1','C007A','KR','international','enrolled'),
+('2423007','2','C007A','KR','international','enrolled'),
 ('2423008','2','C003A','JP','korean','leave'),
-('2423009','1','C003A','KR','korean','dropped'),
-('2524001','3','C007A','JP','korean','leave'),
-('2725001','1','C008A','KR','international','dropped');
+('2423009','1','C003A','JP','korean','dropped'),
+('2524001','3','C007A','KR','international','leave'),
+('2725001','1','C007A','KR','international','dropped');
 
 -- ===== Course Language / Target / Schedule / Professor / Student =====
 INSERT INTO course_language (course_id, language_id) VALUES
-('C001','KR'),('C002','KR'),('C003','JP'),('C004','KR');
+('C003','JP'),('C004','JP'),('C007','KR'),('C008','KR');
 
-INSERT INTO course_target (target_id, course_id, grade_id, language_id) VALUES
-('T001','C001','2',NULL),
-('T002','C002','2',NULL),
-('T003','C003','1','JP'),
-('T004','C004','1','KR'),
-('T005','C005','3',NULL),
-('T006','C006','2',NULL),
-('T007','C007',NULL,'JP'),
-('T008','C008',NULL,'KR');
+INSERT INTO course_target (target_id, course_id, grade_id, language_id, class_id) VALUES
+('T001','C001','2',NULL, NULL),
+('T002','C002','2',NULL, NULL),
+('T003','C003',NULL,'JP', 'C003A'),
+('T004','C004',NULL,'JP', 'C003A'),
+('T005','C005','3',NULL, NULL),
+('T006','C006','2',NULL, NULL),
+('T007','C007',NULL,'KR', 'C007A'),
+('T008','C008',NULL,'KR', 'C007A');
 
-INSERT INTO course_schedule (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week) VALUES
-('SCH1','CR001','1','C001','2025-1','MON'),
-('SCH2','CR001','2','C001','2025-1','WED'),
-('SCH3','CR002','3','C002','2025-1','TUE'),
-('SCH4','CR003','4','C003','2025-1','FRI'),
-('SCH5','CR004','5','C004','2025-1','THU'),
-('SCH6','CR001','6','C005','2025-1','MON'),
-('SCH7','CR002','7','C005','2025-1','WED'),
-('SCH8','CR003','8','C006','2025-1','FRI'),
-('SCH9','CR004','9','C007','2025-1','TUE'),
-('SCH10','CR004','10','C008','2025-1','THU');
+INSERT INTO course_schedule (schedule_id, classroom_id, time_slot_id, course_id, sec_id, day_of_week, class_id) VALUES
+('SCH1', 'CR001', '1', 'C001', '2025-1', 'MON', NULL),
+('SCH2', 'CR001', '2', 'C001', '2025-1', 'WED', NULL),
+('SCH3', 'CR002', '3', 'C002', '2025-1', 'TUE', NULL),
+('SCH4', 'CR003', '4', 'C003', '2025-1', 'FRI', 'C003A'),
+('SCH5', 'CR004', '5', 'C004', '2025-1', 'THU', 'C003A'),
+('SCH6', 'CR001', '6', 'C005', '2025-1', 'MON', NULL),
+('SCH7', 'CR002', '7', 'C005', '2025-1', 'WED', NULL),
+('SCH8', 'CR003', '8', 'C006', '2025-1', 'FRI', NULL),
+('SCH9', 'CR004', '9', 'C007', '2025-1', 'TUE', 'C007A'),
+('SCH10', 'CR004', '10', 'C008', '2025-1', 'THU', 'C007A');
 
-INSERT INTO course_professor (user_id, course_id, class_id) VALUES
-('8888001','C001','C003A'),
-('8888001','C002','C003A'),
-('8888002','C003','C003A'),
-('8888002','C004','C004A'),
-('8888001','C005','C007A'),
-('8888001','C006','C007A'),
-('8888002','C007','C007A'),
-('8888002','C008','C008A');
+INSERT INTO course_professor (user_id, course_id) VALUES
+('8888001', 'C001'),
+('8888001', 'C002'),
+('8888002', 'C003'),
+('8888002', 'C004'),
+('8888001', 'C005'),
+('8888001', 'C006'),
+('8888002', 'C007');
 
-INSERT INTO course_student (user_id, course_id, class_id) VALUES
-('2423001', 'C007', NULL),
-('2423002', 'C007', 'C007A'),
-('2423003', 'C007', 'C007A'),
-('2423004', 'C007', 'C007A'),
-('2423005', 'C007', 'C007A'),
-('2524001', 'C007', NULL);
+INSERT INTO course_student (user_id, class_id) VALUES
+('2423001', NULL),
+('2423002', NULL),
+('2423003', NULL),
+('2423004', NULL),
+('2423005', NULL),
+('2423006', NULL),
+('2423007', NULL);
 
 INSERT INTO huka_schedule
 (schedule_id, student_id, professor_id, sec_id, schedule_type, day_of_week, date, time_slot_id, location, created_at, updated_at)
@@ -151,27 +148,66 @@ VALUES
 ('HK002', '2423005', '8888001', '2025-1', 'REGULAR', 'TUE', NULL, '9', '실습동 302호', NOW(), NOW()),
 
 -- 🔹 수정 상담 (지정 날짜)
-('HK003', '2423004', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-10', '8', '본관 201호', NOW(), NOW()),
-('HK004', '2423005', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-15', '9', '상담실 203호', NOW(), NOW()),
+('HK003', '2423004', '8888001', '2025-1', 'CUSTOM', 'FRI', '2025-10-10', '8', '본관 201호', NOW(), NOW()),
+('HK004', '2423005', '8888001', '2025-1', 'CUSTOM', 'WED', '2025-10-15', '9', '상담실 203호', NOW(), NOW()),
 
 -- 🔹 다른 학생 (유학생)
 ('HK005', '2725001', '8888001', '2025-1', 'REGULAR', 'FRI', NULL, '9', '국제관 101호', NOW(), NOW()),
-('HK006', '2725001', '8888001', '2025-1', 'CUSTOM', NULL, '2025-10-20', '8', '국제관 202호', NOW(), NOW());
+('HK006', '2725001', '8888001', '2025-1', 'CUSTOM', 'MON', '2025-10-20', '8', '국제관 202호', NOW(), NOW());
 
-INSERT INTO course_event (event_id, schedule_id, event_type, event_date) VALUES
-('E001','SCH1','CANCEL','2025-04-15'),
-('E002','SCH3','MAKEUP','2025-05-10'),
-('E003','SCH6','CANCEL','2025-04-21'),
-('E004','SCH9','MAKEUP','2025-04-25');
+INSERT INTO course_event (event_id, schedule_id, event_type, event_date, parent_event_id) VALUES
+/* 세트 1: 인공지능 개론 (SCH1) 
+  - 정규 과목 (is_special=0)
+  - class_id: NULL
+*/
+('E001','SCH1','CANCEL','2025-04-15', NULL),
+('E002','SCH1','MAKEUP','2025-05-09','E001'),
+
+/* 세트 2: 운영체제 (SCH6) 
+  - 정규 과목 (is_special=0)
+  - class_id: NULL
+*/
+('E003','SCH6','CANCEL','2025-04-21', NULL),
+('E004','SCH6','MAKEUP','2025-04-25','E003'),
+
+/* 세트 3: 일본어 특강 (SCH4)
+  - 특강 (is_special=1)
+  - class_id: C003A
+*/
+('E005','SCH4','CANCEL','2025-04-18', NULL),
+('E006','SCH4','MAKEUP','2025-04-22','E005');
 
 -- ===== Reservations & Polls & Cleaning =====
 INSERT INTO reservation (user_id, classroom_id, reserve_date, start_time, end_time) VALUES
 ('2423001','CR003','2025-04-01','10:00:00','12:00:00'),
 ('2725001','CR001','2025-04-03','09:00:00','11:00:00');
 
-INSERT INTO weekend_attendance_poll (poll_id, grade_id, classroom_id, poll_date, target_weekend, required_count, status) VALUES
-('P001','2','CR001','2025-04-05','SAT',8,1),
-('P002','1','CR003','2025-04-12','SUN',6,0);
+INSERT INTO poll_rules (rule_id, grade_id, required_count, start_date) VALUES
+('r001', '1', 5, '2025-11-01'),
+('r002', '2', 8, '2025-11-01'),
+('r003', '3', 3, '2025-11-01');
+
+
+INSERT INTO weekend_attendance_poll (poll_id, grade_id, poll_date, required_count, status) VALUES
+('w2511221', '1', '2025-11-22', 5, 0), 
+('w2511231', '1', '2025-11-23', 5, 0),
+('w2511222', '2', '2025-11-22', 8, 0),
+('w2511232', '2', '2025-11-23', 8, 0),
+('w2511223', '3', '2025-11-22', 3, 0),
+('w2511291', '1', '2025-11-29', 5, 0),
+('w2511301', '1', '2025-11-30', 5, 0),
+('w2511292', '2', '2025-11-29', 8, 0),
+('w2511302', '2', '2025-11-30', 8, 0);
+
+INSERT INTO weekend_attendance_votes (poll_id, user_id) VALUES
+('w2511221', '2423001'),
+('w2511221', '2423002'),
+('w2511221', '2423003'),
+('w2511221', '2423004'),
+('w2511221', '2423005'),
+('w2511231', '2423006'),
+('w2511231', '2423007'),
+('w2511223', '2423008');
 
 -- ===== Kakao & Exams & Logs =====
 INSERT INTO kakao_user (user_id, kakao_id, is_verified) VALUES
@@ -277,9 +313,3 @@ INSERT INTO reservation (user_id, classroom_id, reserve_date, start_time, end_ti
 ('2423001', 'CR002', '2025-10-24', '13:00:00', '14:00:00', NOW()),
 ('2725001', 'CR003', '2025-10-24', '14:00:00', '15:00:00', NOW()),
 ('8888001', 'CR003', '2025-10-24', '15:00:00', '16:00:00', NOW());
-
-INSERT INTO weekend_attendance_votes (poll_id, user_id) VALUES
-('P001', '2423001'),
-('P001', '2423002'),
-('P001', '2524001'),
-('P001', '2725001');

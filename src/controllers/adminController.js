@@ -26,7 +26,7 @@ export const postPendingUsers = async function (req, res, next) {
 
 export const deletePendingUsers = async function (req, res, next) {
     try {
-        const { user_id } = req.body;
+        const { user_id } = req.params;
         await adminService.deletePendingUsers(user_id);
         res.status(200).json({ message: "삭제 완료", user_id});
     } catch (err) {
@@ -57,9 +57,9 @@ export const postAllowedEmail = async function (req, res, next) {
 
 export const deleteAllowedEmail = async function (req, res, next) {
     try {
-        const {id} = req.body;
-        await adminService.deleteAllowedEmail(id);
-        res.status(200).json({ message: "삭제완료", id });
+        const { user_id } = req.params;
+        await adminService.deleteAllowedEmail(user_id);
+        res.status(200).json({ message: "삭제완료", user_id });
     } catch (err) {
         next(err)
     }
@@ -68,8 +68,8 @@ export const deleteAllowedEmail = async function (req, res, next) {
 // 학생 정보
 export const getStudentInfo = async function (req, res, next) {
     try {
-        const {grade_name, status} = req.query;
-        const params = { grade_name, status};
+        const {grade_id, status} = req.query;
+        const params = { grade_id, status};
         const result = await adminService.getStudentInfo(params);
         res.status(200).json(result)
     } catch (err) {
@@ -89,7 +89,7 @@ export const patchStudentInfo = async function (req, res, next) {
         if (Object.keys(updates).length === 0) {
             return res.status(400).json({ error: "No Data" });
         }
-        await adminService.patchStudentInfo(user_id, updates);
+        await adminService.patchStudentInfo(params);
         res.status(200).json({ message: "수정 완료", user_id });
     } catch (err) {
         next(err)
@@ -98,9 +98,19 @@ export const patchStudentInfo = async function (req, res, next) {
 
 export const deleteStudentInfo = async function (req, res, next) {
     try {
-        const { user_id } = req.body;
+        const { user_id } = req.params;
         await adminService.deleteStudentInfo(user_id);        
         res.status(200).json({ message: "삭제 완료" });
+    } catch (err) {
+        next(err)
+    }
+}
+
+// 교수 관리자 정보
+export const getProAdminInfo = async function (req, res, next) {
+    try {
+        const result = await adminService.getProAdminInfo();
+        res.status(200).json(result)
     } catch (err) {
         next(err)
     }

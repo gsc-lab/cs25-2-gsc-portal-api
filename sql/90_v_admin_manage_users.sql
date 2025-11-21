@@ -4,9 +4,10 @@ SELECT
     ua.name,
     ua.email,
     ua.phone,
-    g.name            AS grade_name,
-    lang.name         AS language_name,
-    cc.name           AS class_name,
+    se.grade_id,
+    se.language_id,
+    se.class_id,
+    cc.name AS class_name,
     se.is_international,
     se.status,
     ur.role_type

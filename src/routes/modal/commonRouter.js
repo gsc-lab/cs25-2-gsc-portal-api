@@ -6,6 +6,9 @@ const router = express.Router();
 // 학기 조회
 router.get('/sections', commonController.getSections);
 
+// 학기 등록
+router.post('/sections', commonController.postSections);
+
 // 교수 목록
 router.get('/professors', commonController.getProfessors);
 

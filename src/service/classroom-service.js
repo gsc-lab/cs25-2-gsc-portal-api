@@ -63,16 +63,58 @@ export const getClassroomPolls = async function ({date, user_id}) {
     return await classroomModels.getClassroomPolls(date, user_id);
 }
 
-export const postClassroomPolls = async function ({grade_id, classroom_id, poll_date, target_weekend, required_count}) {
-    if (!grade_id || !classroom_id || !poll_date || !target_weekend || !required_count) {
-        throw new BadRequestError("필수 값이 누락 되었습니다.")
-    }
-    // ID 생성
-    const poll_id = await classroomModels.createClassroomPollsId();
+// (수정) Service: '반복 규칙'을 생성하는 함수
+export const postClassroomPolls = async function ({ grade_id, required_count }) {
     
-    return await classroomModels.postClassroomPolls(poll_id, grade_id, classroom_id, poll_date, target_weekend, required_count);
+    // 1. 유효성 검사
+    if (!grade_id || !required_count) {
+        throw new BadRequestError("학년과 최소 인원은 필수입니다.");
+    }
+    
+    // 2. (신규) Service에서 '오늘 날짜'를 생성
+    const start_date = getTodayDate(); 
+
+    // 3. (수정) '규칙 ID' ('r001') 생성
+    const rule_id = await classroomModels.createPollRuleId(); 
+
+    // 4. '규칙' 테이블에 저장할 데이터 객체
+    const newRuleData = {
+        rule_id,
+        grade_id,
+        start_date, // <- 여기서 생성한 오늘 날짜
+        required_count
+    };
+
+    // 5. '규칙'을 DB에 저장 (Model의 postPollRule 함수 호출)
+    return await classroomModels.postPollRule(newRuleData); 
 }
 
+// 규칙 목록 조회
+export const getPollRules = async function() {
+    return await classroomModels.getPollRules();
+}
+
+// 규칙 목록 수정
+export const putPollRules = async function({ rule_id, required_count}) {
+    if (!rule_id || !required_count) {
+        throw new BadRequestError("rule_id, required_count 값이 누락되었습니다.")
+    }
+
+    const start_date = getTodayDate(); 
+
+    return await classroomModels.putPollRules(rule_id, required_count, start_date);
+}
+
+// 규칙 목록 삭제
+export const deletePollRules = async function(rule_id) {
+    if (!rule_id) {
+        throw new BadRequestError("rule_id가 누락 되었습니다.");
+    }
+
+    return await classroomModels.deletePollRules(rule_id);
+}
+
+// 투표 저장 Post
 export const postReservationPolls = async function ({user_id, poll_id, action}) {
     if (!user_id || !poll_id || !action) {
         throw new BadRequestError("필수 값이 누락 되었습니다.")
@@ -83,4 +125,14 @@ export const postReservationPolls = async function ({user_id, poll_id, action}) 
     else throw new BadRequestError("action 안에는 apply 또는 cancel값만 올 수 있습니다.");
     
     return result
+}
+
+
+// 오늘 날짜 생성 함수
+function getTodayDate() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = ('0' + (d.getMonth() + 1)).slice(-2);
+    const day = ('0' + d.getDate()).slice(-2);
+    return `${year}-${month}-${day}`; // 예: "2025-11-18"
 }
