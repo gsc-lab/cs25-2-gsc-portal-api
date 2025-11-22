@@ -83,24 +83,33 @@ export async function findBySpec(spec, query) {
     queryParams.push(course_id);
   }
 
-  // 교수 및 관리자를 위한 필터링
-  if (grade_id) {
-    whereClauses.push(`v.grade_id = ?`);
-    queryParams.push(grade_id);
-  }
-  if (language_id) {
-    whereClauses.push(`v.language_id = ?`);
-    queryParams.push(language_id);
-  }
-
   // 모든 역할에 공통으로 적용되는 옵션 필터
   if (course_type) {
     whereClauses.push(`v.course_type = ?`);
     queryParams.push(course_type);
   }
   if (author_id) {
-    whereClauses.push(`JSON_UNQUOTE(JSON_EXTRACT(v.author, '$.user_id')) = ?`);
+    whereClauses.push(`v.author_id = ?`);
     queryParams.push(author_id);
+  }
+
+  // View에는 grade_id 컬럼이 없으므로 원본 테이블 참조
+  if (grade_id) {
+    whereClauses.push(`EXISTS (
+      SELECT 1 FROM notice_target nt 
+      WHERE nt.notice_id = v.notice_id 
+      AND nt.grade_id = ?
+    )`);
+    queryParams.push(grade_id);
+  }
+
+  if (language_id) {
+    whereClauses.push(`EXISTS (
+      SELECT 1 FROM notice_target nt 
+      WHERE nt.notice_id = v.notice_id 
+      AND nt.language_id = ?
+    )`);
+    queryParams.push(language_id);
   }
 
   const whereSql =
