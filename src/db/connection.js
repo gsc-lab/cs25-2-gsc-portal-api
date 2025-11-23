@@ -6,7 +6,9 @@ const pool = mysql.createPool({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     waitForConnections: true,
-    dateStrings: true
+    dateStrings: true,
+    charset: 'utf8mb4',
+    collate: 'utf8mb4_0900_ai_ci'
 });
 
 export default pool;
