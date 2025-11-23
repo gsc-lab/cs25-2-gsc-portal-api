@@ -17,10 +17,14 @@ export async function getDashboardData(req, res, next) {
   try {
     const user = req.user;
     const targetDate = req.query.date;
+    const secId = req.query.sec_id;
+    const size = req.query.size;
 
     const dashboardData = await dashboardService.getDashboardData(
       user,
       targetDate,
+      secId,
+      size
     );
     res.status(200).json(dashboardData);
   } catch (error) {
