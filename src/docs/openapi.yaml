@@ -287,8 +287,37 @@ paths:
       description: |
         - 로그인한 사용자의 메인 화면에 필요한 모든 데이터를 조회합니다.
         - 사용자의 역할(학생, 교수, 관리자)에 따라 반환되는 데이터가 달라집니다.
+        - `sec_id`를 제공하지 않으면 최신 학기를 기준으로 데이터를 조회합니다.
       security:
         - bearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          description: |
+            조회 기준 날짜 (YYYY-MM-DD).
+            시간표, 청소 당번 등 날짜 기반 데이터를 조회하는 데 사용됩니다.
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-11-23"
+        - name: sec_id
+          in: query
+          description: |
+            조회할 학기의 ID.
+            제공하지 않을 경우, 서버에서 자동으로 최신 학기를 기준으로 조회합니다.
+          required: false
+          schema:
+            type: string
+            example: "25-1"
+        - name: size
+          in: query
+          description: |
+            조회할 공지사항의 게시물의 개수
+          required: false
+          schema:
+            type: integer
+            example: 15
       responses:
         "200":
           description: 대시보드 데이터 반환 성공
