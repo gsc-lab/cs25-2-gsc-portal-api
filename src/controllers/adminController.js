@@ -115,3 +115,15 @@ export const getProAdminInfo = async function (req, res, next) {
         next(err)
     }
 }
+
+// 권한 수정
+export const putProAdminInfo = async function (req, res, next) {
+    try {
+        const { user_id } = req.params
+        const { role_type } = req.body;
+        const result = await adminService.putProAdminInfo(user_id, role_type);
+        res.status(200).json(result)
+    } catch (err) {
+        next(err)
+    }
+}

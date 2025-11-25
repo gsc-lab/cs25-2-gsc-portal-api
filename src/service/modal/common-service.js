@@ -6,6 +6,27 @@ export const getSections = async function() {
     return await commonModal.getSections();
 }
 
+// 학기 수정
+export const putSections = async function({sec_id, start_date, end_date}) {
+    if (!sec_id) {
+        throw new BadRequestError("sec_id 값이 누락되었습니다.")
+    }
+    if (!start_date || !end_date) {
+        throw new BadRequestError("start_date, end_date 값이 누락 되었습니다.")
+    }
+    return await commonModal.putSections(sec_id, start_date, end_date);
+}
+
+// 학기 수정
+export const deleteSections = async function(sec_id) {
+    if (!sec_id) {
+        throw new BadRequestError("sec_id 값이 누락되었습니다.")
+    }
+
+    return await commonModal.deleteSections(sec_id);
+}
+
+
 // 학기 등록
 export const postSections = async function({ year, semester, start_date, end_date }) {
     if (!year || !semester || !start_date || !end_date) {

@@ -8,6 +8,23 @@ export async function getSections() {
     return rows
 }
 
+// 학기 수정
+export async function putSections(sec_id, start_date, end_date) {
+    const [rows] = await pool.query(
+        "UPDATE section SET start_date = ?, end_date = ? WHERE sec_id = ?", [start_date, end_date, sec_id]
+    )
+    return rows;
+}
+
+// 학기 삭제
+export async function deleteSections(sec_id) {
+    const [rows] = await pool.query(
+        "DELETE FROM section WHERE sec_id = ?", [sec_id]
+    )
+    return rows;
+}
+
+
 // 학기 등록
 export async function postSections(year, semester, start_date, end_date) {
     // ID 만들기

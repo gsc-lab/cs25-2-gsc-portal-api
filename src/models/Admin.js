@@ -109,3 +109,11 @@ export async function getProAdminInfo() {
     `);
     return rows;
 }
+
+// 권한 수정
+export async function putProAdminInfo(user_id, role_type) {
+    const [rows] = await pool.query(`
+        UPDATE user_role SET role_type = ? WHERE user_id = ?
+    `, [role_type, user_id]);
+    return rows;
+}

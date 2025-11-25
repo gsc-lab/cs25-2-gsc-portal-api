@@ -94,3 +94,16 @@ export const deleteStudentInfo = async function(user_id) {
 export const getProAdminInfo = async function() {
     return await UserModel.getProAdminInfo();
 }
+
+// 권한 수정
+export const putProAdminInfo = async function(user_id, role_type) {
+    if (!user_id) {
+        throw new BadRequestError("user_id 값이 누락 되었습니다.")
+    }
+
+    if (!role_type) {
+        throw  new BadRequestError("role_type 값이 누락 되었습니다.")
+    }
+
+    return await UserModel.putProAdminInfo(user_id, role_type);
+}

@@ -15,11 +15,13 @@ router.post('/email', authWithRole("admin"), adminController.postAllowedEmail);
 router.delete('/email/:user_id', authWithRole("admin"), adminController.deleteAllowedEmail);
 
 // 학생 정보
-router.get('/students', adminController.getStudentInfo);
+router.get('/students', authWithRole("admin"), adminController.getStudentInfo);
 router.patch('/students/:user_id', authWithRole("admin"), adminController.patchStudentInfo);
 router.delete('/students/:user_id', authWithRole("admin"), adminController.deleteStudentInfo);
 
 // 교수, 관리자 정보
-router.get('/proadmin', authWithRole("professor"), adminController.getProAdminInfo)
+router.get('/proadmin', authWithRole("admin"), adminController.getProAdminInfo)
+router.put('/proadmin/:user_id', adminController.putProAdminInfo)
+
 
 export default router;

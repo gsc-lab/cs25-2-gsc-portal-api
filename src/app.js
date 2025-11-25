@@ -1,4 +1,7 @@
+import "./instrument.js"
+
 import express from "express";
+import * as Sentry from "@sentry/node"
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import { RedisStore } from "connect-redis";
@@ -85,8 +88,16 @@ app.use("/api/modal/subjects", subjectRouter);
 app.use("/api/modal/common", commonRouter);
 app.use("/api/dashboard", dashboardRouter);
 
+// Sentry Error 생성 api
+app.get("/debug-sentry", function mainHandler(req, res) {
+  throw new Error("아 배고프다");
+});
+
 // 주간 투표 자동 생성 함수
 initPollScheduler();
+
+// Error monitoring
+Sentry.setupExpressErrorHandler(app);
 
 app.use(centralErrorHandler);
 export default app;

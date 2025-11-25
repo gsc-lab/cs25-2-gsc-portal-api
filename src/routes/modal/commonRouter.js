@@ -5,6 +5,8 @@ const router = express.Router();
 
 // 학기 조회
 router.get('/sections', commonController.getSections);
+router.put('/sections/:sec_id', commonController.putSections);
+router.delete('/sections/:sec_id', commonController.deleteSections)
 
 // 학기 등록
 router.post('/sections', commonController.postSections);

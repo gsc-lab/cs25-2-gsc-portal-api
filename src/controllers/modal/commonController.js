@@ -11,6 +11,32 @@ export const getSections = async function (req, res) {
     }
 }
 
+// 학기 수정
+export const putSections = async function (req, res) {
+    try {
+        const { sec_id } = req.params
+        const { start_date, end_date } = req.body
+        const params = { sec_id, start_date, end_date }
+        const result = await commonService.putSections(params);
+        res.status(200).json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+// 학기 삭제
+export const deleteSections = async function (req, res) {
+    try {
+        const { sec_id } = req.params
+        const result = await commonService.deleteSections(sec_id);
+        res.status(200).json(result)
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
 // 학기 등록
 export const postSections = async function (req, res) {
     try {
