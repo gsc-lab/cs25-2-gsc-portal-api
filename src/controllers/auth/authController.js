@@ -9,7 +9,7 @@ import dotenv from "dotenv";
 import redisClient from "../../db/redis.js";
 import {findAdminAccount, findAuthEmail, findByEmail, findById, findStudentAccount} from "../../models/Auth.js";
 import { sign, signRefresh } from "../../utils/auth.utils.js";
-import {checkUserStatus, registerUser, saveStudentExam} from "../../service/auth-service.js";
+import * as authService from "../../service/auth-service.js";
 import {
   BadRequestError,
   ForbiddenError,
@@ -21,7 +21,6 @@ import { v4 } from "uuid";
 dotenv.config();
 
 const scopes = [
-  "https://www.googleapis.com/auth/calendar.readonly",
   "https://www.googleapis.com/auth/userinfo.profile",
   "https://www.googleapis.com/auth/userinfo.email",
 ];
@@ -195,15 +194,15 @@ async function authCallback(req, res) {
         );
       }
 
-      if (
-        tokens.scope.includes(
-          "https://www.googleapis.com/auth/calendar.readonly",
-        )
-      ) {
-        console.log("Calendar scope granted");
-      } else {
-        console.log("Calendar scope NOT granted");
-      }
+      // if (
+      //   tokens.scope.includes(
+      //     "https://www.googleapis.com/auth/calendar.readonly",
+      //   )
+      // ) {
+      //   console.log("Calendar scope granted");
+      // } else {
+      //   console.log("Calendar scope NOT granted");
+      // }
     } catch (error) {
       console.error("OAuth Callback Error", error);
       return res.redirect(`${process.env.FE_BASE_URL}/error?msg=oauth_failed`);
@@ -253,20 +252,18 @@ async function authLogout(req, res, next) {
  * @throws {BadRequestError} 토큰이 없거나 유효하지 않은 경우
  * @throws {InternalServerError} 서버 오류 발생 시
  */
-async function registerAfterOAuth(req, res) {
-  try {
-    const {
-      token,
-      user_id,
-      name,
-      phone,
-      is_student,
-      grade_id,
-      language_id,
-      class_id,
-      is_international,
-    } = req.body;
+async function registerStudent(req, res) {
+  const { token, ...studentData } = req.body;
+  await handleRegistration(token, studentData, authService.registerStudent, res);
+}
 
+async function registerProfessor(req, res) {
+  const { token, ...professorData } = req.body;
+  await handleRegistration(token, professorData, authService.registerProfessor, res);
+}
+
+async function handleRegistration(token, userData, registerFn, res) {
+  try {
     if (!token) {
       throw new BadRequestError("잘못된 요청입니다. 인증 토큰이 없습니다.");
     }
@@ -278,22 +275,11 @@ async function registerAfterOAuth(req, res) {
       throw new BadRequestError("만료되었거나 유효하지 않은 요청입니다. 다시 시도해주세요.");
     }
 
-    // 해당 세션의 레디스 삭제
     await redisClient.del(preRegisterKey);
 
-    const userPayload = {
-      user_id,
-      name,
-      phone,
-      is_student,
-      email: email,
-      grade_id,
-      language_id,
-      class_id,
-      is_international,
-    };
+    const userPayload = { ...userData, email };
+    await registerFn(userPayload);
 
-    await registerUser(userPayload);
     res.status(201).json({
       success: true,
       message: "회원가입이 성공적으로 완료되었습니다.",
@@ -304,7 +290,7 @@ async function registerAfterOAuth(req, res) {
       throw error;
     }
     throw new InternalServerError(
-      "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+        "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
     );
   }
 }
@@ -395,7 +381,8 @@ export default {
   googleAuthRedirect,
   authCallback,
   authLogout,
-  registerAfterOAuth,
+  registerStudent,
+  registerProfessor,
   authMe,
   saveMyProfile,
 };

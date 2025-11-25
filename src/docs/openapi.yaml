@@ -77,38 +77,83 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /auth/register:
+  /auth/register/student:
     post:
       tags:
         - Auth
-      summary: 최초 로그인 사용자 정보 등록 (회원가입)
+      summary: 학생 회원가입
       description: |
-        - Google OAuth 콜백 후 /register 페이지로 이동된 신규 사용자가 추가 정보를 제출하여 가입을 완료합니다.
-        - 이 요청은 Google 로그인 후 백엔드가 설정한 세션을 기반으로 인증됩니다.
+        - Google OAuth 인증 후 발급된 임시 토큰과 함께 학생 정보를 제출하여 가입을 완료합니다.
         - 요청 성공 시 해당 사용자의 status는 'pending'(승인 대기)으로 변경됩니다.
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserRegistrationRequest"
+              $ref: "#/components/schemas/StudentRegistrationRequest"
       responses:
         "201":
-          description: 등록 성공. "관리자 승인 후 로그인이 가능합니다."
+          description: 등록 성공. "회원가입이 성공적으로 완료되었습니다."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "회원가입이 성공적으로 완료되었습니다."
         "400":
-          description: "잘못된 요청 (예: 필수 필드 누락, 유효하지 않은 형식)"
+          description: "잘못된 요청 (예: 필수 필드 누락, 유효하지 않은 토큰)"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "409":
-          description: 이미 등록된 학번 또는 이메일 (Conflict)
+          description: "이미 등록된 학번입니다."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/register/professor:
+    post:
+      tags:
+        - Auth
+      summary: 교수 회원가입
+      description: |
+        - Google OAuth 인증 후 발급된 임시 토큰과 함께 교수 정보를 제출하여 가입을 완료합니다.
+        - 요청 성공 시 해당 사용자의 status는 'pending'(승인 대기)으로 변경됩니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfessorRegistrationRequest"
+      responses:
+        "201":
+          description: 등록 성공. "회원가입이 성공적으로 완료되었습니다."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "회원가입이 성공적으로 완료되었습니다."
+        "400":
+          description: "잘못된 요청 (예: 필수 필드 누락, 유효하지 않은 토큰)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "이미 가입된 이메일입니다."
           content:
             application/json:
               schema:
@@ -3492,55 +3537,67 @@ components:
                 is_opened: false
                 user_voted: false
 
-    UserRegistrationRequest:
+    StudentRegistrationRequest:
       type: object
-      description: 최초 로그인 사용자가 가입을 위해 제출하는 추가 정보
+      description: 학생 회원가입을 위해 제출하는 추가 정보
       required:
-        - name
+        - token
         - user_id
+        - name
         - phone
-        - email
-        - is_student
-        - grade_id
-        - class_id
-        - language_id
       properties:
-        name:
+        token:
           type: string
-          description: 사용자 본명
-          example: 김민준
+          description: "Google OAuth 인증 후 발급된 임시 토큰"
+          example: "a1b2c3d4e5f6..."
         user_id:
           type: string
           description: "학번"
           example: "2423001"
+        name:
+          type: string
+          description: "이름"
+          example: "홍길동"
         phone:
           type: string
-          description: 연락 가능한 전화번호
-          example: 010-1234-5678
-        email:
-          type: string
-          description: 이메일 주소
-          example: minjun.kim@g.yju.ac.kr
-        is_student:
-          type: boolean
-          description: "학생이면 true, 교수면 false"
-          example: true
+          description: "전화번호 (010-1234-5678 형식)"
+          example: "010-1234-5678"
         grade_id:
           type: string
-          description: 소속 학년(Grade) ID
-          example: null
+          description: "학년 ID"
+          example: "1"
         class_id:
           type: string
-          description: 소속 반(Class) ID
-          example: null
+          description: "반 ID"
+          example: "A"
         language_id:
           type: string
-          description: 언어 ID
-          example: null
+          description: "언어 ID (e.g., KR, JP)"
+          example: "JP"
         is_international:
           type: boolean
-          description: 유학생 여부
-          example: null
+          description: "유학생 여부"
+          example: false
+    ProfessorRegistrationRequest:
+      type: object
+      description: 교수 회원가입을 위해 제출하는 추가 정보
+      required:
+        - token
+        - name
+        - phone
+      properties:
+        token:
+          type: string
+          description: "Google OAuth 인증 후 발급된 임시 토큰"
+          example: "a1b2c3d4e5f6..."
+        name:
+          type: string
+          description: "이름"
+          example: "김교수"
+        phone:
+          type: string
+          description: "전화번호 (010-1234-5678 형식)"
+          example: "010-9876-5432"
     StudentApproval:
       type: object
       description: 학생 승인 대기 목록에 표시될 정보 (v_student_approval 뷰 기반)

@@ -39,11 +39,34 @@ const secret = process.env.JWT_SECRET;
  * @throws {BadRequestError} 필수 항목 누락 또는 전화번호 형식 오류 시
  * @throws {ConflictError} 이미 가입된 이메일 또는 학번인 경우
  */
-export const registerUser = async (userData) => {
-  const { email, user_id, name, phone } = userData;
+export const registerStudent = async (userData) => {
+  const { user_id, name, phone } = userData;
 
-  if (!email || !user_id || !name || !phone) {
-    throw new BadRequestError("이메일, 학번, 이름, 전화번호는 필수 항목입니다.");
+  if (!user_id || !name || !phone) {
+    throw new BadRequestError("학번, 이름, 전화번호는 필수 항목입니다.");
+  }
+  if (!/^010-\d{4}-\d{4}$/.test(phone)) {
+    throw new BadRequestError("전화번호 형식이 올바르지 않습니다.");
+  }
+
+  const existingUserById = await findById(user_id);
+  if (existingUserById) {
+    throw new ConflictError("이미 등록된 학번입니다.");
+  }
+
+  try {
+    return await createStudent(userData);
+  } catch (err) {
+    console.error("학생 등록 중 오류 발생:", err.stack);
+    throw new BadRequestError("회원가입 처리 중 오류가 발생했습니다. 입력값을 확인하세요.");
+  }
+};
+
+export const registerProfessor = async (userData) => {
+  const { name, phone, email } = userData;
+
+  if (!name || !phone) {
+    throw new BadRequestError("이름, 전화번호는 필수 항목입니다.");
   }
   if (!/^010-\d{4}-\d{4}$/.test(phone)) {
     throw new BadRequestError("전화번호 형식이 올바르지 않습니다.");
@@ -54,22 +77,13 @@ export const registerUser = async (userData) => {
     throw new ConflictError("이미 가입된 이메일입니다.");
   }
 
-  const existingUserById = await findById(user_id);
-  if (existingUserById) {
-    throw new ConflictError("이미 등록된 학번입니다.");
-  }
   try {
-    // is_student 값을 boolean으로 변환하여 확인
-    const isStudent = [true, 'true', 'on'].includes(userData.is_student);
-
-    // 학생 생성 로직 호출
-    if (isStudent) {
-      return await createStudent(userData);
-    }
-    // 교수 생성 로직 호출
-    return await createProfessor(userData);
+    // 교수는 학번이 없으므로 UUID로 임의 생성
+    const user_id = v4();
+    const professorData = { ...userData, user_id };
+    return await createProfessor(professorData);
   } catch (err) {
-    console.error("회원 등록 중 오류 발생:", err.stack);
+    console.error("교수 등록 중 오류 발생:", err.stack);
     throw new BadRequestError("회원가입 처리 중 오류가 발생했습니다. 입력값을 확인하세요.");
   }
 };

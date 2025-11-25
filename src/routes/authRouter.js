@@ -25,10 +25,16 @@ router.get("/", authController.googleAuthRedirect);
 router.get("/callback", authController.authCallback);
 
 /**
- * POST /api/auth/register
- * OAuth 인증 후 추가 정보를 받아 사용자 회원가입을 완료합니다.
+ * POST /api/auth/register/student
+ * OAuth 인증 후 추가 정보를 받아 학생 회원가입을 완료합니다.
  */
-router.post("/register", authController.registerAfterOAuth);
+router.post("/register/student", authController.registerStudent);
+
+/**
+ * POST /api/auth/register/professor
+ * OAuth 인증 후 추가 정보를 받아 교수 회원가입을 완료합니다.
+ */
+router.post("/register/professor", authController.registerProfessor);
 
 /**
  * POST /api/auth/logout
