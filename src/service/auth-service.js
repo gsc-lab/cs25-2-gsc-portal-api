@@ -78,8 +78,17 @@ export const registerProfessor = async (userData) => {
   }
 
   try {
-    // 교수는 학번이 없으므로 UUID로 임의 생성
-    const user_id = v4();
+    // 교수는 학번이 없으므로 10자리 숫자로 임의 생성 (DB 중복 체크 포함)
+    let user_id;
+    let isUnique = false;
+    while (!isUnique) {
+      user_id = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+      const existingUser = await findById(user_id);
+      if (!existingUser) {
+        isUnique = true;
+      }
+    }
+
     const professorData = { ...userData, user_id };
     return await createProfessor(professorData);
   } catch (err) {
