@@ -122,8 +122,8 @@ async function authCallback(req, res) {
           EX: 600, // 10 minutes
         });
 
-        // Redirect to frontend with the token
-        const frontendRegisterUrl = `${process.env.FE_BASE_URL}/register?token=${tempToken}`;
+        // Redirect to frontend with the token and email
+        const frontendRegisterUrl = `${process.env.FE_BASE_URL}/register?token=${tempToken}&email=${encodeURIComponent(userInfo.email)}`;
         return res.redirect(frontendRegisterUrl);
       }
 
