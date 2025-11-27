@@ -52,11 +52,17 @@ export const detailNotices = async (noticeId, user) => {
 
   // 학생은 수신 대상인 공지만 조회 가능
   if (role === "student") {
-    const isRecipient = await noticeModel.isRecipient(noticeId, user_id);
+    const student = await noticeModel.getStudentEntity(user_id);
+    if (!student) {
+      // 학생 정보가 없는 경우, 권한 확인 불가
+      throw new ForbiddenError("학생 정보를 찾을 수 없어 권한을 확인할 수 없습니다.");
+    }
+
+    const isRecipient = await noticeModel.isStudentRecipient(detailNt, student);
     if (!isRecipient) {
       throw new ForbiddenError("해당 공지사항을 조회할 권한이 없습니다.");
     }
-    return detailNt; // 권한이 있으면 즉시 반환
+    return detailNt;
   }
 
   // 위 모든 조건에 해당하지 않으면 권한 없음
@@ -535,7 +541,17 @@ export const markNoticeAsRead = async (noticeId, user) => {
   }
 
   // 학생이 해당 공지의 수신 대상인지 먼저 확인
-  const isRecipient = await noticeModel.isRecipient(noticeId, user.user_id);
+  const notice = await noticeModel.findById(noticeId);
+  if (!notice) {
+    throw new NotFoundError("읽음 처리할 공지를 찾을 수 없습니다.");
+  }
+
+  const student = await noticeModel.getStudentEntity(user.user_id);
+  if (!student) {
+    throw new ForbiddenError("학생 정보를 찾을 수 없어 권한을 확인할 수 없습니다.");
+  }
+
+  const isRecipient = await noticeModel.isStudentRecipient(notice, student);
   if (!isRecipient) {
     // 수신 대상이 아니므로, 읽음 처리할 수 없음
     throw new ForbiddenError("읽음 처리할 수 없는 공지입니다.");

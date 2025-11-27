@@ -115,7 +115,7 @@ export async function findBySpec(spec, query) {
   const whereSql =
     whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
-  const countSql = `SELECT COUNT(*) as total FROM (${baseSql} ${whereSql}) as count_table`;
+  const countSql = `SELECT COUNT(*) as total FROM v_notice_list v ${whereSql}`;
   const [countRows] = await pool.query(countSql, queryParams);
   const total = countRows[0].total;
 
@@ -581,38 +581,35 @@ export const findCoursesForForm = async (user = null, filters = {}) => {
 };
 
 /**
- * 특정 사용자가 공지사항의 수신 대상인지 확인합니다.
- * (동적 확인 로직으로 변경)
+ * 특정 학생의 엔티티 정보를 조회합니다.
  *
- * 1) 과목 공지일 경우 -> 학생이 해당 course_id의 target_id를 수강 중인지 확인
- * 2) 일반 공지일 경우 -> notice.targets(학년/언어/분반)를
- *    학생이 수강 중인 course_target 정보와 비교하여 매칭 여부 판단
- *
- * @param {string} noticeId - 확인할 공지사항의 ID
- * @param {string} userId - 확인할 사용자의 ID
+ * @param {string} userId - 조회할 학생의 사용자 ID
  * @param {object} [connection=pool] - 데이터베이스 연결 객체
- * @returns {Promise<boolean>} 수신 대상이면 true, 아니면 false
+ * @returns {Promise<object|null>} 학생 엔티티 객체 또는 null
  */
-export const isRecipient = async (noticeId, userId, connection = pool) => {
-  // 1. 공지사항 상세 정보 조회
-  const [noticeRows] = await connection.query(
-    `SELECT * FROM v_notice_details WHERE notice_id = ?`,
-    [noticeId],
-  );
-  if (noticeRows.length === 0) return false;
-  const notice = noticeRows[0];
-
-  // 2. 학생 정보 조회
+export const getStudentEntity = async (userId, connection = pool) => {
   const [studentRows] = await connection.query(
     `SELECT * FROM student_entity WHERE user_id = ?`,
     [userId],
   );
-  if (studentRows.length === 0) return false;
+  return studentRows.length > 0 ? studentRows[0] : null;
+};
 
-  const student = studentRows[0];
+/**
+ * 특정 학생이 공지사항의 수신 대상인지 확인합니다.
+ *
+ * 1) 과목 공지일 경우: 학생이 해당 과목의 수강 대상인지 확인
+ * 2) 일반 공지일 경우: 학생의 정보가 공지의 타겟 조건과 일치하는지 확인
+ *
+ * @param {object} notice - 확인할 공지사항 객체
+ * @param {object} student - 확인할 학생 엔티티 객체
+ * @param {object} [connection=pool] - 데이터베이스 연결 객체
+ * @returns {Promise<boolean>} 수신 대상이면 true, 아니면 false
+ */
+export const isStudentRecipient = async (notice, student, connection = pool) => {
   if (student.status !== "enrolled") return false;
 
-  // 3. 과목 공지인 경우
+  // 1. 과목 공지인 경우
   if (notice.course_id) {
     // course_target 기준으로 학생이 매칭되는지 확인
     const [rows] = await connection.query(
@@ -625,29 +622,29 @@ export const isRecipient = async (noticeId, userId, connection = pool) => {
           AND (ct.class_id IS NULL OR ct.class_id = ?)
         LIMIT 1
       `,
-      [notice.course_id, student.grade_id, student.language_id, student.class_id]
+      [notice.course_id, student.grade_id, student.language_id, student.class_id],
     );
 
     return rows.length > 0;
   }
 
-  // 5. 일반 공지 처리
+  // 2. 일반 공지 처리
   // 타겟 조건이 없으면 전체 학생에게 발송
   if (!notice.targets || notice.targets.length === 0) return true;
 
-  // 학생이 수강 중인 target 중 하나라도 조건을 만족하면 true
+  // 학생의 정보가 공지사항의 타겟 조건 중 하나라도 만족하면 true
   for (const target of notice.targets) {
-    const match = targetRows.some(t => {
-      const gradeOk = !target.grade_id || t.grade_id === target.grade_id;
-      const langOk = !target.language_id || t.language_id === target.language_id;
-      const classOk = !target.class_id || t.class_id === target.class_id;
-      return gradeOk && langOk && classOk;
-    });
+    const gradeOk = !target.grade_id || student.grade_id === target.grade_id;
+    const langOk =
+      !target.language_id || student.language_id === target.language_id;
+    const classOk = !target.class_id || student.class_id === target.class_id;
 
-    // target 조건 중 하나라도 만족했다면 수신 가능
-    if (match) return true;
+    if (gradeOk && langOk && classOk) {
+      return true; // 학생이 타겟 조건 중 하나를 만족하므로 수신 대상임
+    }
   }
 
+  // 모든 타겟 조건을 만족하지 않음
   return false;
 };
 
