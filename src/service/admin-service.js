@@ -96,14 +96,14 @@ export const getProAdminInfo = async function() {
 }
 
 // 권한 수정
-export const putProAdminInfo = async function(user_id, role_type) {
+export const putProAdminInfo = async (user_id, name, phone, role_type) => {
     if (!user_id) {
-        throw new BadRequestError("user_id 값이 누락 되었습니다.")
+        throw new BadRequestError("user_id 값이 누락 되었습니다.");
     }
 
-    if (!role_type) {
-        throw  new BadRequestError("role_type 값이 누락 되었습니다.")
+    if (!name || !phone || !role_type) {
+        throw new BadRequestError("name, phone, role_type 값이 모두 필요합니다.");
     }
 
-    return await UserModel.putProAdminInfo(user_id, role_type);
-}
+    return await UserModel.putProAdminInfo(user_id, name, phone, role_type);
+};

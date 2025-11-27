@@ -116,12 +116,12 @@ export const getProAdminInfo = async function (req, res, next) {
     }
 }
 
-// 권한 수정
+// 교수, 관리자 Data 수정
 export const putProAdminInfo = async function (req, res, next) {
     try {
         const { user_id } = req.params
-        const { role_type } = req.body;
-        const result = await adminService.putProAdminInfo(user_id, role_type);
+        const { name, phone, role_type } = req.body;
+        const result = await adminService.putProAdminInfo(user_id, name, phone, role_type);
         res.status(200).json(result)
     } catch (err) {
         next(err)

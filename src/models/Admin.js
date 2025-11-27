@@ -111,9 +111,37 @@ export async function getProAdminInfo() {
 }
 
 // 권한 수정
-export async function putProAdminInfo(user_id, role_type) {
-    const [rows] = await pool.query(`
-        UPDATE user_role SET role_type = ? WHERE user_id = ?
-    `, [role_type, user_id]);
-    return rows;
+export async function putProAdminInfo(user_id, name, phone, role_type) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // 1) user_account 수정
+        await conn.query(
+        `
+        UPDATE user_account
+        SET name = ?, phone = ?
+        WHERE user_id = ?
+        `,
+        [name, phone, user_id]
+        );
+
+        // 2) user_role 수정
+        await conn.query(
+        `
+        UPDATE user_role
+        SET role_type = ?
+        WHERE user_id = ?
+        `,
+        [role_type, user_id]
+        );
+
+        await conn.commit();
+        return { success: true };
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
 }
