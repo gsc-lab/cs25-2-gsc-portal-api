@@ -127,7 +127,7 @@ async function authCallback(req, res) {
       }
 
       try {
-        checkUserStatus(user.status);
+        authService.checkUserStatus(user.status);
       } catch (error) {
         // 승인 대기, 거절된 사용자는 에러 메시지와 함께 로그인 페이지로 리디렉션
         return res.redirect(
