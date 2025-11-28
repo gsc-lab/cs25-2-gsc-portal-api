@@ -370,7 +370,7 @@ async function saveMyProfile(req, res, next) {
       throw new BadRequestError("파일을 업로드해주세요.");
     }
 
-    await saveStudentExam(user, files[0], body);
+    await authService.saveStudentExam(user, files[0], body);
     res.status(201).json({ message: "성공적으로 저장되었습니다." });
   } catch (err) {
     next(err);
