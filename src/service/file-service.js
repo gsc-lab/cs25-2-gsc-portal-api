@@ -25,10 +25,11 @@ export const addFiles = async (files, connection) => {
   const db = connection || pool;
 
   for (const file of files) {
+    const originalName = file.originalname.normalize("NFC"); // 한글 파일 깨짐 방지
     const sql = `INSERT INTO file_assets (file_name, file_url, size_type, file_type) VALUES (?, ?, ?, ?)`;
 
     const finalMimeType = determineMimeType(file);
-    const params = [file.originalname, file.path, file.size, finalMimeType];
+    const params = [originalName, file.path, file.size, finalMimeType];
 
     const [result] = await db.query(sql, params);
 
