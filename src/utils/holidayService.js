@@ -71,8 +71,6 @@ export async function getNationalHoliday(dateString) {
         dayCode,              // 예: "MON"
         };
     } catch (err) {
-        console.log("[HOLIDAY] ERROR status:", err.response?.status);
-        console.log("[HOLIDAY] ERROR data:", err.response?.data);
         return { isHoliday: false, name: null, dayCode };
     }
 }

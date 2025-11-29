@@ -167,6 +167,12 @@ export function formatTimetableForAdmin(rows, holidayMap = {}) {
 
         if (!days.includes(display_day)) continue; // 주말(보강) 스킵
 
+        // 공휴일 수업 패스
+        if (timetable[group][display_day].isHoliday) {
+            // 공휴일이니까 이 수업은 표시 안 함
+            continue;
+        }
+
         // 5. [수정] 기본 항목 객체 생성 (상담 변수 포함)
         const entry = {
             title: row.course_title || "상담",
