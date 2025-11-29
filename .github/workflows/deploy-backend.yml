@@ -54,7 +54,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             sgwar/gsc-portal-backend:latest   # latest 태그
-            sgwar/gsc-portal-backend:${{ env.BRANCH }}-${{ env.SHORT_SHA }}  # dev-e71a12 형태
+            sgwar/gsc-portal-backend:${{ env.BRANCH }}-${{ env.SHORT_SHA }}
           cache-from: type=registry,ref=sgwar/gsc-portal-backend:buildcache
           cache-to: type=registry,ref=sgwar/gsc-portal-backend:buildcache,mode=max
 
