@@ -1,64 +1,91 @@
-name: Deploy Backend
+name: Deploy Backend   # 워크플로우 이름
 
 on:
   push:
-    branches: ["dev"]
+    branches: ["dev"]   # dev 브랜치에 push될 때 자동 실행
   release:
-    types: ["published"]
-  workflow_dispatch:
+    types: ["published"]  # Release 발행 시에도 실행
+  workflow_dispatch:       # 수동 실행 버튼 활성화
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest   # GitHub Actions 실행 환경 (Ubuntu)
 
-    env:
+    env:   # 전체 Job에서 사용되는 환경 변수
       IMAGE_NAME: gsc-portal-backend
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
     steps:
-      # 📌 1) Git Checkout
+      # ======================================================
+      # 1) GitHub 저장소 코드 체크아웃
+      # ======================================================
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 📌 2) DockerHub Login
+      # ======================================================
+      # 2) Docker Buildx 설정
+      #    (멀티 플랫폼 빌드 및 고급 기능 활성화)
+      # ======================================================
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+
+      # ======================================================
+      # 3) DockerHub 로그인 (푸시를 위해 필요)
+      # ======================================================
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}   # Docker Hub 아이디
+          password: ${{ secrets.DOCKERHUB_TOKEN }}       # Docker Hub Access Token
 
-      # 📌 3) Docker Build & Push
+
+      # ======================================================
+      # 4) Docker 이미지 빌드 + DockerHub 푸시
+      #    - mac/ARM → Linux/AMD64 서버 호환 위해 멀티플랫폼 빌드 필요
+      #    - latest 및 sha 기반 버전 태그 생성
+      #    - registry 캐시 사용 (빌드 속도 향상)
+      # ======================================================
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          push: true
-          platforms: linux/amd64,linux/arm64
+          context: .                # 현재 프로젝트 루트에서 Docker build
+          push: true                # DockerHub로 푸시
+          platforms: linux/amd64,linux/arm64   # 멀티 플랫폼 이미지 생성
           tags: |
-            sgwar/gsc-portal-backend:latest
-            sgwar/gsc-portal-backend:${{ env.BRANCH }}-${{ env.SHORT_SHA }}
-          cache-from: type=registry,ref=sgwar/gsc-portal-backend:buildcache
-          cache-to: type=registry,ref=sgwar/gsc-portal-backend:buildcache,mode=max
+            sgwar/gsc-portal-backend:latest   # latest 태그
+            sgwar/gsc-portal-backend:${{ env.BRANCH }}-${{ env.SHORT_SHA }}  # dev-e71a12 형태
+          cache-from: type=registry,ref=sgwar/gsc-portal-backend:buildcache  # 캐시 가져오기
+          cache-to: type=registry,ref=sgwar/gsc-portal-backend:buildcache,mode=max  # 캐시 저장하기
 
-      # 📌 4) 서버로 SSH 접속 → Docker 배포
+
+      # ======================================================
+      # 5) SSH로 학교 서버 접속 → Docker 배포 실행
+      #
+      #   기능:
+      #   ✔ 새 이미지 pull (속도/불안정성 대비)
+      #   ✔ backend 컨테이너만 재시작 (no-deps)
+      #   ✔ 불필요 이미지 자동 정리 (디스크 보호)
+      #   ✔ < /dev/null → SSH 비대화식 오류 방지
+      # ======================================================
       - name: Deploy to School Server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.SSH_HOST }}      # 학교 서버 IP
+          username: ${{ secrets.SSH_USER }}  # SSH 계정 (ike)
+          key: ${{ secrets.SSH_KEY }}         # GitHub Secrets의 private key
           script: |
             echo "🚀 Deploying BACKEND to School Server..."
 
-            cd ~/gsc-portal-infra
+            cd ~/gsc-portal-infra   # 서버의 프로젝트 인프라 폴더로 이동
 
-            # 📌 (1) 속도/불안정성 대비: 먼저 pull
+            # (1) Docker Hub에서 최신 백엔드 이미지를 pull
             sudo docker compose -f docker-compose.prod.yml pull gsc_backend < /dev/null
 
-            # 📌 (2) 백엔드만 교체 (--no-deps + < /dev/null)
+            # (2) 백엔드 서비스만 재시작 (DB/프론트 영향 X)
             sudo docker compose -f docker-compose.prod.yml up -d --no-deps gsc_backend < /dev/null
 
-            # 📌 (3) 디스크 관리: 사용 안 하는 이미지 제거
+            # (3) 사용되지 않는 Docker 이미지 자동 삭제 (디스크 부족 방지)
             sudo docker image prune -f < /dev/null
 
             echo "✅ Deployment to School Server complete!"
