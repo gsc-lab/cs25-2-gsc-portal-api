@@ -2,7 +2,9 @@ name: Deploy Backend
 
 on:
   push:
-    branches: ["develop"]
+    branches: ["dev"]
+  release:
+    types: ["published"]
   workflow_dispatch:
 
 jobs:
@@ -14,25 +16,31 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
     steps:
+      # 📌 1) Git Checkout
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 📌 2) DockerHub Login
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & Push Docker image
+      # 📌 3) Docker Build & Push
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/gsc-portal-backend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/gsc-portal-backend:${{ github.sha }}
+            sgwar/gsc-portal-backend:latest
+            sgwar/gsc-portal-backend:${{ env.BRANCH }}-${{ env.SHORT_SHA }}
+          cache-from: type=registry,ref=sgwar/gsc-portal-backend:buildcache
+          cache-to: type=registry,ref=sgwar/gsc-portal-backend:buildcache,mode=max
 
+      # 📌 4) 서버로 SSH 접속 → Docker 배포
       - name: Deploy to School Server
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -40,7 +48,17 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            echo "🚀 Deploying BACKEND to School Server..."
+
             cd ~/gsc-portal-infra
-            sudo docker compose pull backend
-            sudo docker compose up -d backend
-            sudo docker image prune -f
+
+            # 📌 (1) 속도/불안정성 대비: 먼저 pull
+            sudo docker compose -f docker-compose.prod.yml pull gsc_backend < /dev/null
+
+            # 📌 (2) 백엔드만 교체 (--no-deps + < /dev/null)
+            sudo docker compose -f docker-compose.prod.yml up -d --no-deps gsc_backend < /dev/null
+
+            # 📌 (3) 디스크 관리: 사용 안 하는 이미지 제거
+            sudo docker image prune -f < /dev/null
+
+            echo "✅ Deployment to School Server complete!"

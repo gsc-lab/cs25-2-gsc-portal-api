@@ -6,7 +6,7 @@ permissions:
 
 on:
   push:
-    branches: ["dev"]
+    branches: ["main"]
   release:
     types: ["published"]
 
