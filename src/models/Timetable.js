@@ -1,6 +1,14 @@
 import pool from "../db/connection.js";
 import { BadRequestError, InternalServerError } from "../errors/index.js"
 import { formatTimetable, formatTimetableForAdmin } from "../utils/timetableFormatter.js";
+import { getNationalHoliday } from "../utils/holidayService.js";
+
+//
+function addDays(baseDateStr, offset) {
+    const d = new Date(baseDateStr);   // "2025-05-05"
+    d.setDate(d.getDate() + offset);   // 0 → 월요일, 1 → 화요일...
+    return d.toISOString().slice(0, 10);  // "YYYY-MM-DD"
+}
 
 // 시간표 조회 (학생, 교수, 관리자)
 export async function getStudentTimetable(user_id, targetDate, weekStart, weekEnd) {
@@ -77,7 +85,27 @@ export async function getStudentTimetable(user_id, targetDate, weekStart, weekEn
     ];
 
     const [rows] = await pool.query(sql, params);
-    return formatTimetable(rows);
+    
+    // 주간 공휴일 정보 만들기
+    const holidayMap = {};
+
+    const DAYS = ["MON", "TUE", "WED", "THU", "FRI"];
+
+    for (let i = 0; i < DAYS.length; i++) {
+        const dayCode = DAYS[i];
+        const dateStr = addDays(weekStart, i);
+
+        const info = await getNationalHoliday(dateStr);
+        holidayMap[dayCode] = {
+            isHoliday: info.isHoliday,
+            name: info.name,
+            date: dateStr,
+        };
+    }
+
+    console.log(holidayMap);
+
+    return formatTimetable(rows, holidayMap);
 }
 
 
@@ -149,7 +177,26 @@ export async function getProfessorTimetable(user_id, targetDate, weekStart, week
     ];
 
     const [rows] = await pool.query(sql, params);
-    return formatTimetable(rows);
+
+    // 주간 공휴일 정보 만들기
+    const holidayMap = {};
+
+    const DAYS = ["MON", "TUE", "WED", "THU", "FRI"];
+
+    for (let i = 0; i < DAYS.length; i++) {
+        const dayCode = DAYS[i];
+        const dateStr = addDays(weekStart, i);
+
+        const info = await getNationalHoliday(dateStr);
+        holidayMap[dayCode] = {
+            isHoliday: info.isHoliday,
+            name: info.name,
+            date: dateStr,
+        };
+    }
+
+
+    return formatTimetable(rows, holidayMap);
 }
 
 
@@ -257,10 +304,28 @@ export async function getAdminTimetable(targetDate, weekStart, weekEnd) {
 
     const [rows] = await pool.query(sql, params);
 
-    // 3. 수정된 formatTimetableForAdmin 함수를 호출합니다.
-    return formatTimetableForAdmin(rows);
-}
+    // 주간 공휴일 정보 만들기
+    const holidayMap = {};
 
+    const DAYS = ["MON", "TUE", "WED", "THU", "FRI"];
+
+    for (let i = 0; i < DAYS.length; i++) {
+        const dayCode = DAYS[i];
+        const dateStr = addDays(weekStart, i);
+
+        const info = await getNationalHoliday(dateStr);
+        holidayMap[dayCode] = {
+            isHoliday: info.isHoliday,
+            name: info.name,
+            date: dateStr,
+        };
+    }
+
+    // 3. 수정된 formatTimetableForAdmin 함수를 호출합니다.
+    const timetable =  formatTimetableForAdmin(rows, holidayMap);
+
+    return timetable;
+}
 
 // 강의 등록
 export async function postRegisterCourse(sec_id, title, professor_id, is_special, grade_id, language_id, class_id, class_name) {
