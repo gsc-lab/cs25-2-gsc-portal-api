@@ -260,26 +260,20 @@ export const getGradeDate = async function (grade, date) {
     const gradeName = `${gradeNumber}학년`;
     const dayCode = toDayCode(date);
 
-    const MAX_PERIOD = 13;
+    // 주말이면 빈 배열 반환
+    if (!dayCode) return [];
 
-    // 주말이면 바로 false 리스트
-    if (!dayCode) {
-        return Array(MAX_PERIOD).fill(false);
-    }
-
+    // model 호출
     const classPeriods = await timetableModel.getGradePeriodsByDate(
         gradeName,
         date,
         dayCode
     );
 
-    // 1~13교시 기준 boolean 리스트 생성
-    const result = Array.from({ length: MAX_PERIOD }, (_, i) => {
-        const period = i + 1;
-        return classPeriods.some(row => Number(row.period) === period);
-    });
+    // 리스트 만들기
+    const result = classPeriods.map(row => String(row.period));
 
-    return result;   // ← ★ 여기! 리스트 그대로 반환
+    return result;
 };
 
 
