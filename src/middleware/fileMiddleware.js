@@ -17,12 +17,12 @@ const storage = multer.diskStorage({
     cb(null, "uploads/");
   },
   filename: function (req, file, cb) {
-    // UTF-8로 전송된 파일명을 latin1으로 잘못 해석하는 문제를 바로잡습니다.
+    // UTF-8로 전송된 파일명을 latin1으로 잘못 해석 문제 해결
     file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
 
     const unique = uuidv4();
 
-    // macOS 등에서 사용하는 NFD 인코딩을 NFC로 정규화합니다.
+    // macOS 등에서 사용하는 NFD 인코딩을 NFC로 정규화
     const normalized = file.originalname.normalize("NFC");
 
     const extension = path.extname(normalized); // 원본 파일 확장자
