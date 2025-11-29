@@ -13,14 +13,23 @@ const periodMap = {
     "20:00:00": 12
 };
 
-export function formatTimetable(rows) {
+export function formatTimetable(rows, holidayMap = {}) {
     const days = ["MON", "TUE", "WED", "THU", "FRI"];
     const timetable = {};
 
     // 기본 구조 세팅
     for (const d of days) {
-        timetable[d] = {};
-        for (let p = 1; p <= 12; p++) timetable[d][p] = [];
+        const h = holidayMap[d] || { isHoliday: false, name: null, date: null };
+
+        timetable[d] = {
+            isHoliday: !!h.isHoliday,
+            holidayName: h.isHoliday ? h.name : null,
+            date: h.date || null,
+        };
+
+        for (let p = 1; p <= 12; p++) {
+            timetable[d][p] = [];
+        }
     }
 
     if (!rows || rows.length === 0) return timetable;
@@ -37,8 +46,13 @@ export function formatTimetable(rows) {
             day = map[eventDay];
         }
 
+        day = day.trim().toUpperCase();
+
         // 주말은 시간표에 존재하지 않으므로 제외
         if (!days.includes(day)) continue;
+
+        // 공휴일이면 제외
+        if (timetable[day].isHoliday) continue;
 
         // 휴강
         if (row.event_status === "CANCEL") {
@@ -97,16 +111,23 @@ export function formatTimetable(rows) {
 
 
 
-export function formatTimetableForAdmin(rows) {
+export function formatTimetableForAdmin(rows, holidayMap = {}) {
     const grades = ["1", "2", "3", "special", "korean"];
     const days = ["MON", "TUE", "WED", "THU", "FRI"];
     const timetable = {};
 
-    // 1. 기본 구조 초기화 (기존과 동일)
+    // 기본 구조 초기화
     for (const g of grades) {
         timetable[g] = {};
         for (const d of days) {
-            timetable[g][d] = {};
+            const h = holidayMap[d] || { isHoliday: false, name: null, date: null };
+
+            timetable[g][d] = {
+                isHoliday: !!h.isHoliday,
+                holidayName: h.isHoliday ? h.name : null,
+                date: h.date || null,
+            };
+
             for (let p = 1; p <= 12; p++) timetable[g][d][p] = [];
         }
     }
