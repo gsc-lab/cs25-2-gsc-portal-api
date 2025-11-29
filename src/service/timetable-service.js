@@ -251,6 +251,48 @@ export const getEvents = async function () {
     return await timetableModel.getEvents()
 }
 
+// 학년, 날짜 조회
+export const getGradeDate = async function (grade, date) {
+    if (!grade) throw new BadRequestError("grade 값이 없습니다");
+    if (!date) throw new BadRequestError("date 값이 없습니다");
+
+    const gradeNumber = Number(grade);
+    const gradeName = `${gradeNumber}학년`;
+    const dayCode = toDayCode(date);
+
+    // 주말이면 빈 배열 반환
+    if (!dayCode) return [];
+
+    // model 호출
+    const classPeriods = await timetableModel.getGradePeriodsByDate(
+        gradeName,
+        date,
+        dayCode
+    );
+
+    // 리스트 만들기
+    const result = classPeriods.map(row => String(row.period));
+
+    return result;
+};
+
+
+function toDayCode(dateString) {
+    const d = new Date(dateString + "T00:00:00");
+    const jsDay = d.getDay(); // 0: Sun, 1: Mon, 2: Tue ...
+
+    const map = {
+        1: "MON",
+        2: "TUE",
+        3: "WED",
+        4: "THU",
+        5: "FRI",
+    };
+
+    return map[jsDay] ?? null;
+}
+
+
 // 후까 교수님
 export const getHukaStudentTimetable = async function(sec_id) {
     if (!sec_id) {

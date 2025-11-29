@@ -209,6 +209,20 @@ export const getEvents = async function (req, res, next) {
     }
 }
 
+// 학년, 날짜 조회
+export const getGradeDate = async function (req, res, next) {
+    try {
+        const { grade, date } = req.query;
+
+        const result = await timetableService.getGradeDate(grade, date)
+        res.status(200).json(result)
+    } catch (err) {
+        next(err)
+    }
+}
+
+
+
 // 후까 교수님
 export const getHukaStudentTimetable = async function (req, res, next) {
     try {

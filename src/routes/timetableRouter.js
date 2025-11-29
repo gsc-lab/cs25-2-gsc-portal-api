@@ -32,6 +32,10 @@ router.delete("/classes/:class_id/assign", authWithRole("professor"), timetableC
 // 휴보강 이력
 router.get("/events", authWithRole("professor"), timetableController.getEvents)
 
+// 학년, 날짜 조회
+router.get("/gradeDate", timetableController.getGradeDate);
+
+
 // 후까 교수님
 router.get("/huka/student", timetableController.getHukaStudentTimetable);
 router.post("/huka/student", authWithRole("professor"), timetableController.postHukaStudentTimetable);
