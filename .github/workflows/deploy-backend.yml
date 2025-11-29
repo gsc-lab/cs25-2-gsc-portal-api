@@ -36,8 +36,8 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}   # Docker Hub 아이디
-          password: ${{ secrets.DOCKERHUB_TOKEN }}       # Docker Hub Access Token
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
 
       # ======================================================
@@ -49,14 +49,14 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .                # 현재 프로젝트 루트에서 Docker build
-          push: true                # DockerHub로 푸시
-          platforms: linux/amd64,linux/arm64   # 멀티 플랫폼 이미지 생성
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             sgwar/gsc-portal-backend:latest   # latest 태그
             sgwar/gsc-portal-backend:${{ env.BRANCH }}-${{ env.SHORT_SHA }}  # dev-e71a12 형태
-          cache-from: type=registry,ref=sgwar/gsc-portal-backend:buildcache  # 캐시 가져오기
-          cache-to: type=registry,ref=sgwar/gsc-portal-backend:buildcache,mode=max  # 캐시 저장하기
+          cache-from: type=registry,ref=sgwar/gsc-portal-backend:buildcache
+          cache-to: type=registry,ref=sgwar/gsc-portal-backend:buildcache,mode=max
 
 
       # ======================================================
@@ -71,9 +71,9 @@ jobs:
       - name: Deploy to School Server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}      # 학교 서버 IP
-          username: ${{ secrets.SSH_USER }}  # SSH 계정 (ike)
-          key: ${{ secrets.SSH_KEY }}         # GitHub Secrets의 private key
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             echo "🚀 Deploying BACKEND to School Server..."
 
