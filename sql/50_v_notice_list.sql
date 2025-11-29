@@ -2,6 +2,7 @@ CREATE OR REPLACE VIEW v_notice_list AS
 SELECT
     -- 1. 기본 공지 정보
     n.notice_id,
+    n.sec_id,
     n.title,
     n.content,
     n.is_pinned,

@@ -380,6 +380,7 @@ paths:
       description: |
         - 학생: 자신에게 타겟된 공지 및 전체 공지
         - 교수/관리자: 모든 공지
+        - `sec_id` 파라미터를 제공하지 않으면 최신 학기를 기준으로 데이터를 조회합니다.
       security:
         - bearerAuth: []
       parameters:
@@ -404,6 +405,13 @@ paths:
             type: string
             example: "1학년"
           description: "조회할 게시물 제목"
+        - name: sec_id
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "25-1"
+          description: "특정 학기 ID로 필터링합니다. (미지정 시 최신 학기)"
         - name: course_id
           in: query
           required: false
@@ -472,6 +480,7 @@ paths:
                 value:
                   title: "10월 신규 기능 업데이트 안내"
                   content: "안녕하세요. 10월에 새롭게 추가된 기능을 안내드립니다."
+                  sec_id: "25-2"
                   course_id: "COURSE-G1-01"
                   targets: '[{"target_grade_id": "G1", "target_level_id": "N1", "target_language_id": "JP"}]'
                   files: "update_guide.pdf"
@@ -639,6 +648,9 @@ paths:
                 is_pinned:
                   type: boolean
                   description: "상단 고정 여부"
+                sec_id:
+                  type: string
+                  description: "연결할 학기 ID"
                 course_id:
                   type: string
                   description: "연결할 과목 ID"
@@ -3266,60 +3278,30 @@ components:
         title:
           type: string
           description: "공지사항 제목"
-          example: "10월 주요 학사일정 안내"
         content:
           type: string
           description: "공지사항 본문 내용"
-          example: "안녕하세요. 10월 주요 학사일정을 안내드립니다."
         is_pinned:
           type: boolean
-          description: "중요 공지사항"
-          example: "true"
+          description: "상단 고정 여부"
+        sec_id:
+          type: string
+          description: "연결할 학기 ID"
         course_id:
           type: string
-          description: "과목 공지일 경우 해당하는 과목 ID. 전체 공지일 경우 생략 가능."
-          example: "COURSE-G1-01"
-        specific_users:
-          type: array
-          items:
-            type: integer
-            example: 2423004
-          description: |
-            "공지 대상 학생을 지정하는 객체 배열. multipart/form-data 전송 시에는 이 배열을 JSON 문자열로 변환하여 보내야 합니다."
-            - `application/json` 요청 시: `[2423004, 2423005]` 형태로 전송
-            - `multipart/form-data` 요청 시: 문자열로 직렬화하여 `"["2423004","2423005"]"` 형태로 전송해야 합니다.
-            - 비워둘 경우 전체 타겟(학년/레벨 기준)으로 발송됩니다.
-          example: [2423004, 2423005, 2423006]
-
+          description: "연결할 과목 ID"
         targets:
-          type: array
-          description: "공지 대상을 지정하는 객체 배열. multipart/form-data 전송 시에는 이 배열을 JSON 문자열로 변환하여 보내야 합니다."
-          items:
-            type: object
-            properties:
-              target_grade_id:
-                type: string
-                example: "G1"
-              target_level_id:
-                type: string
-                example: "N1"
-              target_language_id:
-                type: string
-                example: "JP"
-          # 배열 전체에 대한 example을 YAML 배열 형식으로 제공
-          example:
-            - target_grade_id: "G1"
-              target_class_id: "N1"
-              target_language_id: "JP"
-            - target_grade_id: "G2"
-              target_class_id: "N3"
-              target_language_id: "EN"
+          type: string
+          description: "공지 대상 배열 (JSON 문자열)"
+        specific_users:
+          type: string
+          description: "특정 대상자 지정 (JSON 문자열)"
         files:
           type: array
           items:
             type: string
             format: binary
-          description: "첨부할 파일들"
+          description: "첨부파일"
     NoticeReadStatus:
       type: object
       properties:

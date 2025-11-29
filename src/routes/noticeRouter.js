@@ -39,12 +39,14 @@ router.post(
  * PATCH /api/notices/:notice_id
  * 특정 공지사항을 수정합니다. 교수 역할만 접근 가능하며, 최대 10개의 파일을 첨부할 수 있습니다.
  */
+
 router.patch(
   "/:notice_id",
   authWithRole("professor"),
   uploadForNotices.array("files", 10),
   noticeController.updateNotice,
 );
+
 /**
  * DELETE /api/notices/:notice_id
  * 특정 공지사항을 삭제합니다. 교수 역할만 접근 가능합니다.
@@ -64,6 +66,7 @@ router.post(
   authWithRole("professor"),
   noticeController.dispatchNotice,
 );
+
 /**
  * GET /api/notices/:notice_id/status
  * 특정 공지사항의 읽음 현황을 조회합니다. 교수 역할만 접근 가능합니다.
@@ -73,6 +76,7 @@ router.get(
   authWithRole("professor"),
   noticeController.getNoticeStatus,
 );
+
 /**
  * PATCH /api/notices/:notice_id/read
  * 학생이 특정 공지사항을 읽었음을 처리합니다. 학생 역할만 접근 가능합니다.

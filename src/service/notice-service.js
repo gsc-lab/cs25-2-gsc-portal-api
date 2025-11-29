@@ -22,6 +22,16 @@ import { v4 as uuidv4 } from "uuid";
  * @returns {Promise<object>} 공지사항 목록 및 총 개수
  */
 export const getNotices = async (spec, query) => {
+  // 사용자가 학기 관련 파라미터(sec_id, year, semester)를 전달하지 않은 경우
+  if (!query.sec_id && !query.year && !query.semester) {
+    // 자동으로 현재 학기에 대한 정보 호출
+    const currentSection = await noticeModel.getCurrentSection();
+    if (currentSection) {
+      // 조회된 현재 학기 ID를 쿼리 객체에 추가합니다.
+      query.sec_id = currentSection.sec_id;
+    }
+  }
+  // 최종적으로 구성된 쿼리로 모델 함수를 호출합니다.
   return await noticeModel.findBySpec(spec, query);
 };
 
@@ -82,7 +92,7 @@ export const detailNotices = async (noticeId, user) => {
  * @throws {ForbiddenError} 담당하지 않는 과목의 공지를 작성하려는 경우
  */
 export const addNotice = async (user, noticeData, files) => {
-  const { course_id, targets, specific_users, ...noticeInfo } = noticeData;
+  const { sec_id, course_id, targets, specific_users, ...noticeInfo } = noticeData;
   const { title, content } = noticeInfo;
 
   if (!title || title.trim() === "") {
@@ -151,6 +161,7 @@ export const addNotice = async (user, noticeData, files) => {
 
     const noticeId = await noticeModel.createNotice(
       noticeInfo,
+      sec_id,
       course_id,
       user.user_id,
       connection,
@@ -200,7 +211,7 @@ export const addNotice = async (user, noticeData, files) => {
  * @throws {BadRequestError} 필수 필드 누락, 잘못된 형식의 데이터, 수정할 내용이 없는 경우
  */
 export const updateNotice = async (noticeId, data, newFiles, user) => {
-  const updateTableTextFields = ["title", "content", "is_pinned", "course_id"];
+  const updateTableTextFields = ["title", "content", "is_pinned", "course_id", "sec_id"];
 
   const notice = await noticeModel.findById(noticeId);
   // 사전 검증

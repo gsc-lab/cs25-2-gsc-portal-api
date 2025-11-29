@@ -24,6 +24,7 @@ export async function findBySpec(spec, query) {
     grade_id,
     language_id,
     author_id,
+    sec_id,
   } = query;
   const offset = (page - 1) * size;
 
@@ -81,6 +82,12 @@ export async function findBySpec(spec, query) {
   if (course_id) {
     whereClauses.push(`v.course_id = ?`);
     queryParams.push(course_id);
+  }
+
+  // sec_id 필터 추가
+  if (sec_id) {
+    whereClauses.push(`v.sec_id = ?`);
+    queryParams.push(sec_id);
   }
 
   // 모든 역할에 공통으로 적용되는 옵션 필터
@@ -165,16 +172,17 @@ export async function findById(noticeId) {
  * @param {object} connection - 데이터베이스 연결 객체 (트랜잭션용)
  * @returns {Promise<number>} 새로 생성된 공지사항의 ID
  */
-export async function createNotice(noticeInfo, course_id, userId, connection) {
+export async function createNotice(noticeInfo, sec_id, course_id, userId, connection) {
   const { title, content, is_pinned = 0 } = noticeInfo;
-  const sql = `INSERT INTO notice (title, content, is_pinned, user_id, course_id, created_at)
-                        VALUES (?, ?, ?, ?, ?, NOW())`;
+  const sql = `INSERT INTO notice (title, content, is_pinned, user_id, sec_id, course_id, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, NOW())`;
 
   const [result] = await connection.query(sql, [
     title,
     content,
     is_pinned,
     userId,
+    sec_id,
     course_id,
   ]);
   return result.insertId;
@@ -189,16 +197,16 @@ export async function createNotice(noticeInfo, course_id, userId, connection) {
  * @returns {Promise<number>} 업데이트된 행의 수
  */
 export async function updateNotice(noticeId, patch, connection) {
-  const { title, content, is_pinned, course_id } = patch;
-  const sql = `UPDATE notice SET title = ?, content = ?, is_pinned = ?, course_id = ? WHERE notice_id = ?`;
+  if (Object.keys(patch).length === 0) {
+    return 0; // 업데이트할 내용이 없으면 0을 반환
+  }
 
-  const [result] = await connection.query(sql, [
-    title,
-    content,
-    is_pinned,
-    course_id,
-    noticeId,
-  ]);
+  const setClauses = Object.keys(patch).map(key => `${key} = ?`).join(', ');
+  const values = [...Object.values(patch), noticeId];
+
+  const sql = `UPDATE notice SET ${setClauses} WHERE notice_id = ?`;
+
+  const [result] = await connection.query(sql, values);
   return result.affectedRows;
 }
 
@@ -662,6 +670,30 @@ export const courseExists = async (courseId, connection = pool) => {
   );
   return rows.length > 0;
 };
+
+/**
+ * 현재 날짜를 기준으로 현재 학기 정보를 조회합니다.
+ * section 테이블의 start_date와 end_date를 사용하여 현재 날짜가 속하는 학기를 찾습니다.
+ * @return {Promise<object|null>} 현재 학기 정보 객체 (e.g., { sec_id, year, semester}) 또는 null
+ */
+export const getCurrentSection = async () => {
+  const connection = await pool.getConnection();
+  try {
+    const sql = `
+      SELECT sec_id, year, semester
+      FROM section
+      WHERE NOW() BETWEEN start_date AND end_date
+      LIMIT 1;
+    `;
+    const [rows] = await connection.query(sql);
+    return rows[0] || null;
+
+  } catch (error) {
+    console.log(error);
+  } finally {
+    connection.release();
+  }
+}
 
 /**
  * 특정 사용자가 특정 과목의 담당 교수인지 확인합니다.
