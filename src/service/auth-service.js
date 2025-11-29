@@ -8,18 +8,20 @@ import {
   createProfessor,
   createStudent,
   findById,
-  findByEmail, saveStudentExams,
+  findByEmail,
+  findExamByUserId,
+  saveStudentExams, updateStudentExam,
 } from "../models/Auth.js";
 import { v4 } from "uuid";
 import jwt from "jsonwebtoken";
 import {
   BadRequestError,
+  NotFoundError,
   UnauthenticatedError,
   ConflictError,
   ForbiddenError,
 } from "../errors/index.js";
 import * as fileService from "./file-service.js";
-import * as noticeModel from "../models/Notice.js";
 import pool from "../db/connection.js";
 
 const secret = process.env.JWT_SECRET;
@@ -214,20 +216,58 @@ export const saveStudentExam = async (user, file, examData) => {
     throw new BadRequestError("누락된 값이 존재합니다.");
   }
 
+  // 1. 기존 성적 정보 확인
+  const existingExam = await findExamByUserId(userId);
+
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
 
+    // 2. 새 파일 추가
     const insertedFileIds = await fileService.addFiles([file], connection);
-    const fileId = insertedFileIds[0];
+    const newFileId = insertedFileIds[0];
 
-    await saveStudentExams(userId, examData, fileId, connection);
+    if (existingExam) {
+      // 기존 데이터가 있으면 UPDATE
+      await updateStudentExam(userId, examData, newFileId, connection);
+    } else {
+      // 기존 데이터가 없으면 INSERT
+      await saveStudentExams(userId, examData, newFileId, connection);
+    }
 
     await connection.commit();
+
+    // TODO: 트랜잭션 성공 후, 기존 파일 삭제하는 로직 추가 필요.
+    // 현재는 orphaned file로 남겨두어 안전을 확보
+    // const oldFileId = existingExam ? existingExam.file_id : null;
+    // if (oldFileId) { ... }
+
   } catch (error) {
     await connection.rollback();
     throw error;
   } finally {
     connection.release();
   }
+};
+
+/**
+ * 학생의 시험 점수 정보를 조회합니다.
+ *
+ * @param {string} userId - 조회할 학생의 사용자 ID
+ * @returns {Promise<object>} 조회된 시험 점수 정보
+ * @throws {NotFoundError} 해당 사용자의 시험 정보가 없는 경우
+ */
+export const getStudentExam = async (userId) => {
+  const exam = await findExamByUserId(userId);
+
+  if (!exam) {
+    throw new NotFoundError("저장된 시험 성적 정보가 없습니다.");
+  }
+
+  // file_info가 null인 경우 (파일이 없는 레코드의 경우) 처리
+  if (exam.file_info === null) {
+    exam.file_info = {};
+  }
+
+  return exam;
 };

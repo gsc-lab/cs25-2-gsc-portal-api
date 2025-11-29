@@ -323,6 +323,34 @@ paths:
                     type: string
                     example: "성공적으로 완료되었습니다."
 
+  /auth/me/exam:
+    get:
+      tags: [Auth]
+      summary: 현재 로그인한 학생의 성적 정보 조회
+      description: |
+        현재 로그인한 학생이 이전에 업로드한 자신의 시험 성적 정보(점수, 레벨, 첨부파일 등)를 조회합니다.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 성공적으로 시험 성적 정보를 조회했습니다.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentExamDetail"
+        "401":
+          description: 인증 실패 (유효하지 않은 토큰)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 저장된 시험 성적 정보가 없습니다.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   # === DASHBOARD SECTION ===
 
   /dashboard:
@@ -3778,4 +3806,37 @@ components:
                 items:
                   type: string
                   example: "김학생"
+    StudentExamDetail:
+      type: object
+      properties:
+        exam_id:
+          type: string
+          example: "EX001"
+        user_id:
+          type: string
+          example: "2423004"
+        exam_type:
+          type: string
+          example: "JLPT"
+        score:
+          type: integer
+          example: 120
+        level_code:
+          type: string
+          example: "N1"
+        created_at:
+          type: string
+          format: date-time
+        file_info:
+          type: object
+          properties:
+            file_id:
+              type: integer
+              example: 101
+            file_name:
+              type: string
+              example: "jlpt_score_report.pdf"
+            file_url:
+              type: string
+              example: "/files/101/download"
 

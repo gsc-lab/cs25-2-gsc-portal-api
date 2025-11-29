@@ -105,10 +105,17 @@ export const createStudent = async ({
       [user_id, grade_id, class_id, language_id, is_international, "enrolled"],
     );
 
+    // 3) role 등록
     await conn.query(
       `INSERT INTO user_role (role_type, user_id)
              VALUES (?, ?)`,
       ["student", user_id],
+    );
+
+    // 4) 분반정보 등록
+    await conn.query(
+      `INSERT INTO course_student(user_id, class_id) VALUES (?, ?)`,
+      [user_id, null]
     );
 
     await conn.commit();
@@ -264,4 +271,56 @@ export const saveStudentExams = async (userId, data, fileId, connection) => {
   );
   return result;
 
+};
+
+/**
+ * 사용자 ID를 통해 학생의 시험 점수 정보를 조회합니다.
+ * 파일 정보를 포함하기 위해 file_assets 테이블과 조인합니다.
+ *
+ * @param {string} userId - 조회할 학생의 사용자 ID
+ * @param {object} [connection] - 사용할 데이터베이스 연결 객체 (선택 사항, 트랜잭션용)
+ * @returns {Promise<object|undefined>} 조회된 시험 점수 정보 객체 또는 undefined
+ */
+export const findExamByUserId = async (userId, connection) => {
+  const db = connection || pool;
+  const [rows] = await db.query(
+      `SELECT 
+         se.exam_id,
+         se.user_id,
+         se.exam_type,
+         se.score,
+         se.level_code,
+         JSON_OBJECT(
+           'file_id', fa.file_id,
+           'file_name', fa.file_name,
+           'file_url', CONCAT('/files/', fa.file_id, '/download')
+         ) AS file_info
+       FROM student_exams se
+       LEFT JOIN file_assets fa ON se.file_id = fa.file_id
+       WHERE se.user_id = ?`,
+      [userId]
+  );
+  console.log(rows);
+  return rows[0];
+};
+
+/**
+ * 학생의 기존 시험 점수 정보를 업데이트합니다.
+ *
+ * @param {string} userId - 업데이트할 학생의 사용자 ID
+ * @param {object} data - 새로운 시험 데이터 (exam_type, score, level 포함)
+ * @param {string} fileId - 새로운 시험 관련 파일의 ID
+ * @param {object} [connection] - 사용할 데이터베이스 연결 객체 (선택 사항, 트랜잭션용)
+ * @returns {Promise<object>} 데이터베이스 업데이트 결과
+ */
+export const updateStudentExam = async (userId, data, fileId, connection) => {
+  const db = connection || pool;
+  const { exam_type, score, level } = data;
+  const [result] = await db.query(
+      `UPDATE student_exams 
+     SET exam_type = ?, score = ?, level_code = ?, file_id = ? 
+     WHERE user_id = ?`,
+      [exam_type, score, level, fileId, userId]
+  );
+  return result;
 };

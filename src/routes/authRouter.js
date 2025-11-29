@@ -64,4 +64,11 @@ router.get("/me", authWithRole("student"), authController.authMe);
  */
 router.post("/me", authWithRole("student"), uploadForJLPT.array("files", 1), authController.saveMyProfile);
 
+/**
+ * GET /api/auth/me/exam
+ * 현재 로그인한 학생의 시험 성적 정보를 조회합니다.
+ * 학생 역할만 접근 가능합니다.
+ */
+router.get("/me/exam", authWithRole("student"), authController.getMyExam);
+
 export default router;

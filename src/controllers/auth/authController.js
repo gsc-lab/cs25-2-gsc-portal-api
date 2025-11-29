@@ -377,6 +377,24 @@ async function saveMyProfile(req, res, next) {
   }
 }
 
+/**
+ * 현재 로그인한 사용자의 시험 성적 정보를 조회합니다.
+ *
+ * @param {object} req - Express 요청 객체 (req.user에서 사용자 ID를 가져옴)
+ * @param {object} res - Express 응답 객체
+ * @param {function} next - 다음 미들웨어 함수
+ * @returns {void}
+ */
+async function getMyExam(req, res, next) {
+  try {
+    const { user } = req;
+    const exam = await authService.getStudentExam(user.user_id);
+    res.status(200).json(exam);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export default {
   googleAuthRedirect,
   authCallback,
@@ -385,4 +403,5 @@ export default {
   registerProfessor,
   authMe,
   saveMyProfile,
+  getMyExam,
 };
