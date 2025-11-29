@@ -106,7 +106,9 @@ async function authCallback(req, res) {
 
         if (!authUser) {
           console.log("유효한 이메일이 아닙니다.");
-          return res.redirect("/?error=invalid_email");
+          return res.redirect(
+            `${process.env.FE_BASE_URL}/?error=${encodeURIComponent(error.message)}`,
+          );
         }
       }
       // 1) 사용자 조회/가입
@@ -194,15 +196,6 @@ async function authCallback(req, res) {
         );
       }
 
-      // if (
-      //   tokens.scope.includes(
-      //     "https://www.googleapis.com/auth/calendar.readonly",
-      //   )
-      // ) {
-      //   console.log("Calendar scope granted");
-      // } else {
-      //   console.log("Calendar scope NOT granted");
-      // }
     } catch (error) {
       console.error("OAuth Callback Error", error);
       return res.redirect(`${process.env.FE_BASE_URL}/error?msg=oauth_failed`);
