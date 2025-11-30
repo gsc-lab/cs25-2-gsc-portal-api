@@ -36,6 +36,7 @@ jobs:
         run: |
           echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
           echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "APP_VERSION=${GITHUB_REF##*/}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       # ======================================================
       # 3) DockerHub 로그인 (푸시를 위해 필요)
@@ -62,6 +63,8 @@ jobs:
           tags: |
             sgwar/gsc-portal-backend:latest
             sgwar/gsc-portal-backend:${{ env.BRANCH }}-${{ env.SHORT_SHA }}
+          build-args: |
+            APP_VERSION=${{ env.APP_VERSION }}
           cache-from: type=registry,ref=sgwar/gsc-portal-backend:buildcache
           cache-to: type=registry,ref=sgwar/gsc-portal-backend:buildcache,mode=max
 
@@ -93,3 +96,17 @@ jobs:
             sudo docker image prune -f < /dev/null
 
             echo "✅ Deployment to School Server complete!"
+
+
+      # ======================================================
+      # 6) Health Check (배포 후 서비스 정상동작 검증)
+      #
+      #   기능:
+      #   ✔ /health 엔드포인트 호출하여 서버 상태 확인
+      #   ✔ Redis / DB / CPU 등 내부 헬스체크 모두 반영
+      #   ✔ curl -f → HTTP 200이 아니면 배포 실패 처리
+      # ======================================================
+      - name: Health check after deploy (dev)
+        run: |
+          echo "Health check on ${{ secrets.HEALTHCHECK_URL }}"
+          curl -f ${{ secrets.HEALTHCHECK_URL }}

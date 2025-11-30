@@ -36,6 +36,7 @@ jobs:
         run: |
           echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
           echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "APP_VERSION=${GITHUB_REF##*/}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -46,6 +47,8 @@ jobs:
           tags: |
             sgwar/gsc-portal-backend:latest
             sgwar/gsc-portal-backend:${{ env.BRANCH }}-${{ env.SHORT_SHA }}
+          build-args: |
+            APP_VERSION=${{ env.APP_VERSION }}
           cache-from: type=registry,ref=sgwar/gsc-portal-backend:buildcache
           cache-to: type=registry,ref=sgwar/gsc-portal-backend:buildcache,mode=max
 
@@ -74,3 +77,8 @@ jobs:
             sudo docker image prune -f < /dev/null
 
             echo "✅ Backend deployment completed!"
+      
+      - name: Health check after deploy (prod)
+        run: |
+          echo "🔍 Health check on ${{ secrets.HEALTHCHECK_URL }}"
+          curl -f ${{ secrets.HEALTHCHECK_URL }}

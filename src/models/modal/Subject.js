@@ -209,7 +209,6 @@ export async function getCourseStudents(class_id) {
         ORDER BY ua.name;
         `,[lang[0].language_id]
     );
-    console.log("rows", rows);
 
     return {
         all_students: rows,

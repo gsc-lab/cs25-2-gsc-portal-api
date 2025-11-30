@@ -25,6 +25,7 @@ import classroomRouter from "./routes/classroomRouter.js";
 import subjectRouter from "./routes/modal/subjectRouter.js";
 import commonRouter from "./routes/modal/commonRouter.js";
 import dashboardRouter from "./routes/dashboardRouter.js";
+import healthRouter from "./routes/healthRouter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +34,8 @@ dotenv.config();
 import { centralErrorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
+
+app.set("json spaces", 2);
 
 const corsOptions = {
   origin: process.env.FE_BASE_URL,
@@ -87,6 +90,7 @@ app.use("/api/classrooms", classroomRouter);
 app.use("/api/modal/subjects", subjectRouter);
 app.use("/api/modal/common", commonRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/health", healthRouter);
 
 // Sentry Error 생성 api
 app.get("/debug-sentry", function mainHandler(req, res) {

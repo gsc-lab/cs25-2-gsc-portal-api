@@ -1,138 +1,155 @@
-import * as classroomModels from '../models/Classroom.js'
-import { BadRequestError, InternalServerError } from "../errors/index.js"
+import * as classroomModels from "../models/Classroom.js";
+import { BadRequestError } from "../errors/index.js";
+import { requireFields } from "../utils/validation.js";
 
-export const getClassrooms = async function () {
+// 강의실 목록
+export const getClassrooms = async () => {
     return await classroomModels.getClassrooms();
-}
+};
 
-export const postClassrooms = async function ({building, room_number, room_type}) {
-    if (!building || !room_number || !room_type) {
-        throw new BadRequestError("필수 값이 누락 되었습니다.");
-    }
-    // ID 생성
+// 강의실 생성
+export const postClassrooms = async ({ building, room_number, room_type }) => {
+    requireFields(
+        { building, room_number, room_type },
+        ["building", "room_number", "room_type"]
+    );
+
     const classroom_id = await classroomModels.createClassroomId();
-    
-    return await classroomModels.postClassrooms(classroom_id, building, room_number, room_type);
-}
+    return await classroomModels.postClassrooms(
+        classroom_id,
+        building,
+        room_number,
+        room_type
+    );
+};
 
-export const putClassrooms = async function ({id, building, room_number, room_type}) {
-    if (!id || !building || !room_number || !room_type) {
-        throw new BadRequestError("필수 값이 누락 되었습니다.");
-    }
-    
+// 강의실 수정
+export const putClassrooms = async ({ id, building, room_number, room_type }) => {
+    requireFields(
+        { id, building, room_number, room_type },
+        ["id", "building", "room_number", "room_type"]
+    );
+
     return await classroomModels.putClassrooms(id, building, room_number, room_type);
-}
+};
 
-export const deleteClassrooms = async function (id) {
-    if(!id) { 
-        throw new BadRequestError("필수 값이 누락 되었습니다.")
-    }
-    
+// 강의실 삭제
+export const deleteClassrooms = async (id) => {
+    requireFields({ id }, ["id"]);
+
     return await classroomModels.deleteClassrooms(id);
-}
+    };
 
-export const getClassroomsReservations = async function({id, date}) {
-    if (!id || !date) {
-        throw new BadRequestError("필수 값이 누락 되었습니다.")
-    }
-    
+    // 특정 강의실 예약 목록
+    export const getClassroomsReservations = async ({ id, date }) => {
+    requireFields({ id, date }, ["id", "date"]);
+
     return await classroomModels.getClassroomsReservations(id, date);
-}
+};
 
-export const postClassroomReservations = async function({id, user_id, reserve_date, start_time, end_time}) {
-    if (!id || !user_id || !reserve_date || !start_time || !end_time) {
-        throw new BadRequestError("필수 값이 누락 되었습니다.")
-    }
-    
-    return await classroomModels.postClassroomReservations(id, user_id, reserve_date, start_time, end_time);
-}
+// 강의실 예약 생성
+export const postClassroomReservations = async ({
+    id,
+    user_id,
+    reserve_date,
+    start_time,
+    end_time,
+    }) => {
+    requireFields(
+        { id, user_id, reserve_date, start_time, end_time },
+        ["id", "user_id", "reserve_date", "start_time", "end_time"]
+    );
 
-export const deleteClassroomReservation = async function ({id, reservation_id}) {
-    if (!id || !reservation_id) {
-        throw new BadRequestError("필수 값이 누락 되었습니다.")
-    }
-    
+    return await classroomModels.postClassroomReservations(
+        id,
+        user_id,
+        reserve_date,
+        start_time,
+        end_time
+    );
+};
+
+// 예약 삭제
+export const deleteClassroomReservation = async ({ id, reservation_id }) => {
+    requireFields({ id, reservation_id }, ["id", "reservation_id"]);
+
     return await classroomModels.deleteClassroomReservation(id, reservation_id);
-}
+};
 
-export const getClassroomPolls = async function ({date, user_id}) {
-    if (!date || !user_id) {
-        throw new BadRequestError("필수 값이 누락 되었습니다.")
-    }
-    
+// 강의실 개방 투표 현황
+export const getClassroomPolls = async ({ date, user_id }) => {
+    requireFields({ date, user_id }, ["date", "user_id"]);
+
     return await classroomModels.getClassroomPolls(date, user_id);
-}
+};
 
-// (수정) Service: '반복 규칙'을 생성하는 함수
-export const postClassroomPolls = async function ({ grade_id, required_count }) {
-    
-    // 1. 유효성 검사
-    if (!grade_id || !required_count) {
-        throw new BadRequestError("학년과 최소 인원은 필수입니다.");
+// 투표 규칙 생성
+export const postClassroomPolls = async ({ grade_id, required_count }) => {
+    requireFields({ grade_id, required_count }, ["grade_id", "required_count"]);
+
+    // 도메인 검증: 최소 인원은 1 이상
+    if (required_count <= 0) {
+        throw new BadRequestError("required_count는 1 이상이어야 합니다.");
     }
-    
-    // 2. (신규) Service에서 '오늘 날짜'를 생성
-    const start_date = getTodayDate(); 
 
-    // 3. (수정) '규칙 ID' ('r001') 생성
-    const rule_id = await classroomModels.createPollRuleId(); 
+    const start_date = getTodayDate();
+    const rule_id = await classroomModels.createPollRuleId();
 
-    // 4. '규칙' 테이블에 저장할 데이터 객체
     const newRuleData = {
         rule_id,
         grade_id,
-        start_date, // <- 여기서 생성한 오늘 날짜
-        required_count
+        start_date,
+        required_count,
     };
 
-    // 5. '규칙'을 DB에 저장 (Model의 postPollRule 함수 호출)
-    return await classroomModels.postPollRule(newRuleData); 
-}
+    return await classroomModels.postPollRule(newRuleData);
+};
 
-// 규칙 목록 조회
-export const getPollRules = async function() {
+// 투표 규칙 목록 조회
+export const getPollRules = async () => {
     return await classroomModels.getPollRules();
-}
+};
 
-// 규칙 목록 수정
-export const putPollRules = async function({ rule_id, required_count}) {
-    if (!rule_id || !required_count) {
-        throw new BadRequestError("rule_id, required_count 값이 누락되었습니다.")
+// 투표 규칙 수정
+export const putPollRules = async ({ rule_id, required_count }) => {
+    requireFields({ rule_id, required_count }, ["rule_id", "required_count"]);
+
+    if (required_count <= 0) {
+        throw new BadRequestError("required_count는 1 이상이어야 합니다.");
     }
 
-    const start_date = getTodayDate(); 
-
+    const start_date = getTodayDate();
     return await classroomModels.putPollRules(rule_id, required_count, start_date);
-}
+};
 
-// 규칙 목록 삭제
-export const deletePollRules = async function(rule_id) {
-    if (!rule_id) {
-        throw new BadRequestError("rule_id가 누락 되었습니다.");
-    }
+// 투표 규칙 삭제
+export const deletePollRules = async (rule_id) => {
+    requireFields({ rule_id }, ["rule_id"]);
 
     return await classroomModels.deletePollRules(rule_id);
-}
+};
 
-// 투표 저장 Post
-export const postReservationPolls = async function ({user_id, poll_id, action}) {
-    if (!user_id || !poll_id || !action) {
-        throw new BadRequestError("필수 값이 누락 되었습니다.")
-    }
+// 투표하기
+export const postReservationPolls = async ({ user_id, poll_id, action }) => {
+    requireFields({ user_id, poll_id, action }, ["user_id", "poll_id", "action"]);
+
     let result;
-    if (action === "apply") result = await classroomModels.addVote(user_id, poll_id);
-    else if (action === "cancel") result = await classroomModels.removeVote(user_id, poll_id);
-    else throw new BadRequestError("action 안에는 apply 또는 cancel값만 올 수 있습니다.");
-    
-    return result
-}
+    if (action === "apply") {
+        result = await classroomModels.addVote(user_id, poll_id);
+    } else if (action === "cancel") {
+        result = await classroomModels.removeVote(user_id, poll_id);
+    } else {
+        throw new BadRequestError("action 값은 apply 또는 cancel만 가능합니다.");
+    }
 
+    return result;
+};
 
-// 오늘 날짜 생성 함수
+// 오늘 날짜 (YYYY-MM-DD)
 function getTodayDate() {
     const d = new Date();
     const year = d.getFullYear();
-    const month = ('0' + (d.getMonth() + 1)).slice(-2);
-    const day = ('0' + d.getDate()).slice(-2);
-    return `${year}-${month}-${day}`; // 예: "2025-11-18"
+    const month = ("0" + (d.getMonth() + 1)).slice(-2);
+    const day = ("0" + d.getDate()).slice(-2);
+    return `${year}-${month}-${day}`;
 }

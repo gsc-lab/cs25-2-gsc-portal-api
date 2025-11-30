@@ -1,129 +1,219 @@
-import * as adminService from '../service/admin-service.js'
+import * as adminService from "../service/admin-service.js";
+import { BadRequestError } from "../errors/index.js";
 
-// 승인
+// 승인 대기 유저 목록 조회
 export const getPendingUsers = async function (req, res, next) {
     try {
-        var result = await adminService.getPendingUsers();
-        res.status(200).json(result);
+        const result = await adminService.getPendingUsers();
+        return res.status(200).json({
+        success: true,
+        data: result,
+        });
     } catch (err) {
-        res.status(500).json({ error: err })
+        next(err);
     }
 };
 
+// 승인 / 거절 처리
 export const postPendingUsers = async function (req, res, next) {
     try {
         const { user_id, action } = req.body;
         const params = { user_id, action };
-        await adminService.postPendingUsers(params);
-        res.status(200).json({
-            message: action === "active" ? "승인 완료" : "승인 거부",
-            user_id
-        })
-    } catch (err) {
-        next(err)
-    }
-}
 
+        const result = await adminService.postPendingUsers(params);
+
+        return res.status(200).json({
+        success: true,
+        message: action === "active" ? "승인 완료" : "승인 거부",
+        data: {
+            user_id,
+            action,
+            result,
+        },
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 승인 대기 유저 삭제
 export const deletePendingUsers = async function (req, res, next) {
     try {
         const { user_id } = req.params;
-        await adminService.deletePendingUsers(user_id);
-        res.status(200).json({ message: "삭제 완료", user_id});
-    } catch (err) {
-        next(err)
-    }
-}
+        const result = await adminService.deletePendingUsers(user_id);
 
-// 예외 이메일
+        return res.status(200).json({
+        success: true,
+        message: "삭제 완료",
+        data: {
+            user_id,
+            result,
+        },
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 예외 이메일 목록 조회
 export const getAllowedEmail = async function (req, res, next) {
     try {
         const result = await adminService.getAllowedEmail();
-        res.status(200).json(result); 
+        return res.status(200).json({
+        success: true,
+        data: result,
+        });
     } catch (err) {
-        next(err)
-    };
-}
+        next(err);
+    }
+};
 
+// 예외 이메일 추가
 export const postAllowedEmail = async function (req, res, next) {
     try {
         const { email, reason } = req.body;
         const params = { email, reason };
-        await adminService.postAllowedEmail(params);
-        res.status(200).json({ message: "추가 완료", email });
-    } catch (err) {
-        next(err)
-    }
-}
 
+        const result = await adminService.postAllowedEmail(params);
+
+        return res.status(201).json({
+        success: true,
+        message: "예외 이메일 추가 완료",
+        data: {
+            email,
+            reason,
+            result,
+        },
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 예외 이메일 삭제
 export const deleteAllowedEmail = async function (req, res, next) {
     try {
         const { user_id } = req.params;
-        await adminService.deleteAllowedEmail(user_id);
-        res.status(200).json({ message: "삭제완료", user_id });
-    } catch (err) {
-        next(err)
-    }
-}
+        const result = await adminService.deleteAllowedEmail(user_id);
 
-// 학생 정보
+        return res.status(200).json({
+        success: true,
+        message: "예외 이메일 삭제 완료",
+        data: {
+            user_id,
+            result,
+        },
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 학생 정보 조회
 export const getStudentInfo = async function (req, res, next) {
     try {
-        const {grade_id, status} = req.query;
-        const params = { grade_id, status};
-        const result = await adminService.getStudentInfo(params);
-        res.status(200).json(result)
-    } catch (err) {
-        next(err)
-    }
-}
+        const { grade_id, status } = req.query;
+        const params = { grade_id, status };
 
+        const result = await adminService.getStudentInfo(params);
+
+        return res.status(200).json({
+        success: true,
+        data: result,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 학생 정보 일부 수정 (PATCH)
 export const patchStudentInfo = async function (req, res, next) {
     try {
         const { user_id } = req.params;
         const updates = req.body;
-        const params = { user_id, updates};
 
         if (!user_id) {
-            return res.status(400).json({ error: "user_id is required" });
+        throw new BadRequestError("user_id는 필수 값입니다.");
         }
-        if (Object.keys(updates).length === 0) {
-            return res.status(400).json({ error: "No Data" });
+        if (!updates || Object.keys(updates).length === 0) {
+        throw new BadRequestError("수정할 데이터가 없습니다.");
         }
-        await adminService.patchStudentInfo(params);
-        res.status(200).json({ message: "수정 완료", user_id });
-    } catch (err) {
-        next(err)
-    }
-}
 
+        const params = { user_id, updates };
+        const result = await adminService.patchStudentInfo(params);
+
+        return res.status(200).json({
+        success: true,
+        message: "학생 정보 수정 완료",
+        data: {
+            user_id,
+            updates,
+            result,
+        },
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 학생 삭제
 export const deleteStudentInfo = async function (req, res, next) {
     try {
         const { user_id } = req.params;
-        await adminService.deleteStudentInfo(user_id);        
-        res.status(200).json({ message: "삭제 완료" });
-    } catch (err) {
-        next(err)
-    }
-}
+        const result = await adminService.deleteStudentInfo(user_id);
 
-// 교수 관리자 정보
+        return res.status(200).json({
+        success: true,
+        message: "학생 정보 삭제 완료",
+        data: {
+            user_id,
+            result,
+        },
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 교수 / 관리자 정보 조회
 export const getProAdminInfo = async function (req, res, next) {
     try {
         const result = await adminService.getProAdminInfo();
-        res.status(200).json(result)
-    } catch (err) {
-        next(err)
-    }
-}
 
-// 교수, 관리자 Data 수정
+        return res.status(200).json({
+        success: true,
+        data: result,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 교수 / 관리자 정보 수정
 export const putProAdminInfo = async function (req, res, next) {
     try {
-        const { user_id } = req.params
+        const { user_id } = req.params;
         const { name, phone, role_type } = req.body;
-        const result = await adminService.putProAdminInfo(user_id, name, phone, role_type);
-        res.status(200).json(result)
+
+        const result = await adminService.putProAdminInfo(
+        user_id,
+        name,
+        phone,
+        role_type,
+        );
+
+        return res.status(200).json({
+        success: true,
+        message: "교수/관리자 정보 수정 완료",
+        data: {
+            user_id,
+            name,
+            phone,
+            role_type,
+            result,
+        },
+        });
     } catch (err) {
-        next(err)
+        next(err);
     }
-}
+};

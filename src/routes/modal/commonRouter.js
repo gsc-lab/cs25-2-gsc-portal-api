@@ -3,24 +3,40 @@ import * as commonController from '../../controllers/modal/commonController.js';
 
 const router = express.Router();
 
-// 학기 조회
+/* ===========================
+    학기 (Section)
+=========================== */
+// 조회
 router.get('/sections', commonController.getSections);
-router.put('/sections/:sec_id', commonController.putSections);
-router.delete('/sections/:sec_id', commonController.deleteSections)
-
-// 학기 등록
+// 등록
 router.post('/sections', commonController.postSections);
+// 수정
+router.put('/sections/:sec_id', commonController.putSections);
+// 삭제
+router.delete('/sections/:sec_id', commonController.deleteSections);
 
-// 교수 목록
+
+/* ===========================
+    교수 목록
+=========================== */
 router.get('/professors', commonController.getProfessors);
 
-// 강의실 목록
+
+/* ===========================
+    강의실 목록
+=========================== */
 router.get('/classrooms', commonController.getClassrooms);
 
-// 교시 목록
+
+/* ===========================
+    교시 (Timeslots)
+=========================== */
 router.get('/timeslots', commonController.getTimeslots);
 
-// 요일 목록
+
+/* ===========================
+    요일 (Days)
+=========================== */
 router.get('/days', commonController.getDays);
 
 export default router;

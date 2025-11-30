@@ -33,7 +33,6 @@ export async function postSections(year, semester, start_date, end_date) {
         `INSERT INTO section (sec_id, semester, year, start_date, end_date) VALUES (?, ?, ?, ?, ?)`, [sec_id, semester, year, start_date, end_date]
     )
     return {
-        success: true,
         sec_id,
         affectedRows: rows.affectedRows
     };
@@ -76,7 +75,7 @@ export async function getDays() {
     const [rows] = await pool.query(
         `SELECT 'MON' AS day_of_week
             UNION SELECT 'TUE'
-            UNION SELECT 'WEN'
+            UNION SELECT 'WED'
             UNION SELECT 'THU'
             UNION SELECT 'FRI';`
     )

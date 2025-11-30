@@ -8,6 +8,8 @@ COPY . .
 # --- Production stage ---
 FROM node:lts-alpine AS production
 WORKDIR /app
+ARG APP_VERSION=dev
+ENV APP_VERSION=$APP_VERSION
 COPY --from=build /app ./
 RUN npm install --only=production --ignore-scripts
 EXPOSE 3000

@@ -103,8 +103,6 @@ export async function getStudentTimetable(user_id, targetDate, weekStart, weekEn
         };
     }
 
-    console.log(holidayMap);
-
     return formatTimetable(rows, holidayMap);
 }
 
@@ -1078,30 +1076,20 @@ export async function getEvents() {
 }
 
 // 교시 목록 조회
-// models/timetableModel.js
-
 export async function getGradePeriodsByDate(gradeName, date, dayCode) {
-  const sql = `
-    SELECT DISTINCT vt.time_slot_id AS period
-    FROM v_timetable vt
-    WHERE vt.grade_name = ?
-      AND ? BETWEEN vt.start_date AND vt.end_date
-      AND vt.day = ?
-    ORDER BY vt.time_slot_id;
-  `;
+    const sql = `
+        SELECT DISTINCT vt.time_slot_id AS period
+        FROM v_timetable vt
+        WHERE vt.grade_name = ?
+        AND ? BETWEEN vt.start_date AND vt.end_date
+        AND vt.day = ?
+        ORDER BY vt.time_slot_id;
+    `;
 
-  console.log("[MODEL] params:", { gradeName, date, dayCode }); // ⬅ 로그
+    const [rows] = await pool.query(sql, [gradeName, date, dayCode]);
 
-  const [rows] = await pool.query(sql, [gradeName, date, dayCode]);
-
-  console.log("[MODEL] rows:", rows); // ⬅ 여기 꼭 찍어봐
-
-  return rows;  // 예: [ { period: 3 } ]
+    return rows;
 }
-
-
-
-
 
 
 // 후까 교수님
