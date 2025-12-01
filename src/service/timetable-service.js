@@ -1,4 +1,7 @@
 import * as timetableModel from "../models/Timetable.js";
+import { fetchMonthlyHolidays } from "../utils/holidayService.js";
+import { addDays } from "../utils/pollScheduler.js"
+
 import {
   BadRequestError,
   NotFoundError,
@@ -165,14 +168,128 @@ export const postRegisterTimetable = async (payload) => {
     );
   }
 
-  return await timetableModel.registerTimetable(
-    classroom_id,
-    course_id,
-    day_of_week,
-    start_period,
-    end_period
-  );
+  let regResult;
+
+  try {
+    regResult = await timetableModel.registerTimetable(
+      classroom_id,
+      course_id,
+      day_of_week,
+      start_period,
+      end_period
+    );
+  } catch (err) {
+    // 강의실 겹치는 경우
+    if (
+      err?.code === "ER_DUP_ENTRY" &&
+      String(err.message).includes("course_schedule.ux_sched_slot_room")
+    ) {
+      // 인덱스 이름 기준으로 구분
+      throw new BadRequestError(
+        "해당 강의실은 이미 같은 요일·교시에 다른 수업이 등록되어 있습니다."
+      );
+    }
+
+    // 그 외 DB 에러는 그대로 위로
+    throw err;
+  }
+
+  const { sec_id } = regResult
+  // 공휴일에 맞는 휴강 자동 생성
+  // 1) 학기 시간 조회
+  const section = await timetableModel.getSectionById(sec_id);
+
+  if (section) {
+    // 2) 공휴일 기준 자동 휴강 생성
+    await autoCancelHolidaysForSchedule({
+      course_id,
+      classroom_id,
+      day_of_week,
+      start_period,
+      end_period,
+      start_date: section.start_date,
+      end_date: section.end_date,
+    });
+  }
+
+  return regResult
 };
+
+export async function autoCancelHolidaysForSchedule({
+  course_id,
+  classroom_id,
+  day_of_week,
+  start_period,
+  end_period,
+  start_date,
+  end_date,
+}) {
+  // 1) 학기 기간 동안 이 요일에 해당하는 날짜들 추출
+  const classDates = [];
+  let cur = start_date;
+
+  while (cur <= end_date) {
+    const dCode = toDayCode(cur);  // "MON" ~ "FRI" or null
+    if (dCode === day_of_week) {
+      classDates.push(cur);       // 이 과목이 열릴 예정인 날짜
+    }
+    cur = addDays(cur, 1);
+  }
+
+  if (classDates.length === 0) {
+    console.log("[AUTO-CANCEL] 수업 날짜 없음, 종료");
+    return;
+  }
+
+  // 2) 연/월 목록 뽑아서 월별 공휴일 조회
+  const ymSet = new Set(classDates.map((d) => d.slice(0, 7))); // "YYYY-MM"
+
+  // 🔥 여기에서 미리 선언해야 한다
+  const holidaySet = new Set(); // 공휴일인 "YYYY-MM-DD" 모음
+
+  for (const ym of ymSet) {
+    const [year, month] = ym.split("-");
+    const items = await fetchMonthlyHolidays(year, month); // 정부 공휴일 API + 캐시
+
+    for (const item of items) {
+      const loc = String(item.locdate); // 예: "20250815"
+      const yyyy = loc.slice(0, 4);
+      const mm = loc.slice(4, 6);
+      const dd = loc.slice(6, 8);
+      const date = `${yyyy}-${mm}-${dd}`;
+
+      const dCode = toDayCode(date);
+      if (dCode === day_of_week && date >= start_date && date <= end_date) {
+        holidaySet.add(date);
+      }
+    }
+  }
+
+  // 3) 수업 날짜들 중 공휴일에 해당하는 날짜만 골라서 CANCEL 생성
+  for (const date of classDates) {
+    if (!holidaySet.has(date)) continue;
+
+    // 이미 같은 CANCEL 있으면 스킵
+    const exists = await timetableModel.existsCancelEvent({
+      course_id,
+      event_date: date,
+      start_period,
+      end_period,
+    });
+
+    await timetableModel.postRegisterHoliday(
+      "CANCEL",      // event_type
+      date,          // event_date
+      start_period,
+      end_period,
+      course_id,
+      [],            // cancel_event_ids: CANCEL이면 필요 없음
+      classroom_id   // 필요 없으면 null
+    );
+  }
+}
+
+
 
 export const putRegisterTimetable = async (payload) => {
   const { schedule_ids, classroom_id, start_period, end_period, day_of_week } =
@@ -402,7 +519,7 @@ export const getEvents = async () => {
 // 학년/날짜별 수업 교시 조회
 // ========================
 
-const ALL_PERIODS = Array.from({ length: 11 }, (_, i) => i + 1); 
+const ALL_PERIODS = Array.from({ length: 12 }, (_, i) => i + 1); 
 // [1,2,3,...,11]
 
 export const getGradeDate = async (grade, date) => {

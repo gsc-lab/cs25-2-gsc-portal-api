@@ -2,7 +2,7 @@ name: Deploy Backend   # 워크플로우 이름
 
 on:
   push:
-    branches: ["dev"]   # dev 브랜치에 push될 때 자동 실행
+    branches: ["main"]   # dev 브랜치에 push될 때 자동 실행
   release:
     types: ["published"]  # Release 발행 시에도 실행
   workflow_dispatch:       # 수동 실행 버튼 활성화

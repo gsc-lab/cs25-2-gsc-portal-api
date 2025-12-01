@@ -2,7 +2,7 @@ import schedule from 'node-schedule';
 import pool from '../db/connection.js';
 
 // 날짜 더하는 함수
-const addDays = (date, days) => {
+export const addDays = (date, days) => {
     const result = new Date(date);
     result.setDate(result.getDate() + days);
     const year = result.getFullYear();

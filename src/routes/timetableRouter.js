@@ -30,7 +30,7 @@ router.delete("/registerCourses/:course_id", authWithRole("professor"), timetabl
     3) 시간표(Timetable) 관리
 =========================== */
 // 추가
-router.post("/registerTimetable", authWithRole("professor"), timetableController.postRegisterTimetable);
+router.post("/registerTimetable", timetableController.postRegisterTimetable);
 // 수정
 router.put("/registerTimetable/:schedule_ids", authWithRole("professor"), timetableController.putRegisterTimetable);
 // 삭제

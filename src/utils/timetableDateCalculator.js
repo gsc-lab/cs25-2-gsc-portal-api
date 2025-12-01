@@ -1,4 +1,3 @@
-// utils/date.js
 export function getWeekRange(dateStr) {
   // Asia/Seoul 기준으로 월요일~일요일
     const d = new Date(`${dateStr}T00:00:00+09:00`);
@@ -28,4 +27,18 @@ export const getTodayDate = () => {
     const day = String(today.getDate()).padStart(2, '0');
     
     return `${year}-${month}-${day}`; // "2024-05-20" 형식 반환
+}
+
+export function toDayCode(dateStr) {
+  const map = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  return map[new Date(dateStr).getDay()];
+}
+
+export function addDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  const y = result.getFullYear();
+  const m = String(result.getMonth() + 1).padStart(2, '0');
+  const d = String(result.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }

@@ -1,9 +1,9 @@
 import pool from "../db/connection.js";
 import { BadRequestError, InternalServerError } from "../errors/index.js"
 import { formatTimetable, formatTimetableForAdmin } from "../utils/timetableFormatter.js";
-import { getNationalHoliday } from "../utils/holidayService.js";
+import { parseDate, getNationalHoliday, fetchMonthlyHolidays } from "../utils/holidayService.js";
 
-//
+// 날짜 계산
 function addDays(baseDateStr, offset) {
     const d = new Date(baseDateStr);   // "2025-05-05"
     d.setDate(d.getDate() + offset);   // 0 → 월요일, 1 → 화요일...
@@ -87,22 +87,56 @@ export async function getStudentTimetable(user_id, targetDate, weekStart, weekEn
     const [rows] = await pool.query(sql, params);
     
     // 주간 공휴일 정보 만들기
-    const holidayMap = {};
-
     const DAYS = ["MON", "TUE", "WED", "THU", "FRI"];
 
-    for (let i = 0; i < DAYS.length; i++) {
-        const dayCode = DAYS[i];
-        const dateStr = addDays(weekStart, i);
+    // 1) 주간 날짜 5개 만들어두기
+    const dateInfos = DAYS.map((dayCode, idx) => {
+        const dateStr = addDays(weekStart, idx); // "YYYY-MM-DD"
+        const [year, month, day] = dateStr.split("-").map(Number);
+        const ymKey = `${year}${String(month).padStart(2, "0")}`;
 
-        const info = await getNationalHoliday(dateStr);
+        return {
+            dayCode,
+            dateStr,
+            year,
+            month,
+            day,
+            ymKey,
+        };
+    });
+
+    // 2) 이 주에 포함된 (year, month) 조합만 뽑기 (최대 2개)
+    const monthKeys = [...new Set(dateInfos.map((d) => d.ymKey))];
+
+    // 3) 각 month마다 API 1번씩 (최대 2번, 캐시 포함)
+    const monthlyMap = {};
+    for (const key of monthKeys) {
+        const year = key.slice(0, 4);
+        const month = key.slice(4, 6);
+        monthlyMap[key] = await fetchMonthlyHolidays(year, month);
+    }
+
+    // 4) 각 날짜마다 locdate 매칭해서 holidayMap 만들기
+    const holidayMap = {};
+
+    for (const info of dateInfos) {
+        const { dayCode, dateStr, year, month, day, ymKey } = info;
+        const items = monthlyMap[ymKey] || [];
+
+        const locdateNumber = Number(
+            `${year}${String(month).padStart(2, "0")}${String(day).padStart(2, "0")}`
+        );
+
+        const found = items.find((item) => Number(item.locdate) === locdateNumber);
+
         holidayMap[dayCode] = {
-            isHoliday: info.isHoliday,
-            name: info.name,
+            isHoliday: !!found,
+            name: found ? found.dateName : null,
             date: dateStr,
         };
     }
 
+    // rows + holidayMap을 합쳐서 최종 형태로 반환
     return formatTimetable(rows, holidayMap);
 }
 
@@ -177,26 +211,58 @@ export async function getProfessorTimetable(user_id, targetDate, weekStart, week
     const [rows] = await pool.query(sql, params);
 
     // 주간 공휴일 정보 만들기
-    const holidayMap = {};
-
     const DAYS = ["MON", "TUE", "WED", "THU", "FRI"];
 
-    for (let i = 0; i < DAYS.length; i++) {
-        const dayCode = DAYS[i];
-        const dateStr = addDays(weekStart, i);
+    // 1) 주간 날짜 5개 만들어두기
+    const dateInfos = DAYS.map((dayCode, idx) => {
+        const dateStr = addDays(weekStart, idx); // "YYYY-MM-DD"
+        const [year, month, day] = dateStr.split("-").map(Number);
+        const ymKey = `${year}${String(month).padStart(2, "0")}`;
 
-        const info = await getNationalHoliday(dateStr);
+        return {
+            dayCode,
+            dateStr,
+            year,
+            month,
+            day,
+            ymKey,
+        };
+    });
+
+    // 2) 이 주에 포함된 (year, month) 조합만 뽑기 (최대 2개)
+    const monthKeys = [...new Set(dateInfos.map((d) => d.ymKey))];
+
+    // 3) 각 month마다 API 1번씩 (최대 2번, 캐시 포함)
+    const monthlyMap = {};
+    for (const key of monthKeys) {
+        const year = key.slice(0, 4);
+        const month = key.slice(4, 6);
+        monthlyMap[key] = await fetchMonthlyHolidays(year, month);
+    }
+
+    // 4) 각 날짜마다 locdate 매칭해서 holidayMap 만들기
+    const holidayMap = {};
+
+    for (const info of dateInfos) {
+        const { dayCode, dateStr, year, month, day, ymKey } = info;
+        const items = monthlyMap[ymKey] || [];
+
+        const locdateNumber = Number(
+            `${year}${String(month).padStart(2, "0")}${String(day).padStart(2, "0")}`
+        );
+
+        const found = items.find((item) => Number(item.locdate) === locdateNumber);
+
         holidayMap[dayCode] = {
-            isHoliday: info.isHoliday,
-            name: info.name,
+            isHoliday: !!found,
+            name: found ? found.dateName : null,
             date: dateStr,
         };
     }
 
-
+    // rows + holidayMap을 합쳐서 최종 형태로 반환
     return formatTimetable(rows, holidayMap);
 }
-
 
 
 
@@ -303,18 +369,51 @@ export async function getAdminTimetable(targetDate, weekStart, weekEnd) {
     const [rows] = await pool.query(sql, params);
 
     // 주간 공휴일 정보 만들기
-    const holidayMap = {};
-
     const DAYS = ["MON", "TUE", "WED", "THU", "FRI"];
 
-    for (let i = 0; i < DAYS.length; i++) {
-        const dayCode = DAYS[i];
-        const dateStr = addDays(weekStart, i);
+    // 1) 주간 날짜 5개 만들어두기
+    const dateInfos = DAYS.map((dayCode, idx) => {
+        const dateStr = addDays(weekStart, idx); // "YYYY-MM-DD"
+        const [year, month, day] = dateStr.split("-").map(Number);
+        const ymKey = `${year}${String(month).padStart(2, "0")}`;
 
-        const info = await getNationalHoliday(dateStr);
+        return {
+            dayCode,
+            dateStr,
+            year,
+            month,
+            day,
+            ymKey,
+        };
+    });
+
+    // 2) 이 주에 포함된 (year, month) 조합만 뽑기 (최대 2개)
+    const monthKeys = [...new Set(dateInfos.map((d) => d.ymKey))];
+
+    // 3) 각 month마다 API 1번씩 (최대 2번, 캐시 포함)
+    const monthlyMap = {};
+    for (const key of monthKeys) {
+        const year = key.slice(0, 4);
+        const month = key.slice(4, 6);
+        monthlyMap[key] = await fetchMonthlyHolidays(year, month);
+    }
+
+    // 4) 각 날짜마다 locdate 매칭해서 holidayMap 만들기
+    const holidayMap = {};
+
+    for (const info of dateInfos) {
+        const { dayCode, dateStr, year, month, day, ymKey } = info;
+        const items = monthlyMap[ymKey] || [];
+
+        const locdateNumber = Number(
+            `${year}${String(month).padStart(2, "0")}${String(day).padStart(2, "0")}`
+        );
+
+        const found = items.find((item) => Number(item.locdate) === locdateNumber);
+
         holidayMap[dayCode] = {
-            isHoliday: info.isHoliday,
-            name: info.name,
+            isHoliday: !!found,
+            name: found ? found.dateName : null,
             date: dateStr,
         };
     }
@@ -355,7 +454,7 @@ export async function postRegisterCourse(sec_id, title, professor_id, is_special
         if (class_name && !class_id) {
             cls_id = course_id + class_name;
             const exists = await findClassById(cls_id);
-            if (!exists) await insertCourseClass(cls_id, class_name);
+            if (!exists) await insertCourseClass(cls_id, class_name, language_id);
             class_id = cls_id
         }
 
@@ -463,11 +562,11 @@ export async function findClassById(class_id) {
     return rows.length > 0;
 }
 
-// // 시간표 id 저장
-export async function insertCourseClass(class_id, class_name) {
+// 시간표 id 저장
+export async function insertCourseClass(class_id, class_name, language_id) {
     return pool.query(
-        "INSERT INTO course_class (class_id, name) VALUES (?, ?)",
-        [class_id, class_name]
+        "INSERT INTO course_class (class_id, name, language_id) VALUES (?, ?, ?)",
+        [class_id, class_name, language_id]
     );
 }
 
@@ -487,9 +586,7 @@ export async function registerTimetable(classroom_id, course_id, day_of_week, st
             [course_id]
         );
         const class_id = classIdRaw.length > 0 ? classIdRaw[0].class_id : null;
-        
-        
-        
+
         
         // 학기(sec_id) 조회
         const [secData] = await conn.query(
@@ -510,7 +607,7 @@ export async function registerTimetable(classroom_id, course_id, day_of_week, st
 
         // 교시 범위 등록
         for (let i = 0; i <= end_period - start_period; i++) {
-            const period = start_period + i;
+            const period = Number(start_period) + i;
             const newScheduleId = generateScheduleId(lastId, i);
 
             await conn.query(
@@ -532,7 +629,10 @@ export async function registerTimetable(classroom_id, course_id, day_of_week, st
         }
 
         await conn.commit();
-        return { message: "시간표 등록 완료" };
+        return { 
+            message: "시간표 등록 완료",
+            sec_id,
+        };
     } catch (err) {
         await conn.rollback();
         throw err;
@@ -541,6 +641,57 @@ export async function registerTimetable(classroom_id, course_id, day_of_week, st
     }
 }
 
+export async function getSectionById(sec_id) {
+    const [rows] = await pool.query(
+        `
+        SELECT 
+        sec_id,
+        start_date,
+        end_date
+        FROM section
+        WHERE sec_id = ?
+        LIMIT 1
+        `,
+        [sec_id]
+    );
+
+    // 없으면 null, 있으면 첫 row 반환
+    return rows[0] || null;
+}
+
+// 공휴일에 맞는 휴강 자동 생성
+export async function existsCancelEvent({ course_id, event_date, start_period, end_period }) {
+
+    // 1) 이 course_id가 가진 해당 교시들의 schedule_id 목록 조회
+    const [schedules] = await pool.query(
+        `
+        SELECT schedule_id
+        FROM course_schedule
+        WHERE course_id = ?
+        AND time_slot_id BETWEEN ? AND ?
+        `,
+        [course_id, start_period, end_period]
+    );
+
+    if (schedules.length === 0) return false;
+
+    const scheduleIds = schedules.map(row => row.schedule_id);
+
+    // 2) 이 schedule_id들 중 event_date에 이미 CANCEL이 있는지 확인
+    const [rows] = await pool.query(
+        `
+        SELECT 1
+        FROM course_event
+        WHERE event_type = 'CANCEL'
+        AND schedule_id IN (?)
+        AND event_date = ?
+        LIMIT 1
+        `,
+        [scheduleIds, event_date]
+    );
+
+    return rows.length > 0;
+}
 
 // 시간표 수정
 export async function putRegisterTimetable(schedule_ids, classroom_id, start_period, end_period, day_of_week) {

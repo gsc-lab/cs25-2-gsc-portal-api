@@ -3,7 +3,7 @@ import * as timetableService from "../service/timetable-service.js";
 // 시간표 조회 (학생)
 export const getStudentTimetable = async (req, res, next) => {
     try {
-        const user_id = req.user.user_id;
+        const user_id = '2423001';
         const targetDate = req.query.date;
 
         const result = await timetableService.getStudentTimetable({
@@ -23,7 +23,7 @@ export const getStudentTimetable = async (req, res, next) => {
 // 시간표 조회 (교수)
 export const getProfessorTimetable = async (req, res, next) => {
     try {
-        const user_id = req.user.user_id;
+        const user_id = '8888001'
         const targetDate = req.query.date;
 
         const result = await timetableService.getProfessorTimetable({
