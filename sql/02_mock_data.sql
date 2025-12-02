@@ -93,9 +93,12 @@ INSERT INTO student_entity (user_id, grade_id, class_id, language_id, is_interna
 ('2423006','1','C007A','KR','international','enrolled'),
 ('2423007','2','C007A','KR','international','enrolled'),
 ('2423008','2','C003A','JP','korean','leave'),
+('2423010','1','C003A','JP','korean','enrolled'),
 ('2423009','1','C003A','JP','korean','dropped'),
 ('2524001','3','C007A','KR','international','leave'),
-('2725001','1','C007A','KR','international','dropped');
+('2725001','1','C007A','KR','international','dropped'),
+('2725999','3','C007A','KR','international','enrolled');
+
 
 -- ===== Course Language / Target / Schedule / Professor / Student =====
 INSERT INTO course_language (course_id, language_id) VALUES
