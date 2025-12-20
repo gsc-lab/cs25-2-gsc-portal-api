@@ -78,24 +78,24 @@ jobs:
       #   ✔ 불필요 이미지 자동 정리 (디스크 보호)
       #   ✔ < /dev/null → SSH 비대화식 오류 방지
       # ======================================================
-      - name: Deploy to School Server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            echo "🚀 Deploying BACKEND to School Server..."
-
-            cd ~/gsc-portal-infra   # 서버의 프로젝트 인프라 폴더로 이동
-
-            sudo docker compose -f docker-compose.prod.yml pull gsc_backend < /dev/null
-
-            sudo docker compose -f docker-compose.prod.yml up -d --no-deps gsc_backend < /dev/null
-
-            sudo docker image prune -f < /dev/null
-
-            echo "✅ Deployment to School Server complete!"
+#      - name: Deploy to School Server
+#        uses: appleboy/ssh-action@v1.0.3
+#        with:
+#          host: ${{ secrets.SSH_HOST }}
+#          username: ${{ secrets.SSH_USER }}
+#          key: ${{ secrets.SSH_KEY }}
+#          script: |
+#            echo "🚀 Deploying BACKEND to School Server..."
+#
+#            cd ~/gsc-portal-infra   # 서버의 프로젝트 인프라 폴더로 이동
+#
+#            sudo docker compose -f docker-compose.prod.yml pull gsc_backend < /dev/null
+#
+#            sudo docker compose -f docker-compose.prod.yml up -d --no-deps gsc_backend < /dev/null
+#
+#            sudo docker image prune -f < /dev/null
+#
+#            echo "✅ Deployment to School Server complete!"
 
 
       # ======================================================
