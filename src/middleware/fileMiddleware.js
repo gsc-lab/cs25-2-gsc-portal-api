@@ -3,8 +3,6 @@
  * @description Multer를 사용하여 로컬 파일 시스템 또는 AWS S3에 파일을 업로드하는 미들웨어를 설정합니다.
  */
 import multer from "multer";
-import AWS from "aws-sdk";
-import multerS3 from "multer-s3";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 
@@ -29,29 +27,6 @@ const storage = multer.diskStorage({
     cb(null, unique + extension);
   },
 });
-
-// // AWS region 및 자격증명 설정
-// AWS.config.update({
-//   accessKeyId: process.env.S3_ACCESS_KEY_ID,
-//   secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-//   region: 'ap-northeast-2'
-// })
-//
-// // AWS S3 multer 설정
-// const upload = multer({
-//   storage: multerS3({
-//     s3: new AWS.S3(),
-//     bucket: 'gsc-portal-files',
-//     acl: "uploads",
-//     contentType: multerS3.AUTO_CONTENT_TYPE,
-//     key(req, file, cb) {
-//       cb(null, `${Date.now()}_${path.basename(file.originalname)}`);
-//     },
-//   }),
-//   limits: { fileSize: 5 * 1024 * 1024 },
-// })
-
-// // 허용되는 파일 타입과 사이즈
 
 /**
  * 파일 업로드 미들웨어를 생성하는 헬퍼 함수입니다.
