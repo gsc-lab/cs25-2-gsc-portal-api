@@ -6,6 +6,12 @@ on:
   release:
     types: ["published"]  # Release 발행 시에도 실행
   workflow_dispatch:       # 수동 실행 버튼 활성화
+    inputs:
+      no_cache:
+        description: '캐시 없이 강제로 새로 빌드하겠습니까?'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build-and-deploy:
@@ -59,6 +65,9 @@ jobs:
         with:
           context: .
           push: true
+
+          # 체크박스에 체크하면 true, 아니면 false
+          no-cache: ${{ inputs.no_cache }}
           platforms: linux/amd64,linux/arm64
           tags: |
             sgwar/gsc-portal-backend:latest
